@@ -1,0 +1,417 @@
+<!-- All material contained herein is copyright (c) McGraw-Hill Professional Books
+All Rights Reserved. No use of this material may be made without express written
+permission of the copyright holder. HTML conversions by Mega Space [barry@megaspace.com] -->
+
+<HTML>
+<HEAD>
+<META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=ISO-8859-1">
+<TITLE>Understanding Digital Signatures: Inside the Java Virtual Machine
+ by Bill Venners - Beta Version</TITLE>
+</HEAD>
+<BODY BGCOLOR="#FFFFFF">
+<TABLE BORDER="0" WIDTH="100%">
+<TR><TD><A HREF="http://www.pbg.mcgraw-hill.com/betabooks/stores.html" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/stores.html" target="bottom"><IMG SRC="hotkey.gif" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/images/hotkey.gif" ALIGN="LEFT" BORDER="0" WIDTH="40" HEIGHT="40" ALT="Orders"></A>
+<IMG SRC="order_text.gif" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/images/order_text.gif" WIDTH="103" HEIGHT="41" ALT="Orders"></TD>
+<TD ALIGN="RIGHT"><A HREF="chap18.html" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/venners/chap18.html"><IMG SRC="backward.gif" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/images/backward.gif" BORDER="0" ALT="Backward" WIDTH="32" HEIGHT="32"></A>&nbsp;<A HREF="chap20.html" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/venners/chap20.html"><IMG SRC="forward.gif" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/images/forward.gif" BORDER="0" ALT="Forward" WIDTH="32" HEIGHT="32"></A></TD></TR>
+<TR><TD COLSPAN="2"><A HREF="mailto:computing@mcgraw-hill.com"><IMG SRC="hotkey.gif" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/images/hotkey.gif" ALIGN="LEFT" BORDER="0" WIDTH="40" HEIGHT="40" ALT="Comments"></A>
+<IMG SRC="comment_text.gif" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/images/comment_text.gif" WIDTH="73" HEIGHT="39" ALT="Comments"></TD></TR>
+
+<TR><TD COLSPAN="2"><FONT FACE="ARIEL,HELVETICA" SIZE="-1"><I>&copy; 1997 The McGraw-Hill Companies, Inc.  All rights reserved.  <BR>Any use of this Beta Book is subject to the rules stated in the <A HREF="http://www.mcgraw-hill.com/corporate/news_info/copyrttm.htm" tppabs="http://www.mcgraw-hill.com/corporate/news_info/copyrttm.htm" target="_top">Terms of Use</A>.</I></FONT><br>
+<script language="javascript">
+    document.write("<a href='http://banners.linkbuddies.com/click.php?id=237296'><img src='http://banners.linkbuddies.com/image.php?id=237296&ref=" + document.referrer + "' width=468 height=60 alt='Click Here' border=0></a>");
+</script></TD></TR>
+
+</TABLE>
+<HR>
+<P><H1>Chapter Nineteen</H1></P>
+<P><H2>Method Invocation and Return</H2></P>
+<P>The Java Virtual Machineís instruction set has four different instructions that invoke methods. This chapter describes these four instructions and the situations in which each is used.</P>
+<H3><EM><P>Method Invocation</P>
+</EM></H3><P>The Java programming language provides two basic kinds of methods: instance methods and class (or static) methods. The difference between these two kinds of methods are:</P>
+<OL><LI>instance methods require an instance before they can be invoked; class methods do not,</P>
+<LI>instance methods use dynamic (late) binding; class methods use static (early) binding.</OL>
+<P>When the Java Virtual Machine invokes a class method, it selects the method to invoke based on the type of the object reference, which is always known at compile-time. When the virtual machine invokes an instance method, by contrast, it selects the method to invoke based on the actual class of the object, which may be known only at run-time.</P>
+<P>The Java Virtual Machine uses two different instructions to invoke these two different kinds of methods: <FONT FACE="Courier New">invokevirtual</FONT> for instance methods and <FONT FACE="Courier New">invokestatic</FONT> for class methods. These instructions are shown in Table 19-1.</P>
+<P>Table 19-1. Method invocation</P>
+<TABLE WIDTH="500">
+<TR><TD VALIGN="TOP"><STRONG>Opcode</STRONG></TD><TD VALIGN="TOP"><STRONG>Operand(s)</STRONG></TD><TD VALIGN="TOP"><STRONG>Description</STRONG></TD></TR>
+<TR><TD VALIGN="TOP"><FONT FACE="Courier New">invokevirtual</FONT></TD><TD VALIGN="TOP">indexbyte1, indexbyte2</TD><TD VALIGN="TOP">pop objectref and args, invoke instance method at constant pool index</TD></TR>
+<TR><TD VALIGN="TOP"><FONT FACE="Courier New">invokestatic</FONT></TD><TD VALIGN="TOP">indexbyte1, indexbyte2</TD><TD VALIGN="TOP">pop args, invoke class method at constant pool index</TD></TR>
+</TABLE>
+<P>As mentioned in earlier chapters, references to methods are initially symbolic. All invoke instructions, such as <FONT FACE="Courier New">invokevirtual</FONT> and <FONT FACE="Courier New">invokestatic</FONT>, refer to a constant pool entry that initially contains a symbolic reference. When the Java Virtual Machine encounters an invoke instruction, if the symbolic reference has not yet been resolved, the virtual machine resolves it as part of the execution of the invoke instruction.</P>
+<P>To resolve a symbolic reference, the Java Virtual Machine locates the method being referred to symbolically and replaces the symbolic reference with a direct reference. A direct reference, such as a pointer or offset, allows the virtual machine to invoke the method more quickly if the reference is ever used again in the future.</P>
+<P>For example, upon encountering an <FONT FACE="Courier New">invokevirtual</FONT> instruction, the Java Virtual Machine forms an unsigned 16-bit index into the constant pool of the current class from the indexbyte1 and indexbyte2 operands that follow the <FONT FACE="Courier New">invokevirtual</FONT> opcode. The constant pool entry contains a symbolic reference to the method to invoke.</P>
+<P>During resolution, the Java Virtual Machine also performs several verification checks. These checks ensure that Java language rules are followed and that the invoke instruction is safe to execute. For example, the virtual machine first makes sure the symbolically referenced method even exists. If it exists, it checks to make sure the current class can legally access the method. For instance, if the method is private, it must be a member of the current class. If any of these checks fail, the Java Virtual Machine throws an exception. Chapter 5, &quot;The Java Virtual Machine,&quot; gives an overview of the resolution process. Chapter 8, &quot;The Linking Model,&quot; describes the process in detail.</P>
+<P>Once a method has been resolved, the Java Virtual Machine is ready to invoke it. If the method is an instance method, it must be invoked on an object. For every instance method invocation, the virtual machine expects a reference to the object (objectref) to be on the stack. In addition to objectref, the virtual machine expects the arguments (args) required by the method, if any, to be on the stack. If the method is a class method, which doesn't require an objectref because class methods arenít invoked on an object, only the args are on the stack.</P>
+<P>The objectref and args (or just args, in the case of a class method) must be pushed onto the calling methodís operand stack by the instructions that precede the invoke instruction.</P>
+<H3><P>Invoking a Java Method</P>
+</H3><P>As mentioned in Chapter 5, &quot;The Java Virtual Machine,&quot; the virtual machine creates a new stack frame for each Java (not native) method it invokes. The stack frame contains space for the method's local variables, its operand stack, and any other information required by a particular virtual machine implementation. The size of the local variables and operand stack are calculated at compile-time and placed into the class file, so the virtual machine knows just how much memory will be needed by the method's stack frame. When it invokes a method, it creates a stack frame of the proper size for that method. The virtual machine pushes the new stack frame onto the Java stack.</P>
+<P>For an instance method, the virtual machine pops the objectref and args from the operand stack of the calling method's stack frame. It places the objectref on the new stack frame as local variable 0, and all the args as local variable 1, 2, and so on. The objectref is the implicit <CODE>this</CODE> pointer that is passed to any instance method.</P>
+<P>For a class method, the virtual machine just pops the args from the operand stack of the calling method's frame and places them onto the new stack frame as local variable 0, 1, 2, and so on.</P>
+<P>Once the objectref and args (or just the args, for a class method) have been placed into the local variables of the new frame, the virtual machine makes the new stack frame current and sets the program counter to point to the first instruction in the new method.</P>
+<H3><P>Invoking a Native Method</P>
+</H3><P>As mentioned in Chapter 5, &quot;The Java Virtual Machine,&quot; the virtual machine invokes native methods in an implementation dependent manner. When invoking a native method, the virtual machine does not push a new stack frame onto the Java stack for the native method. At the point in which the thread enters the native method, it leaves the Java stack behind. When the native method returns, the Java stack will once again be used.</P>
+<H3><EM><P>Other Forms of Method Invocation</P>
+</EM></H3><P>Although instance methods are normally invoked with <FONT FACE="Courier New">invokevirtual</FONT>, in certain situations, two other opcodes may be used: <FONT FACE="Courier New">invokespecial</FONT> and <FONT FACE="Courier New">invokeinterface</FONT>. These opcodes are shown in Table 19-2.</P>
+<P>The <FONT FACE="Courier New">invokespecial</FONT> instruction is used for three situations in which an instance method must be invoked based on the type of the reference, not on the class of the object. The three situations are: </P>
+<OL><LI>instance initialization (<CODE>&lt;init</FONT>()</CODE>) methods</P>
+<LI>private methods</P>
+<LI>methods invoked with the <CODE>super</CODE> keyword</OL>
+<P><FONT FACE="Courier New">Invokeinterface</FONT> is used to invoke an instance method given a reference to an interface.</P>
+<P>Table 19-2. Method invocation</P>
+<TABLE WIDTH="500">
+<TR><TD VALIGN="TOP"><STRONG>Opcode</STRONG></TD><TD VALIGN="TOP"><STRONG>Operand(s)</STRONG></TD><TD VALIGN="TOP"><STRONG>Description</STRONG></TD></TR>
+<TR><TD VALIGN="TOP"><FONT FACE="Courier New">invokespecial</FONT></TD><TD VALIGN="TOP">indexbyte1, indexbyte2</TD><TD VALIGN="TOP">pop objectref and args, invoke instance method at constant pool index</TD></TR>
+<TR><TD VALIGN="TOP"><FONT FACE="Courier New">invokeinterface</FONT></TD><TD VALIGN="TOP">indexbyte1, indexbyte2</TD><TD VALIGN="TOP">pop objectref and args, invoke instance method at constant pool index</TD></TR>
+</TABLE>
+<P>As mentioned in Chapter 7, &quot;The Lifetime of a Class,&quot; class initialization (or <FONT FACE="Courier New">&lt;clinit</FONT>()</FONT>) methods are always invoked directly by the Java Virtual Machine itself, never by any bytecodes. There is no instruction in the Java Virtual Machineís instruction set that will invoke a method named <FONT FACE="Courier New">&lt;clinit</FONT>()</FONT>. If some class file attempts to invoke a <FONT FACE="Courier New">&lt;clinit</FONT>()</FONT> method with any of the four instructions described in this chapter, the virtual machine will throw an exception.</P>
+<H3><EM><P>The invokespecial instruction</P>
+</EM></H3><P><FONT FACE="Courier New">Invokespecial</FONT> differs from <FONT FACE="Courier New">invokevirtual</FONT> primarily in that <FONT FACE="Courier New">invokespecial</FONT> normally (with one special exception) selects a method based on the type of the reference rather than the class of the object. In other words, it does static binding instead of dynamic binding. In each of the three situations where <FONT FACE="Courier New">invokespecial</FONT> is used, dynamic binding wouldn't yield the desired result.</P>
+<H3><P>invokespecial and &lt;init</FONT>()</P>
+</H3><P>As mentioned in Chapter 7, &quot;The Lifetime of a Class,&quot; the <CODE>&lt;init</FONT>()</CODE> method, or instance initialization method, is where the compiler places code for constructors and instance variable initializers. A class gets one <CODE>&lt;init</FONT>()</CODE> method in the class file for each constructor in the source. If you don't explicitly declare a constructor in the source, the compiler will generate a default no-arg constructor for you. This default constructor also ends up as an <CODE>&lt;init</FONT>()</CODE> method in the class file. So just as every class will have at least one constructor, every class will have at least one <CODE>&lt;init</FONT>()</CODE> method. These methods are always invoked with <FONT FACE="Courier New">invokespecial</FONT>.</P>
+<P>The <CODE>&lt;init</FONT>()</CODE> methods are called only when a new instance is created. At least one <CODE>&lt;init</FONT>()</CODE> method will be invoked for each class along the inheritance path of the newly created object, and multiple <CODE>&lt;init</FONT>()</CODE> methods could be invoked for any one class along that path.</P>
+<P>The reason <FONT FACE="Courier New">invokespecial</FONT> is used to invoke <CODE>&lt;init</FONT>()</CODE> methods is that subclass <CODE>&lt;init</FONT>()</CODE> methods need to be able to invoke superclass <CODE>&lt;init</FONT>() </CODE>methods. This is how multiple <CODE>&lt;init</FONT>()</CODE> methods get invoked when an object is instantiated. The virtual machine invokes an <CODE>&lt;init</FONT>()</CODE> method declared in the object's class. That <CODE>&lt;init</FONT>()</CODE> method first invokes either another <CODE>&lt;init</FONT>()</CODE> method in the same class, or an <CODE>&lt;init</FONT>()</CODE> method in its superclass. This process continues all the way up to <CODE>Object</CODE>.</P>
+<P>For example, consider this code:</P>
+<PRE><P><FONT FACE="Courier New">begin</FONT></P>
+<FONT SIZE="2"><P></FONT><FONT FACE="Courier New">// On CD-ROM in file invoke/ex1/Dog.java
+<P>class Dog {</P>
+<P>}</P>
+</FONT><FONT SIZE="2"><P>&nbsp;</P></P>
+<P></FONT><FONT FACE="Courier New">// On CD-ROM in file invoke/ex1/CockerSpaniel.java
+<P>class CockerSpaniel extends Dog {</P>
+<P>&nbsp;</P>
+<P>    public static void main(String args[]) {</P>
+<P>        CockerSpaniel bootsie = new CockerSpaniel();</P>
+<P>    }</P>
+<P>}</P>
+</FONT><FONT SIZE="2"><P>&nbsp;</P></FONT><FONT FACE="Courier New">end</FONT></P></PRE>
+<P>When you invoke <CODE>main()</CODE>, the virtual machine will allocate space for a new <CODE>CockerSpaniel</CODE> object, then invoke <CODE>CockerSpaniel</CODE>'s default no-arg <CODE>&lt;init</FONT>()</CODE> method to initialize that space. That method will invoke <CODE>Dog</CODE>'s <CODE>&lt;init</FONT>()</CODE> method, which will invoke <CODE>Object</CODE>'s <CODE>&lt;init</FONT>()</CODE> method. Here are the bytecodes for the <FONT FACE="Courier New">main()</FONT> method of class <FONT FACE="Courier New">CockerSpaniel</FONT>:</P>
+<PRE><P><FONT FACE="Courier New">begin</FONT></P>
+<FONT SIZE="2"><P></FONT><FONT FACE="Courier New">0 new #1 &lt;Class CockerSpaniel</FONT>
+<P>3 invokespecial #3 &lt;Method &lt;init</FONT>() of class CockerSpaniel</FONT></P>
+<P>6 return</P>
+</FONT><FONT SIZE="2"><P>&nbsp;</P></FONT><FONT FACE="Courier New">end</FONT></P></PRE>
+<P><FONT FACE="Courier New">CockerSpaniel</FONT>ís <FONT FACE="Courier New">main()</FONT> method allocates memory for the new <FONT FACE="Courier New">CockerSpaniel</FONT> object and initializes that memory to default initial values with the <FONT FACE="Courier New">new</FONT> instruction. (The &quot;<FONT FACE="Courier New">#1</FONT>&quot; specifies the constant pool entry that refers to the class to instantiate, in this case, class <FONT FACE="Courier New">CockerSpaniel</FONT>.) The <FONT FACE="Courier New">new</FONT> instruction pushes a reference to the newly created <FONT FACE="Courier New">CockerSpaniel</FONT> object onto the stack. The <FONT FACE="Courier New">main()</FONT> method then calls the <FONT FACE="Courier New">&lt;init</FONT>()</FONT> method of class <FONT FACE="Courier New">CockerSpaniel</FONT> using <FONT FACE="Courier New">invokespecial</FONT> on that object reference. (The &quot;<FONT FACE="Courier New">#3</FONT>&quot; specifies the constant pool entry that contains the reference to <FONT FACE="Courier New">CockerSpaniel</FONT>ís <FONT FACE="Courier New">&lt;init</FONT>()</FONT> method.) The Java Virtual Machine pushes a new frame onto the Java Stack and places the object reference into local variable 0 of the new frame. Here are the bytecodes for the <FONT FACE="Courier New">&lt;init</FONT>()</FONT> method of class <FONT FACE="Courier New">CockerSpaniel</FONT>:</P>
+<PRE><P><FONT FACE="Courier New">begin</FONT></P>
+<FONT SIZE="2"><P></FONT><FONT FACE="Courier New">0 aload_0
+<P>1 invokespecial #4 &lt;Method &lt;init</FONT>() of class Dog</FONT></P>
+<P>4 return</P>
+</FONT><FONT SIZE="2"><P>&nbsp;</P></FONT><FONT FACE="Courier New">end</FONT></P></PRE>
+<P>As mentioned above, this <FONT FACE="Courier New">&lt;init</FONT>()</FONT> method corresponds to the default no-arg constructor generated automatically by the compiler for class <FONT FACE="Courier New">CockerSpaniel</FONT>. It first pushes the reference to the object being initialized onto the stack from local variable 0, then it invokes the <FONT FACE="Courier New">Dog</FONT>ís <FONT FACE="Courier New">&lt;init</FONT>()</FONT> method on that reference. (The &quot;<FONT FACE="Courier New">#4</FONT>&quot; specifies the constant pool entry that contains the reference to <FONT FACE="Courier New">Dog</FONT>ís <FONT FACE="Courier New">&lt;init</FONT>()</FONT> method.) Here are the bytecodes for <FONT FACE="Courier New">Dog</FONT>ís <FONT FACE="Courier New">&lt;init</FONT>()</FONT> method:</P>
+<PRE><P><FONT FACE="Courier New">begin</FONT></P>
+<FONT SIZE="2"><P></FONT><FONT FACE="Courier New">0 aload_0
+<P>1 invokespecial #3 &lt;Method &lt;init</FONT>() of class java.lang.Object</FONT></P>
+<P>4 return</P>
+</FONT><FONT SIZE="2"><P>&nbsp;</P></FONT><FONT FACE="Courier New">end</FONT></P></PRE>
+<P>This <FONT FACE="Courier New">&lt;init</FONT>()</FONT> method corresponds to the default no-arg constructor generated automatically by the compiler for class <FONT FACE="Courier New">Dog</FONT>. It first pushes the reference to the object being initialized onto the stack from local variable 0, then it invokes the <FONT FACE="Courier New">Object</FONT>ís <FONT FACE="Courier New">&lt;init</FONT>()</FONT> method on that reference. (The &quot;<FONT FACE="Courier New">#3</FONT>&quot; specifies the constant pool entry that contains the reference to <FONT FACE="Courier New">Object</FONT>ís <FONT FACE="Courier New">&lt;init</FONT>()</FONT> method. Remember that this is not the same constant pool as that referred to by the methods of class <FONT FACE="Courier New">CockerSpaniel</FONT>. Each class has its own constant pool.) When all three of these <FONT FACE="Courier New">&lt;init</FONT>()</FONT> methods have returned, the new <FONT FACE="Courier New">CockerSpaniel</FONT> object created by <FONT FACE="Courier New">main()</FONT> is fully initialized and ready for use.</P>
+<P>Because every class has at least one <CODE>&lt;init</FONT>()</CODE> method, it is common that classes have <CODE>&lt;init</FONT>()</CODE> methods with the same signature. (A method's <I>signature</I> is its name and the number and types of its arguments.) The <CODE>&lt;init</FONT>()</CODE> methods for the three classes in the inheritance path for <CODE>CockerSpaniel, for example, all</CODE> have the same signature. <CODE>CockerSpaniel</CODE>, <CODE>Dog</CODE>, and <CODE>Object</CODE> all contain a method named <CODE>&lt;init</FONT>()</CODE> that takes no arguments.</P>
+<P>It would be impossible to invoke a <CODE>Dog</CODE>'s <CODE>&lt;init</FONT>()</CODE> method from <CODE>CockerSpaniel</CODE>'s <CODE>&lt;init</FONT>()</CODE> method using <FONT FACE="Courier New">invokevirtual</FONT>, because <FONT FACE="Courier New">invokevirtual</FONT> would perform dynamic binding and invoke <CODE>CockerSpaniel</CODE>'s <CODE>&lt;init</FONT>()</CODE> method. With <FONT FACE="Courier New">invokespecial</FONT>, however, <CODE>Dog</CODE>'s <CODE>&lt;init</FONT></CODE> method can be invoked from <CODE>CockerSpaniel</CODE>'s <CODE>&lt;init</FONT>()</CODE> method, because the type of the reference placed in <FONT FACE="Courier New">CockerSpaniel</FONT>ís class file (in constant pool entry &quot;<FONT FACE="Courier New">#4</FONT>&quot;) is <CODE>Dog</CODE>.</P>
+<H3><P>invokespecial and Private Methods</P>
+</H3><P>In the case of private instance methods, it must be possible for a subclass to declare an instance method with the same signature as a private instance method in a superclass. (<FONT FACE="Courier New">invokespecial</FONT> is not used to invoke private class methods, just private instance methods. Private class methods are invoked with <FONT FACE="Courier New">invokestatic</FONT>.) For example, consider the following code in which <CODE>interestingMethod()</CODE> is declared as <CODE>private</CODE> in a superclass and with package access in a subclass:</P>
+<PRE><P><FONT FACE="Courier New">begin</FONT></P>
+<FONT SIZE="2"><P></FONT><FONT FACE="Courier New">// On CD-ROM in file invoke/ex2/Superclass.java
+<P>class Superclass {</P>
+<P>&nbsp;</P>
+<P>    private void interestingMethod() {</P>
+<P>        System.out.println("Superclass's interesting method.");</P>
+<P>    }</P>
+<P>&nbsp;</P>
+<P>    void exampleMethod() {</P>
+<P>        interestingMethod();</P>
+<P>    }</P>
+<P>}</P>
+</FONT><FONT SIZE="2"><P>&nbsp;</P></P>
+<P></FONT><FONT FACE="Courier New">// On CD-ROM in file invoke/ex2/Subclass.java
+<P>class Subclass extends Superclass {</P>
+<P>&nbsp;</P>
+<P>    void interestingMethod() {</P>
+<P>        System.out.println("Subclass's interesting method.");</P>
+<P>    }</P>
+<P>&nbsp;</P>
+<P>    public static void main(String args[]) {</P>
+<P>        Subclass me = new Subclass();</P>
+<P>        me.exampleMethod();</P>
+<P>    }</P>
+<P>}</P>
+</FONT><FONT SIZE="2"><P>&nbsp;</P></FONT><FONT FACE="Courier New">end</FONT></P></PRE>
+<P>When you invoke <CODE>main()</CODE> in <CODE>Subclass</CODE> as defined above, it instantiates a new <FONT FACE="Courier New">Subclass</FONT> object and invokes <FONT FACE="Courier New">exampleMethod()</FONT> on it. Here are the bytecodes for the <FONT FACE="Courier New">main()</FONT> method of class <FONT FACE="Courier New">Subclass</FONT>:</P>
+<PRE><P><FONT FACE="Courier New">begin</FONT></P>
+<FONT SIZE="2"><P></FONT><FONT FACE="Courier New"> 0 new #2 &lt;Class Subclass</FONT>
+<P> 3 dup</P>
+<P> 4 invokespecial #6 &lt;Method &lt;init</FONT>() of class Subclass</FONT></P>
+<P> 7 astore_1</P>
+<P> 8 aload_1</P>
+<P> 9 invokevirtual #8 &lt;Method void exampleMethod() of class Superclass</FONT></P>
+<P>12 return</P>
+</FONT><FONT SIZE="2"><P>&nbsp;</P></FONT><FONT FACE="Courier New">end</FONT></P></PRE>
+<P>Subclass inherits <FONT FACE="Courier New">exampleMethod()</FONT> from <FONT FACE="Courier New">Superclass</FONT>. When <FONT FACE="Courier New">main()</FONT> invokes <FONT FACE="Courier New">exampleMethod()</FONT> on a <FONT FACE="Courier New">Subclass</FONT> object, it uses <FONT FACE="Courier New">invokevirtual</FONT>. The Java Virtual Machine will create and push a new frame onto the stack and begin executing the bytecodes of <FONT FACE="Courier New">exampleMethod()</FONT> as defined in class <FONT FACE="Courier New">Superclass</FONT>. Here are the bytecodes for <FONT FACE="Courier New">exampleMethod()</FONT>:</P>
+<PRE><P><FONT FACE="Courier New">begin</FONT></P>
+<FONT SIZE="2"><P></FONT><FONT FACE="Courier New">0 aload_0
+<P>1 invokespecial #7 &lt;Method void interestingMethod() of Superclass</FONT></P>
+<P>4 return</P>
+</FONT><FONT SIZE="2"><P>&nbsp;</P></FONT><FONT FACE="Courier New">end</FONT></P></PRE>
+<P>Note that <FONT FACE="Courier New">exampleMethod()</FONT> first pushes the reference passed in local variable 0 (the hidden <FONT FACE="Courier New">this</FONT> passed to all instance methods) onto the stack. It then invokes <FONT FACE="Courier New">interestingMethod()</FONT> on that reference with the <FONT FACE="Courier New">invokespecial</FONT> instruction. The class identified in the constant pool entry specified by the <FONT FACE="Courier New">invokespecial</FONT> instruction, entry #7, is <FONT FACE="Courier New">Superclass</FONT>. The Java Virtual Machine invokes the <FONT FACE="Courier New">interestingMethod()</FONT> defined in <FONT FACE="Courier New">Superclass</FONT> <I>even though</I> the object is an instance of class <FONT FACE="Courier New">Subclass</FONT> and there is an accessible <FONT FACE="Courier New">interestingMethod()</FONT> defined in <FONT FACE="Courier New">Subclass</FONT>.</P>
+<P>The program correctly prints <CODE>"Superclass's interesting method"</CODE>. If <FONT FACE="Courier New">interestingMethod()</FONT> had been invoked with an <FONT FACE="Courier New">invokevirtual</FONT> instruction instead of <FONT FACE="Courier New">invokespecial</FONT>, the program would have printed <CODE>"Subclass's interesting method"</CODE>. Why? Because the virtual machine would choose the <CODE>interestingMethod()</CODE> to call based on the actual class of the object, which is <CODE>Subclass</CODE>. So it would use <CODE>Subclass</CODE>'s <CODE>interestingMethod()</CODE>. With <FONT FACE="Courier New">invokespecial</FONT> however, the virtual machine selects the method based on the type of the reference, so <CODE>Superclass</CODE>'s version of <CODE>interestingMethod()is</CODE> invoked.</P>
+<P>invokespecial and <CODE>super</P>
+</CODE><P>In the case of invocation of a method with the <CODE>super</CODE> keyword, as in <CODE>super.someMethod()</CODE>, you want the superclassís version of a method to be invoked, even if the current class overrides the method. Once again, <FONT FACE="Courier New">invokevirtual</FONT> would invoke the current classís version, so it canít be used. For an example, consider this code:</P>
+<PRE><P><FONT FACE="Courier New">begin</FONT></P>
+<FONT SIZE="2"><P></FONT><FONT FACE="Courier New">// On CD-ROM in file invoke/ex3/Cat.java
+<P>class Cat {</P>
+<P>&nbsp;</P>
+<P>    void someMethod() {</P>
+<P>    }</P>
+<P>}</P>
+</FONT><FONT SIZE="2"><P>&nbsp;</P></P>
+<P></FONT><FONT FACE="Courier New">// On CD-ROM in file invoke/ex3/TabbyCat.java
+<P>class TabbyCat extends Cat{</P>
+<P>&nbsp;</P>
+<P>    void someMethod() {</P>
+<P>        super.someMethod();</P>
+<P>    }</P>
+<P>}</P>
+</FONT><FONT SIZE="2"><P>&nbsp;</P></FONT><FONT FACE="Courier New">end</FONT></P></PRE>
+<P>Here are the bytecodes for <FONT FACE="Courier New">TabbyCat</FONT>ís <FONT FACE="Courier New">someMethod()</FONT>:</P>
+<PRE><P><FONT FACE="Courier New">begin</FONT></P>
+<FONT SIZE="2"><P></FONT><FONT FACE="Courier New">0 aload_0
+<P>1 invokespecial #4 &lt;Method void someMethod() of class Cat</FONT></P>
+<P>4 return</P>
+</FONT><FONT SIZE="2"><P>&nbsp;</P></FONT><FONT FACE="Courier New">end</FONT></P></PRE>
+<P>Had <FONT FACE="Courier New">invokevirtual</FONT> been used in this case, the <FONT FACE="Courier New">someMethod()</FONT> defined in class <FONT FACE="Courier New">TabbyCat</FONT> would have been invoked. Because <FONT FACE="Courier New">invokespecial</FONT> is used and the constant pool entry (#4, in this case) indicates the <FONT FACE="Courier New">someMethod()</FONT> declared in class <FONT FACE="Courier New">Cat</FONT> should be invoked, the Java Virtual Machine correctly invokes the superclassís (<FONT FACE="Courier New">Cat</FONT>ís) version of <FONT FACE="Courier New">someMethod()</FONT>.</P>
+<P>Whether or not the Java Virtual Machine actually uses static binding to execute an <FONT FACE="Courier New">invokespecial</FONT> instruction, or instead uses a special kind of dynamic binding, depends on whether or not the referring classís <FONT FACE="Courier New">ACC_SUPER</FONT> flag is set. Prior to JDK version 1.0.2, the <FONT FACE="Courier New">invokespecial</FONT> instruction was called <FONT FACE="Courier New">invokenonvirtual</FONT> and always resulted in static binding. It turned out, however, that <FONT FACE="Courier New">invokenonvirtual</FONT>ís stubborn insistence on static binding did not yield a correct implementation of the semantics of the Java language in all cases. (In other words, there was a &quot;bug&quot; in the instruction set.) In JDK 1.0.2, the <FONT FACE="Courier New">invokenonvirtual</FONT> instruction was renamed <FONT FACE="Courier New">invokespecial</FONT> and its semantics were changed. In addition, a new flag, <FONT FACE="Courier New">ACC_SUPER</FONT>, was added to the <FONT FACE="Courier New">access_flags</FONT> item of the Java class file.</P>
+<P>The <FONT FACE="Courier New">ACC_SUPER</FONT> flag item of a class file indicates to the Java Virtual Machine which semantics it should use to execute <FONT FACE="Courier New">invokespecial</FONT> instructions it encounters in the bytecodes of that class file. If the <FONT FACE="Courier New">ACC_SUPER</FONT> flag is not set, the virtual machine uses the old (<FONT FACE="Courier New">invokenonvirtual</FONT>) semantics. Else, if the <FONT FACE="Courier New">ACC_SUPER</FONT> flag is set, the virtual machine uses the new semantics. All new Java compilers are supposed to set the <FONT FACE="Courier New">ACC_SUPER</FONT> flag in every class file they generate.</P>
+<P>According to the old semantics, the virtual machine will perform static binding in all cases when executing <FONT FACE="Courier New">invokespecial</FONT>. By contrast, the new semantics requires static binding in all cases except one: the invocation of superclass methods.</P>
+<P>According to the new semantics, when the Java Virtual Machine resolves an <FONT FACE="Courier New">invokespecial</FONT> instructionís symbolic reference to a superclass method, it dynamically searches the current classís superclasses to find the nearest superclass implementation of the method. (As used here, &quot;nearest&quot; means the implementation of the method declared in the superclass that is closest to the current class in its inheritance hierarchy.) In most cases, the virtual machine will likely discover that the nearest implementation of the method is in the superclass listed in the symbolic reference. But it is possible that the virtual machine could find the nearest implementation in a different superclass.</P>
+<P>For example, imagine you create an inheritance hierarchy of three classes: <FONT FACE="Courier New">Animal</FONT>, <FONT FACE="Courier New">Dog</FONT>, and <FONT FACE="Courier New">CockerSpaniel</FONT>. Assume class <FONT FACE="Courier New">Dog</FONT> extends class <FONT FACE="Courier New">Animal</FONT>, class <FONT FACE="Courier New">CockerSpaniel</FONT> extends class <FONT FACE="Courier New">Dog</FONT>, and that a method defined in <FONT FACE="Courier New">CockerSpaniel</FONT> uses <FONT FACE="Courier New">invokespecial</FONT> to invoke a non-private superclass method named <FONT FACE="Courier New">walk()</FONT>. Assume also that when you compiled <FONT FACE="Courier New">CockerSpaniel</FONT>, the compiler set the <FONT FACE="Courier New">ACC_SUPER</FONT> flag. In addition, assume that when you compiled <FONT FACE="Courier New">CockerSpaniel</FONT>, class <FONT FACE="Courier New">Animal</FONT> defined a <FONT FACE="Courier New">walk()</FONT> method, but <FONT FACE="Courier New">Dog</FONT> didnít. In that case, the symbolic reference from <FONT FACE="Courier New">CockerSpaniel</FONT> to the <FONT FACE="Courier New">walk()</FONT> method would give <FONT FACE="Courier New">Animal</FONT> as its class. When the <FONT FACE="Courier New">invokespecial</FONT> instruction in <FONT FACE="Courier New">CockerSpaniel</FONT>ís method is executed, the virtual machine would dynamically select and invoke <FONT FACE="Courier New">Animal</FONT>ís <FONT FACE="Courier New">walk()</FONT> method.</P>
+<P>Now imagine that later, you added a <FONT FACE="Courier New">walk()</FONT> method to <FONT FACE="Courier New">Dog</FONT>, and recompiled <FONT FACE="Courier New">Dog</FONT>, but didnít recompile <FONT FACE="Courier New">CockerSpaniel</FONT>. <FONT FACE="Courier New">CockerSpaniel</FONT>ís symbolic reference to the superclass <FONT FACE="Courier New">walk()</FONT> method still claims <FONT FACE="Courier New">Animal</FONT> as its class, even though there is now an implementation of <FONT FACE="Courier New">walk()</FONT> in <FONT FACE="Courier New">Dog</FONT>ís class file. Nevertheless, when the <FONT FACE="Courier New">invokespecial</FONT> instruction in <FONT FACE="Courier New">CockerSpaniel</FONT>ís method is executed, the virtual machine would dynamically select and invoke <FONT FACE="Courier New">Dog</FONT>ís implementation of the <FONT FACE="Courier New">walk()</FONT> method.</P>
+<H3><EM><P>The invokeinterface Instruction</P>
+</EM></H3><P>The <FONT FACE="Courier New">invokeinterface</FONT> opcode performs the same function as <FONT FACE="Courier New">invokevirtual</FONT>, it invokes instance methods and uses dynamic binding. The difference between these two instructions is that <FONT FACE="Courier New">invokevirtual</FONT> is used when the type of the reference is a <I>class</I>, whereas <FONT FACE="Courier New">invokeinterface</FONT> is used when the type of the reference is an <I>interface</I>.</P>
+<P>The Java Virtual Machine uses a different opcode to invoke a method on an interface reference because it can't make as many assumptions about the method table offset given an interface reference as it can given a class reference. (Method tables are described in Chapter 8, &quot;The Linking Model.&quot;) Given a class reference, a method will always occupy the same position in the method table, independent of the actual class of the object. This is not true given an interface reference. The method could occupy different locations for different classes that implement the same interface.</P>
+<P>For examples of the use of <FONT FACE="Courier New">invokeinterface</FONT> in bytecodes, see the &quot;Examples of Method Invocation&quot; section later in this chapter.</P>
+<H3><EM><P>Invocation Instructions and Speed</P>
+</EM></H3><P>As you might imagine, invoking a method given an interface reference is likely slower than invoking a method given a class reference. When the Java Virtual Machine encounters an <FONT FACE="Courier New">invokevirtual</FONT> instruction and resolves the symbolic reference to a direct reference to an instance method, that direct reference is likely an offset into a method table. From that point forward, the same offset can be used. For an <FONT FACE="Courier New">invokeinterface</FONT> instruction, however, the virtual machine will have to search through the method table every single time the instruction is encountered, because it can't assume the offset is the same as the previous time. </P>
+<P>The fastest instructions will likely be <FONT FACE="Courier New">invokespecial</FONT> and <FONT FACE="Courier New">invokestatic</FONT>, because methods invoked by these instructions are statically bound. When the Java Virtual Machine resolves the symbolic reference for these instructions and replaces it with a direct reference, that direct reference will likely include a pointer to the actual bytecodes.</P>
+<H3><EM><P>Examples of Method Invocation</P>
+</EM></H3><P>The following code illustrates the various ways the Java Virtual Machine invokes methods and shows which invocation opcode is used in each situation:</P>
+<PRE><P><FONT FACE="Courier New">begin</FONT></P>
+<FONT SIZE="2"><P></FONT><FONT FACE="Courier New">// On CD-ROM in file invoke/ex4/InYourFace.java
+<P>interface InYourFace {</P>
+<P>    void interfaceMethod ();</P>
+<P>}</P>
+</FONT><FONT SIZE="2"><P>&nbsp;</P></P>
+<P></FONT><FONT FACE="Courier New">// On CD-ROM in file invoke/ex4/ItsABirdItsAPlaneItsSuperclass.java
+<P>class ItsABirdItsAPlaneItsSuperclass implements InYourFace {</P>
+<P>&nbsp;</P>
+<P>    ItsABirdItsAPlaneItsSuperclass(int i) {</P>
+<P>        super();                    // invokespecial (of an &lt;init</FONT>)</P>
+<P>    }</P>
+<P>&nbsp;</P>
+<P>    static void classMethod() {</P>
+<P>    }</P>
+<P>&nbsp;</P>
+<P>    void instanceMethod() {</P>
+<P>    }</P>
+<P>&nbsp;</P>
+<P>    final void finalInstanceMethod() {</P>
+<P>    }</P>
+<P>&nbsp;</P>
+<P>    public void interfaceMethod() {</P>
+<P>    }</P>
+<P>}</P>
+</FONT><FONT SIZE="2"><P>&nbsp;</P></P>
+<P></FONT><FONT FACE="Courier New">// On CD-ROM in file invoke/ex4/Subclass.java
+<P>class Subclass extends ItsABirdItsAPlaneItsSuperclass {</P>
+<P>&nbsp;</P>
+<P>    Subclass() {</P>
+<P>        this(0);                      // invokespecial (of an &lt;init</FONT>)</P>
+<P>    }</P>
+<P>&nbsp;</P>
+<P>    Subclass(int i) {</P>
+<P>        super(i);                     // invokespecial (of an &lt;init</FONT>)</P>
+<P>    }</P>
+<P>&nbsp;</P>
+<P>    private void privateMethod() {</P>
+<P>    }</P>
+<P>&nbsp;</P>
+<P>    void instanceMethod() {</P>
+<P>    }</P>
+<P>&nbsp;</P>
+<P>    final void anotherFinalInstanceMethod() {</P>
+<P>    }</P>
+<P>&nbsp;</P>
+<P>    void exampleInstanceMethod() {</P>
+<P>&nbsp;</P>
+<P>        instanceMethod();             // invokevirtual</P>
+<P>        super.instanceMethod();       // invokespecial</P>
+<P>&nbsp;</P>
+<P>        privateMethod();              // invokespecial</P>
+<P>&nbsp;</P>
+<P>        finalInstanceMethod();        // invokevirtual</P>
+<P>        anotherFinalInstanceMethod(); // invokevirtual</P>
+<P>&nbsp;</P>
+<P>        interfaceMethod();            // invokevirtual</P>
+<P>&nbsp;</P>
+<P>        classMethod();                // invokestatic</P>
+<P>    }</P>
+<P>}</P>
+</FONT><FONT SIZE="2"><P>&nbsp;</P></P>
+<P></FONT><FONT FACE="Courier New">// On CD-ROM in file invoke/ex4/UnrelatedClass.java
+<P>class UnrelatedClass {</P>
+<P>&nbsp;</P>
+<P>    public static void main(String args[]) {</P>
+<P>&nbsp;</P>
+<P>        Subclass sc = new Subclass(); // invokespecial (of an &lt;init</FONT>)</P>
+<P>        Subclass.classMethod();       // invokestatic</P>
+<P>        sc.classMethod();             // invokestatic</P>
+<P>        sc.instanceMethod();          // invokevirtual</P>
+<P>        sc.finalInstanceMethod();     // invokevirtual</P>
+<P>        sc.interfaceMethod();         // invokevirtual</P>
+<P>&nbsp;</P>
+<P>        InYourFace iyf = sc;</P>
+<P>        iyf.interfaceMethod();        // invokeinterface</P>
+<P>    }</P>
+<P>}</P>
+</FONT><FONT SIZE="2"><P>&nbsp;</P></FONT><FONT FACE="Courier New">end</FONT></P></PRE>
+<P>Here are the bytecodes generated by <FONT FACE="Courier New">javac</FONT> for each of these classes (The compiler generates no bytecodes for the <FONT FACE="Courier New">InYourFace</FONT> interface.):</P>
+<PRE><P><FONT FACE="Courier New">begin</FONT></P>
+<FONT SIZE="2"><P></FONT><FONT FACE="Courier New">// Methods of class ItsABirdItsAPlaneItsSuperclass
+<P>&nbsp;</P>
+<P>// Method &lt;init</FONT>(int)</P>
+<P> 0 aload_0</P>
+<P> 1 invokespecial #4 &lt;Method &lt;init</FONT>() of class java.lang.Object</FONT></P>
+<P> 4 return</P>
+<P>&nbsp;</P>
+<P>// Method void classMethod()</P>
+<P> 0 return</P>
+<P>&nbsp;</P>
+<P>// Method void instanceMethod()</P>
+<P> 0 return</P>
+<P>&nbsp;</P>
+<P>// Method void finalInstanceMethod()</P>
+<P> 0 return</P>
+<P>&nbsp;</P>
+<P>// Method void interfaceMethod()</P>
+<P> 0 return</P>
+<P>&nbsp;</P>
+<P>// ------------------------------------</P>
+<P>// Methods of class Subclass </P>
+<P>&nbsp;</P>
+<P>// Method &lt;init</FONT>()</P>
+<P> 0 aload_0</P>
+<P> 1 iconst_0</P>
+<P> 2 invokespecial #4 &lt;Method &lt;init</FONT>(int) of class Subclass</FONT></P>
+<P> 5 return</P>
+<P>&nbsp;</P>
+<P>// Method &lt;init</FONT>(int)</P>
+<P> 0 aload_0</P>
+<P> 1 iload_1</P>
+<P> 2 invokespecial #3 &lt;Method &lt;init</FONT>(int) of class</P>
+<P>        ItsABirdItsAPlaneItsSuperclass</FONT></P>
+<P> 5 return</P>
+<P>&nbsp;</P>
+<P>// Method void privateMethod()</P>
+<P> 0 return</P>
+<P>&nbsp;</P>
+<P>// Method void instanceMethod()</P>
+<P> 0 return</P>
+<P>&nbsp;</P>
+<P>// Method void anotherFinalInstanceMethod()</P>
+<P> 0 return</P>
+<P>&nbsp;</P>
+<P>// Method void exampleInstanceMethod()</P>
+<P> 0 aload_0</P>
+<P> 1 invokevirtual #9 &lt;Method void instanceMethod() of class Subclass</FONT></P>
+<P> 4 aload_0</P>
+<P> 5 invokespecial #8 &lt;Method void instanceMethod() of class</P>
+<P>        ItsABirdItsAPlaneItsSuperclass</FONT></P>
+<P> 8 aload_0</P>
+<P> 9 invokespecial #11 &lt;Method void privateMethod() of class Subclass</FONT></P>
+<P>12 aload_0</P>
+<P>13 invokevirtual #7 &lt;Method void finalInstanceMethod() of class</P>
+<P>        ItsABirdItsAPlaneItsSuperclass</FONT></P>
+<P>16 aload_0</P>
+<P>17 invokevirtual #5 &lt;Method void anotherFinalInstanceMethod() of</P>
+<P>        class Subclass</FONT></P>
+<P>20 aload_0</P>
+<P>21 invokevirtual #10 &lt;Method void interfaceMethod() of class</P>
+<P>        ItsABirdItsAPlaneItsSuperclass</FONT></P>
+<P>24 invokestatic #6 &lt;Method void classMethod() of class</P>
+<P>        ItsABirdItsAPlaneItsSuperclass</FONT></P>
+<P>27 return</P>
+<P>&nbsp;</P>
+<P>// ------------------------------------</P>
+<P>// Methods of class UnrelatedClass</P>
+<P>&nbsp;</P>
+<P>// Method &lt;init</FONT>()</P>
+<P> 0 aload_0</P>
+<P> 1 invokespecial #7 &lt;Method java.lang.Object()</FONT></P>
+<P> 4 return</P>
+<P>&nbsp;</P>
+<P>// Method void main(java.lang.String[])</P>
+<P> 0 new #3 &lt;Class Subclass</FONT></P>
+<P> 3 dup</P>
+<P> 4 invokespecial #6 &lt;Method &lt;init</FONT>() of class Subclass</FONT></P>
+<P> 7 astore_1</P>
+<P> 8 invokestatic #8 &lt;Method void classMethod() of class</P>
+<P>        ItsABirdItsAPlaneItsSuperclass</FONT></P>
+<P>11 invokestatic #8 &lt;Method void classMethod() of class</P>
+<P>        ItsABirdItsAPlaneItsSuperclass</FONT></P>
+<P>14 aload_1</P>
+<P>15 invokevirtual #10 &lt;Method void instanceMethod() of class Subclass</FONT></P>
+<P>18 aload_1</P>
+<P>19 invokevirtual #9 &lt;Method void finalInstanceMethod() of class</P>
+<P>        ItsABirdItsAPlaneItsSuperclass</FONT></P>
+<P>22 aload_1</P>
+<P>23 invokevirtual #12 &lt;Method void interfaceMethod() of class</P>
+<P>        ItsABirdItsAPlaneItsSuperclass</FONT></P>
+<P>26 aload_1</P>
+<P>27 astore_2</P>
+<P>28 aload_2</P>
+<P>29 invokeinterface (args 1) #11 &lt;Method void interfaceMethod() of</P>
+<P>         interface InYourFace</FONT></P>
+<P>34 return</P>
+</FONT><FONT SIZE="2"><P>&nbsp;</P></FONT><FONT FACE="Courier New">end</FONT></P></PRE>
+<H3><EM><P>Returning from Methods</P>
+</EM></H3><P>There are several opcodes that return from a method, one for each type of return value. These opcodes, which are shown in Table 19-3, take no operands. If there is a return value, it must be on the operand stack. The return value is popped off the operand stack and pushed onto the operand stack of the calling method's stack frame. The current stack frame is popped, and the calling method's stack frame becomes current. The program counter is reset to the instruction in the calling method just following the instruction that invoked the returning method.</P>
+<P>Table 19-3. Returning from methods</P>
+<TABLE WIDTH="500">
+<TR><TD VALIGN="TOP"><STRONG>Opcode</STRONG></TD><TD VALIGN="TOP"><STRONG>Operand(s)</STRONG></TD><TD VALIGN="TOP"><STRONG>Description</STRONG></TD></TR>
+<TR><TD VALIGN="TOP"><FONT FACE="Courier New">ireturn</FONT></TD><TD VALIGN="TOP">none</TD><TD VALIGN="TOP">pop <FONT FACE="Courier New">int</FONT>, push onto stack of calling method and return</TD></TR>
+<TR><TD VALIGN="TOP"><FONT FACE="Courier New">lreturn</FONT></TD><TD VALIGN="TOP">none</TD><TD VALIGN="TOP">pop <FONT FACE="Courier New">long</FONT>, push onto stack of calling method and return</TD></TR>
+<TR><TD VALIGN="TOP"><FONT FACE="Courier New">freturn</FONT></TD><TD VALIGN="TOP">none</TD><TD VALIGN="TOP">pop <FONT FACE="Courier New">float</FONT>, push onto stack of calling method and return</TD></TR>
+<TR><TD VALIGN="TOP"><FONT FACE="Courier New">dreturn</FONT></TD><TD VALIGN="TOP">none</TD><TD VALIGN="TOP">pop <FONT FACE="Courier New">double</FONT>, push onto stack of calling method and return</TD></TR>
+<TR><TD VALIGN="TOP"><FONT FACE="Courier New">areturn</FONT></TD><TD VALIGN="TOP">none</TD><TD VALIGN="TOP">pop object reference, push onto stack of calling method and return</TD></TR>
+<TR><TD VALIGN="TOP"><FONT FACE="Courier New">return</FONT></TD><TD VALIGN="TOP">none</TD><TD VALIGN="TOP">return void</TD></TR>
+</TABLE>
+<P>The <FONT FACE="Courier New">ireturn</FONT> instruction is used for methods that return <CODE>int</CODE>, <CODE>char</CODE>, <CODE>byte</CODE>, or <CODE>short</CODE>.</P>
+<H3><EM><P>On the CD-ROM</P>
+</EM></H3><P>The CD-ROM contains the source code examples from this chapter in subdirectories of the <FONT FACE="Courier New">invoke</FONT> directory.</P>
+<H3><EM><P>The Resources Page</P>
+</EM></H3><P>For more information about the material presented in this chapter, visit the resources page: <FONT FACE="Courier New"><A HREF="http://www.artima.com/insidejvm/invoke.html" tppabs="http://www.artima.com/insidejvm/invoke.html">http://www.artima.com/insidejvm/invoke.html</A></FONT>.</P>
+<TABLE BORDER="0" WIDTH="100%">
+<TR><TD><A HREF="http://www.pbg.mcgraw-hill.com/betabooks/stores.html" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/stores.html" target="bottom"><IMG SRC="hotkey.gif" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/images/hotkey.gif" ALIGN="LEFT" BORDER="0" WIDTH="40" HEIGHT="40" ALT="Orders"></A>
+<IMG SRC="order_text.gif" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/images/order_text.gif" WIDTH="103" HEIGHT="41" ALT="Orders"></TD>
+<TD ALIGN="RIGHT"><A HREF="chap18.html" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/venners/chap18.html"><IMG SRC="backward.gif" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/images/backward.gif" BORDER="0" ALT="Backward" WIDTH="32" HEIGHT="32"></A>&nbsp;<A HREF="chap20.html" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/venners/chap20.html"><IMG SRC="forward.gif" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/images/forward.gif" BORDER="0" ALT="Forward" WIDTH="32" HEIGHT="32"></A></TD></TR>
+<TR><TD COLSPAN="2"><A HREF="mailto:computing@mcgraw-hill.com"><IMG SRC="hotkey.gif" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/images/hotkey.gif" ALIGN="LEFT" BORDER="0" WIDTH="40" HEIGHT="40" ALT="Comments"></A>
+<IMG SRC="comment_text.gif" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/images/comment_text.gif" WIDTH="73" HEIGHT="39" ALT="Comments"></TD></TR>
+
+</TABLE>
+<HR>
+<P ALIGN=CENTER>&nbsp;<A HREF="http://www.pbg.mcgraw-hill.com/computing/computing-home.html" tppabs="http://www.pbg.mcgraw-hill.com/computing/computing-home.html" TARGET="_top">COMPUTING
+MCGRAW-HILL</A> | <A HREF="http://www.pbg.mcgraw-hill.com/betabooks/betabooks-home.html" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/betabooks-home.html" TARGET="_top">Beta Books</A>
+| <A HREF="http://www.pbg.mcgraw-hill.com/computing/contact.html" tppabs="http://www.pbg.mcgraw-hill.com/computing/contact.html" TARGET="_top">Contact Us</A>
+| <A HREF="http://www.pbg.mcgraw-hill.com/betabooks/stores.html" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/stores.html" TARGET="_top">Order Information</A>
+| <A HREF="http://mcgraw-hill.inforonics.com/compsearch.shtml" tppabs="http://mcgraw-hill.inforonics.com/compsearch.shtml" TARGET="_top">Online Catalog</A></P>
+
+<P ALIGN=CENTER><FONT SIZE="-1"><A HREF="http://www.pbg.mcgraw-hill.com/computing/computing-home.html" tppabs="http://www.pbg.mcgraw-hill.com/computing/computing-home.html" TARGET="_top">Computing McGraw-Hill</A> is an imprint of the <A HREF="http://www.pbg.mcgraw-hill.com/pbg-home.html" tppabs="http://www.pbg.mcgraw-hill.com/pbg-home.html" TARGET="_top">McGraw-Hill Professional Book Group</A>.</FONT></P>
+
+<!-- begin footer -->
+<HR>
+<A HREF="http://www.mcgraw-hill.com/" tppabs="http://www.mcgraw-hill.com/" TARGET="_top"><IMG SRC="division-white.gif" tppabs="http://www.pbg.mcgraw-hill.com/images/division-white.gif" WIDTH="350" HEIGHT="44" ALT="A Division of the McGraw-Hill Companies" BORDER="0"></A><BR>
+<FONT SIZE="-2">Copyright &copy; 1997 <A HREF="http://www.mcgraw-hill.com/" tppabs="http://www.mcgraw-hill.com/" TARGET="_top">
+The McGraw-Hill Companies</A>. All rights reserved. Any use is subject to the 
+<A HREF="http://www.mcgraw-hill.com/corporate/news_info/copyrttm.htm" tppabs="http://www.mcgraw-hill.com/corporate/news_info/copyrttm.htm" TARGET="_top">
+Terms of Use</A>; the corporation also has a comprehensive <A HREF="http://www.mcgraw-hill.com/corporate/news_info/privacy.html" tppabs="http://www.mcgraw-hill.com/corporate/news_info/privacy.html" TARGET="_top">
+Privacy Policy</A> governing information we may collect from our customers.</FONT>
+<!-- end footer -->
+</BODY>
+</HTML>

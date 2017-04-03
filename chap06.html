@@ -1,0 +1,759 @@
+<!-- All material contained herein is copyright (c) McGraw-Hill Professional Books
+All Rights Reserved. No use of this material may be made without express written
+permission of the copyright holder. HTML conversions by Mega Space [barry@megaspace.com] -->
+
+<HTML>
+<HEAD>
+<META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=ISO-8859-1">
+<TITLE>Understanding Digital Signatures: Inside the Java Virtual Machine
+ by Bill Venners - Beta Version</TITLE>
+</HEAD>
+<BODY BGCOLOR="#FFFFFF">
+<TABLE BORDER="0" WIDTH="100%">
+<TR><TD><A HREF="http://www.pbg.mcgraw-hill.com/betabooks/stores.html" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/stores.html" target="bottom"><IMG SRC="hotkey.gif" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/images/hotkey.gif" ALIGN="LEFT" BORDER="0" WIDTH="40" HEIGHT="40" ALT="Orders"></A>
+<IMG SRC="order_text.gif" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/images/order_text.gif" WIDTH="103" HEIGHT="41" ALT="Orders"></TD>
+<TD ALIGN="RIGHT"><A HREF="chap05.html" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/venners/chap05.html"><IMG SRC="backward.gif" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/images/backward.gif" BORDER="0" ALT="Backward" WIDTH="32" HEIGHT="32"></A>&nbsp;<A HREF="chap07.html" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/venners/chap07.html"><IMG SRC="forward.gif" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/images/forward.gif" BORDER="0" ALT="Forward" WIDTH="32" HEIGHT="32"></A></TD></TR>
+<TR><TD COLSPAN="2"><A HREF="mailto:computing@mcgraw-hill.com"><IMG SRC="hotkey.gif" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/images/hotkey.gif" ALIGN="LEFT" BORDER="0" WIDTH="40" HEIGHT="40" ALT="Comments"></A>
+<IMG SRC="comment_text.gif" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/images/comment_text.gif" WIDTH="73" HEIGHT="39" ALT="Comments"></TD></TR>
+
+<TR><TD COLSPAN="2"><FONT FACE="ARIEL,HELVETICA" SIZE="-1"><I>&copy; 1997 The McGraw-Hill Companies, Inc.  All rights reserved.  <BR>Any use of this Beta Book is subject to the rules stated in the <A HREF="http://www.mcgraw-hill.com/corporate/news_info/copyrttm.htm" tppabs="http://www.mcgraw-hill.com/corporate/news_info/copyrttm.htm" target="_top">Terms of Use</A>.</I></FONT><br>
+<script language="javascript">
+    document.write("<a href='http://banners.linkbuddies.com/click.php?id=237296'><img src='http://banners.linkbuddies.com/image.php?id=237296&ref=" + document.referrer + "' width=468 height=60 alt='Click Here' border=0></a>");
+</script></TD></TR>
+
+</TABLE>
+<HR>
+<P><H1>Chapter Six</H1></P>
+<P><H2>The Java Class File</H2></P>
+<P>The previous chapter, the first of Part II, &quot;Java Internals,&quot; gave an overview of the Java Virtual Machine. The next four chapters will focus on different aspects of the Java Virtual Machine. This chapter takes a look at the Java class file. It describes the contents of the class file, including the structure and format of the constant pool. This chapter serves as a complete reference of the Java class file format.</P>
+<P>Accompanying this chapter on the CD-ROM is an applet that interactively illustrates the material presented in the chapter. The applet, named <I>Getting Loaded</I>, simulates the Java Virtual Machine loading a Java class file. At the end of this chapter, you will find a description of this applet and an instructions on how to use it.</P>
+<H3><EM><P>What is a Java Class File?</P>
+</EM></H3><P>The Java class file is a precisely defined binary file format for Java programs. Each Java class file represents a complete description of one Java class or interface. There is no way to put more than one class or interface into a single class file. The precise definition of the class file format ensures that any Java class file can be loaded and correctly interpreted by any Java Virtual Machine, no matter what system produced the class file or what system hosts the virtual machine.</P>
+<P>Although the class file is related to the Java language architecturally, it is not inextricably linked to the Java language. As shown in Figure 6-1, you could write programs in other languages and compile them to class files, or you could compile your Java programs to a different binary file format. Nevertheless, most Java programmers will likely use the class file as the primary vehicle for delivering their programs to Java Virtual Machines.</P>
+<P><IMG SRC="fig6-1.gif" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/venners/images/fig6-1.gif" ALT="Figure 6-1"></P>
+
+<P>As mentioned in earlier chapters, the Java class file is a binary stream of 8-bit bytes. Data items are stored sequentially in the class file with no padding between adjacent items. The lack of padding helps keep class files compact. Items that occupy more than one byte are split up into several consecutive bytes that appear in <I>big-endian</I> (higher bytes first) order.</P>
+<P>Just as your Java classes can contain varying numbers of fields, methods, method parameters, local variables, and so on, the Java class file can contain many items that vary in size or number from one class file to another. In the class file, the size or length of a variable-length item precedes the actual data for the item. This allows class file streams to be parsed from beginning to end, reading in the size of an item first followed by the item data.</P>
+<H3><EM><P>What's in a Class File?</P>
+</EM></H3><P>The Java class file contains everything a Java Virtual Machine needs to know about one Java class or interface. The remainder of this chapter describes the class file format using tables. Each table has a name and shows an ordered list of items that can appear in a class file. Items appear in the table in the order in which they appear in the class file. Each item has a type, a name, and a count. The type is either a table name or one of the &quot;primitive types&quot; shown in Table 6-1. All values stored in items of type <FONT FACE="Courier New">u2</FONT>, <FONT FACE="Courier New">u4</FONT>, and <FONT FACE="Courier New">u8</FONT> appear in the class file in big-endian order.</P>
+<P>Table 6-1. Class file &quot;primitive types&quot;</P>
+<TABLE WIDTH="500">
+<TR><TD VALIGN="TOP"><FONT FACE="Courier New">u1</FONT></TD><TD VALIGN="TOP">a single unsigned byte</TD></TR>
+<TR><TD VALIGN="TOP"><FONT FACE="Courier New">u2</FONT></TD><TD VALIGN="TOP">two unsigned bytes</TD></TR>
+<TR><TD VALIGN="TOP"><FONT FACE="Courier New">u4</FONT></TD><TD VALIGN="TOP">four unsigned bytes</TD></TR>
+<TR><TD VALIGN="TOP"><FONT FACE="Courier New">u8</FONT></TD><TD VALIGN="TOP">eight unsigned bytes</TD></TR>
+</TABLE>
+<P>The major components of the class file, in their order of appearance in the class file, are shown in Table 6-2. Each of these components is described in more detail below.</P>
+<P>Table 6-2. Format of a <FONT FACE="Courier New">ClassFile</FONT> Table</P>
+<TABLE WIDTH="500">
+<TR><TD VALIGN="TOP"><STRONG>Type&</STRONG></TD><TD VALIGN="TOP"><STRONG>#9;Name</STRONG></TD><TD VALIGN="TOP"><STRONG>Count</STRONG></TD></TR>
+<TR><TD VALIGN="TOP"><FONT FACE="Courier New">u4</FONT></TD><TD VALIGN="TOP"><FONT FACE="Courier New">magic</FONT></TD><TD VALIGN="TOP">1</TD></TR>
+<TR><TD VALIGN="TOP"><FONT FACE="Courier New">u2</FONT></TD><TD VALIGN="TOP"><FONT FACE="Courier New">minor_version</FONT></TD><TD VALIGN="TOP">1</TD></TR>
+<TR><TD VALIGN="TOP"><FONT FACE="Courier New">u2</FONT></TD><TD VALIGN="TOP"><FONT FACE="Courier New">major_version</FONT></TD><TD VALIGN="TOP">1</TD></TR>
+<TR><TD VALIGN="TOP"><FONT FACE="Courier New">u2</FONT></TD><TD VALIGN="TOP"><FONT FACE="Courier New">constant_pool_count</FONT></TD><TD VALIGN="TOP">1</TD></TR>
+<TR><TD VALIGN="TOP"><FONT FACE="Courier New">cp_info</FONT></TD><TD VALIGN="TOP"><FONT FACE="Courier New">constant_pool</FONT></TD><TD VALIGN="TOP"> <FONT FACE="Courier New">constant_pool_count</FONT></TD><TD VALIGN="TOP"> <FONT FACE="Courier New">- 1</FONT></TD><TD VALIGN="TOP"></TD></TR>
+<TR><TD VALIGN="TOP"><FONT FACE="Courier New">u2</FONT></TD><TD VALIGN="TOP"><FONT FACE="Courier New">access_flags</FONT></TD><TD VALIGN="TOP">1</TD></TR>
+<TR><TD VALIGN="TOP"><FONT FACE="Courier New">u2</FONT></TD><TD VALIGN="TOP"><FONT FACE="Courier New">this_class</FONT></TD><TD VALIGN="TOP">1</TD></TR>
+<TR><TD VALIGN="TOP"><FONT FACE="Courier New">u2</FONT></TD><TD VALIGN="TOP"><FONT FACE="Courier New">super_class</FONT></TD><TD VALIGN="TOP">1</TD></TR>
+<TR><TD VALIGN="TOP"><FONT FACE="Courier New">u2</FONT></TD><TD VALIGN="TOP"><FONT FACE="Courier New">interfaces_count</FONT></TD><TD VALIGN="TOP">1</TD></TR>
+<TR><TD VALIGN="TOP"><FONT FACE="Courier New">u2</FONT></TD><TD VALIGN="TOP"><FONT FACE="Courier New">interfaces</FONT></TD><TD VALIGN="TOP"> <FONT FACE="Courier New">interfaces_count</FONT></TD><TD VALIGN="TOP"></TD></TR>
+<TR><TD VALIGN="TOP"><FONT FACE="Courier New">u2</FONT></TD><TD VALIGN="TOP"><FONT FACE="Courier New">fields_count</FONT></TD><TD VALIGN="TOP">1</TD></TR>
+<TR><TD VALIGN="TOP"><FONT FACE="Courier New">field_info</FONT></TD><TD VALIGN="TOP"><FONT FACE="Courier New">fields</FONT></TD><TD VALIGN="TOP"> <FONT FACE="Courier New">fields_count</FONT></TD><TD VALIGN="TOP"></TD></TR>
+<TR><TD VALIGN="TOP"><FONT FACE="Courier New">u2</FONT></TD><TD VALIGN="TOP"><FONT FACE="Courier New">methods_count</FONT></TD><TD VALIGN="TOP">1</TD></TR>
+<TR><TD VALIGN="TOP"><FONT FACE="Courier New">method_info</FONT></TD><TD VALIGN="TOP"><FONT FACE="Courier New">methods</FONT></TD><TD VALIGN="TOP"> <FONT FACE="Courier New">methods_count</FONT></TD><TD VALIGN="TOP"></TD></TR>
+<TR><TD VALIGN="TOP"><FONT FACE="Courier New">u2</FONT></TD><TD VALIGN="TOP"><FONT FACE="Courier New">attributes_count</FONT></TD><TD VALIGN="TOP">1</TD></TR>
+<TR><TD VALIGN="TOP"><FONT FACE="Courier New">attribute_info</FONT></TD><TD VALIGN="TOP"><FONT FACE="Courier New">attributes</FONT></TD><TD VALIGN="TOP"> <FONT FACE="Courier New">attributes_count</FONT></TD><TD VALIGN="TOP"></TD></TR>
+</TABLE>
+<H3><P>magic</P>
+</H3><P>The first four bytes of every Java class file are its <I>magic number</I>, 0xCAFEBABE. The magic number makes non-Java class files easier to identify. If a file doesnít start with 0xCAFEBABE, it definitely isnít a Java class file. A magic number can be chosen by a file formatís designers to be any arbitrary number that isnít already in widespread use. The magic number for the Java class file was chosen back in the days when &quot;Java&quot; was called &quot;Oak.&quot; According to Patrick Naughton, a key member of the original Java team, the magic number was chosen &quot;long before the name Java was ever uttered in reference to this language. We were looking for something fun, unique, and easy to remember. It is only a coincidence that 0xCAFEBABE, an oblique reference to the cute baristas at Peet's Coffee, was foreshadowing for the name Java.&quot;</P>
+<H3><P>minor_version and major_version</P>
+</H3><P>The second four bytes of the class file contain the minor and major version numbers. As Java technology evolves, new features may occasionally be added to the Java class file format. Each time the class file format changes, the version numbers will change as well. To the Java Virtual Machine, the version numbers identify the format to which a particular class file adheres. Java Virtual Machines will generally be able to load class files with a given major version number and a range of minor version numbers. Java Virtual Machines must reject class files with version numbers outside their valid range.</P>
+<P>For class files generated by 1.0 or 1.1 compilers, the major version number is 45. The minor version number is 3.</P>
+<H3><P>constant_pool_count and constant_pool</P>
+</H3><P>Following the magic and version numbers in the class file is the <I>constant pool</I>. As mentioned in Chapter 5, &quot;The  Java Virtual Machine,&quot; the constant pool contains the constants associated with the class or interface defined by the file. Constants such as literal strings, final variable values, class names, and method names are stored in the constant pool. The constant pool is organized as a list of entries. A count of the number of entries in the list, <FONT FACE="Courier New">constant_pool_count</FONT>, precedes the actual list, <FONT FACE="Courier New">constant_pool</FONT>.</P>
+<P>Many entries in the constant pool refer to other entries in the constant pool, and many items that follow the constant pool in the class file refer back to entries in the constant pool. Throughout the class file, constant pool entries are referred to by the integer index that indicates their position in the <FONT FACE="Courier New">constant_pool</FONT> list. The first entry in the list has an index of one, the second has an index of two, and so on. Although there is no entry in the <FONT FACE="Courier New">constant_pool</FONT> list that has an index of zero, the missing zeroeth entry is included in the <FONT FACE="Courier New">constant_pool_count</FONT>. For example, if a <FONT FACE="Courier New">constant_pool</FONT> list includes fourteen entries (with indexes one through fourteen), the <FONT FACE="Courier New">constant_pool_count</FONT> would be fifteen.</P>
+<P>Each constant pool entry starts with a one-byte tag that indicates the type of constant making its home at that position in the list. Once a Java Virtual Machine grabs and interprets this tag, it knows what to expect after the tag. Table 6-3 shows the names and values of the constant pool tags.</P>
+<P>Table 6-3. Constant pool tags</P>
+<TABLE WIDTH="500">
+<TR><TD VALIGN="TOP"><STRONG>Entry Type</STRONG></TD><TD VALIGN="TOP"><STRONG>Tag Value</STRONG></TD><TD VALIGN="TOP"><STRONG>Description</STRONG></TD></TR>
+<TR><TD VALIGN="TOP"><FONT FACE="Courier New">CONSTANT_Utf8</FONT></TD><TD VALIGN="TOP">1</TD><TD VALIGN="TOP">A UTF-8 encoded Unicode string</TD></TR>
+<TR><TD VALIGN="TOP"><FONT FACE="Courier New">CONSTANT_Integer</FONT></TD><TD VALIGN="TOP">3</TD><TD VALIGN="TOP">An <FONT FACE="Courier New">int</FONT> literal value</TD></TR>
+<TR><TD VALIGN="TOP"><FONT FACE="Courier New">CONSTANT_Float</FONT></TD><TD VALIGN="TOP">4</TD><TD VALIGN="TOP">A <FONT FACE="Courier New">float</FONT> literal value</TD></TR>
+<TR><TD VALIGN="TOP"><FONT FACE="Courier New">CONSTANT_Long</FONT></TD><TD VALIGN="TOP">5</TD><TD VALIGN="TOP">A <FONT FACE="Courier New">long</FONT> literal value</TD></TR>
+<TR><TD VALIGN="TOP"><FONT FACE="Courier New">CONSTANT_Double</FONT></TD><TD VALIGN="TOP">6</TD><TD VALIGN="TOP">A <FONT FACE="Courier New">double</FONT> literal value</TD></TR>
+<TR><TD VALIGN="TOP"><FONT FACE="Courier New">CONSTANT_Class</FONT></TD><TD VALIGN="TOP">7</TD><TD VALIGN="TOP">A symbolic reference to a class or interface</TD></TR>
+<TR><TD VALIGN="TOP"><FONT FACE="Courier New">CONSTANT_String</FONT></TD><TD VALIGN="TOP">8</TD><TD VALIGN="TOP">A <FONT FACE="Courier New">String</FONT> literal value</TD></TR>
+<TR><TD VALIGN="TOP"><FONT FACE="Courier New">CONSTANT_Fieldref</FONT></TD><TD VALIGN="TOP">9</TD><TD VALIGN="TOP">A symbolic reference to a field</TD></TR>
+<TR><TD VALIGN="TOP"><FONT FACE="Courier New">CONSTANT_Methodref</FONT></TD><TD VALIGN="TOP">10</TD><TD VALIGN="TOP">A symbolic reference to a method declared in a class</TD></TR>
+<TR><TD VALIGN="TOP"><FONT FACE="Courier New">CONSTANT_InterfaceMethodref</FONT></TD><TD VALIGN="TOP">11</TD><TD VALIGN="TOP">A symbolic reference to a method declared in an interface</TD></TR>
+<TR><TD VALIGN="TOP"><FONT FACE="Courier New">CONSTANT_NameAndType</FONT></TD><TD VALIGN="TOP">12</TD><TD VALIGN="TOP">Part of a symbolic reference to a field or method</TD></TR>
+</TABLE>
+<P>For each tag shown in Table 6-3, there is a corresponding table. The name of the table is formed by appending &quot;<FONT FACE="Courier New">_info</FONT>&quot; to the tag name. For example, the table that corresponds to the <FONT FACE="Courier New">CONSTANT_Class</FONT> tag is called <FONT FACE="Courier New">CONSTANT_Class_info</FONT>. The <FONT FACE="Courier New">CONSTANT_Utf8_info</FONT> table stores a compressed form of Unicode strings. The tables for the various kinds of constant pool entries are described in detail later in this chapter.</P>
+<P>The constant pool plays an important role in the dynamic linking of Java programs. In addition to literal constant values, the constant pool contains the following kinds of symbolic references:</P>
+<UL>
+<LI> fully qualified names of classes and interfaces
+<LI> field names and descriptors
+<LI> method names and descriptors
+</UL>
+<P>A <I>field</I> is an instance or class variable of the class or interface. A <I>field descriptor</I> is a string that indicates the fieldís type. A <I>method descriptor</I> is a string that indicates the methodís return type and the number, order, and types of its parameters. The constant poolís fully qualified names and method and field descriptors are used at run time to link code in this class or interface with code and data in other classes and interfaces. The class file contains no information about the eventual memory layout of its components, so classes, fields, and methods cannot be referenced directly by the bytecodes in the class file. The Java Virtual Machine resolves the actual address of any referenced item at run time given a symbolic reference from the constant pool. For example, bytecode instructions that invoke a method give constant pool index of a symbolic reference to the method to invoke. This process of using the symbolic references in the constant pool is described in more detail in Chapter 8, &quot;The Linking Model.&quot;</P>
+<H3><P>access_flags</P>
+</H3><P>The first two bytes after the constant pool, the <I>access flags</I>, reveal several pieces of information about the class or interface defined in the file. To start with, the access flags indicate whether the file defines a class or an interface. The access flags also indicate what modifiers were used in the declaration of the class or interface. Classes and interfaces can be public or abstract. Classes can be final, though final classes cannot be abstract. Interfaces canít be final. The bits used for the various flags are shown in Table 6-4.</P>
+<P>Table 6-4. Flag bits in the <FONT FACE="Courier New">access_flags</FONT> item of <FONT FACE="Courier New">ClassFile</FONT> tables</P>
+<TABLE WIDTH="500">
+<TR><TD VALIGN="TOP"><STRONG>Flag Name</STRONG></TD><TD VALIGN="TOP"><STRONG>Value</STRONG></TD><TD VALIGN="TOP"><STRONG>Meaning if Set</STRONG></TD><TD VALIGN="TOP"><STRONG>Set By</STRONG></TD></TR>
+<TR><TD VALIGN="TOP"><FONT FACE="Courier New">ACC_PUBLIC</FONT></TD><TD VALIGN="TOP">0x0001</TD><TD VALIGN="TOP">Type is public</TD><TD VALIGN="TOP">Classes and interfaces</TD></TR>
+<TR><TD VALIGN="TOP"><FONT FACE="Courier New">ACC_FINAL</FONT></TD><TD VALIGN="TOP">0x0010</TD><TD VALIGN="TOP">Class is final</TD><TD VALIGN="TOP">Classes only</TD></TR>
+<TR><TD VALIGN="TOP"><FONT FACE="Courier New">ACC_SUPER</FONT></TD><TD VALIGN="TOP">0x0020</TD><TD VALIGN="TOP">Use new </TD><TD VALIGN="TOP"><FONT FACE="Courier New">invokespecial</FONT> semanticsClasses and interfaces</TD></TR>
+<TR><TD VALIGN="TOP"><FONT FACE="Courier New">ACC_INTERFACE</FONT></TD><TD VALIGN="TOP">0x0200</TD><TD VALIGN="TOP">Type is an interface, not a class</TD><TD VALIGN="TOP">All interfaces, no classes</TD></TR>
+<TR><TD VALIGN="TOP"><FONT FACE="Courier New">ACC_ABSTRACT</FONT></TD><TD VALIGN="TOP">0x0400</TD><TD VALIGN="TOP">Type is abstract</TD><TD VALIGN="TOP">All interfaces, some classes</TD></TR>
+</TABLE>
+<P>The <FONT FACE="Courier New">ACC_SUPER</FONT> flag exists for backwards compatibility with Sunís older Java compilers. In Sunís older Java Virtual Machines, the <FONT FACE="Courier New">invokespecial</FONT> instruction had more relaxed semantics. All new compilers should set the <FONT FACE="Courier New">ACC_SUPER</FONT> flag. All new implementations of the Java Virtual Machine should implement the newer, stricter <FONT FACE="Courier New">invokespecial</FONT> semantics. (See the <FONT FACE="Courier New">invokespecial</FONT> instruction in Appendix A for a description of these semantics.) Sunís older compilers generate class files with the <FONT FACE="Courier New">ACC_SUPER</FONT> flag set to zero. Sunís older Java Virtual Machines ignore the flag if it is set.</P>
+<P>All unused bits in <FONT FACE="Courier New">access_flags</FONT> must be set to zero and ignored by Java Virtual Machine implementations.</P>
+<H3><P>this_class</P>
+</H3><P>The next two bytes are the <FONT FACE="Courier New">this_class</FONT> item, an index into the constant pool. The constant pool entry at position <FONT FACE="Courier New">this_class</FONT> must be a <FONT FACE="Courier New">CONSTANT_Class_info</FONT> table, which has two parts: a <FONT FACE="Courier New">tag</FONT> and a <FONT FACE="Courier New">name_index</FONT>. The tag will have the value <FONT FACE="Courier New">CONSTANT_Class</FONT>. The constant pool entry at position <FONT FACE="Courier New">name_index</FONT> will be a <FONT FACE="Courier New">CONSTANT_Utf8_info</FONT> table containing the fully qualified name of the class or interface.</P>
+<P>The <FONT FACE="Courier New">this_class</FONT> item provides a glimpse of how the constant pool is used. By itself, the <FONT FACE="Courier New">this_class</FONT> item is just an index into the constant pool. When a Java Virtual Machine looks up the constant pool entry at position <FONT FACE="Courier New">this_class</FONT>, it will find an entry that identifies itself via its <FONT FACE="Courier New">tag</FONT> as a <FONT FACE="Courier New">CONSTANT_Class_info</FONT>. The Java Virtual Machine knows <FONT FACE="Courier New">CONSTANT_Class_info</FONT> entries always have an index into the constant pool, called <FONT FACE="Courier New">name_index</FONT>, following their <FONT FACE="Courier New">tag</FONT>. So the virtual machine looks up the constant pool entry at position <FONT FACE="Courier New">name_index</FONT>, where it should find a <FONT FACE="Courier New">CONSTANT_Utf8_info</FONT> entry that contains the fully qualified name of the class or interface. See Figure 6-2 for a graphical depiction of this process.</P>
+<P><IMG SRC="fig6-2.gif" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/venners/images/fig6-2.gif" ALT="Figure 6-2"></P>
+
+<H3><P>super_class</P>
+</H3><P>Following <FONT FACE="Courier New">this_class</FONT> in the class file is the <FONT FACE="Courier New">super_class</FONT> item, another two-byte index into the constant pool. The constant pool entry at position <FONT FACE="Courier New">super_class</FONT> will be a <FONT FACE="Courier New">CONSTANT_Class_info</FONT> entry that refers to the fully qualified name of this classís superclass. Because the base class of every object in Java programs is the <FONT FACE="Courier New">java.lang.Object</FONT> class, the <FONT FACE="Courier New">super_class</FONT> constant pool index will be valid for every class except <FONT FACE="Courier New">Object</FONT>. For <FONT FACE="Courier New">Object</FONT>, <FONT FACE="Courier New">super_class</FONT> is a zero. For interfaces, the constant pool entry at position <FONT FACE="Courier New">super_class</FONT> is <FONT FACE="Courier New">java.lang.Object</FONT>.</P>
+<H3><P>interfaces_count and interfaces</P>
+</H3><P>The component that follows <FONT FACE="Courier New">super_class</FONT> starts with <FONT FACE="Courier New">interfaces_count</FONT>, a count of the number of superinterfaces directly implemented by the class or interface defined in this file. Immediately following the count is <FONT FACE="Courier New">interfaces</FONT>, an array that contains one index into the constant pool for each superinterface directly implemented by this class or interface. Each superinterface is represented by a <FONT FACE="Courier New">CONSTANT_Class_info</FONT> entry in the constant pool that refers to the fully qualified name of the interface. Only direct superinterfaces, those that appear in the <FONT FACE="Courier New">implements</FONT> clause of the class or the <FONT FACE="Courier New">extends</FONT> clause of the interface declaration, appear in this array. The superinterfaces appear in the array in the order in which they appear (left to right) in the <FONT FACE="Courier New">implements</FONT> or <FONT FACE="Courier New">extends</FONT> clause.</P>
+<H3><P>fields_count and fields</P>
+</H3><P>Following the interfaces component in the class file is a description of the fields declared by this class or interface. This component starts with <FONT FACE="Courier New">fields_count</FONT>, a count of the number of fields, including both class and instance variables. Following the count is a list of variable-length <FONT FACE="Courier New">field_info</FONT> tables, one for each field. (The <FONT FACE="Courier New">fields_count</FONT> indicates the number of <FONT FACE="Courier New">field_info</FONT> tables in the list.) The only fields that appear in the <FONT FACE="Courier New">fields</FONT> list are those that were declared by the class or interface defined in the file. No fields inherited from superclasses or superinterfaces appear in the <FONT FACE="Courier New">fields</FONT> list.</P>
+<P>Each <FONT FACE="Courier New">field_info</FONT> table reveals information about one field. The table contains the field's name, descriptor, and modifiers. If the field is declared as final, the <FONT FACE="Courier New">field_info</FONT> table also reveals the fieldís constant value. Some of this information is contained in the <FONT FACE="Courier New">field_info</FONT> table itself, and some is contained in constant pool locations referred to by the table. The <FONT FACE="Courier New">field_info</FONT> table is described in more detail later in this chapter.</P>
+<H3><P>methods_count and methods</P>
+</H3><P>Following the fields in the class file is a description of the methods declared by the class or interface. This component starts with <FONT FACE="Courier New">methods_count</FONT>, a two-byte count of the number of methods in the class or interface. The count includes only those methods that are explicitly defined by this class or interface. (It does not include any methods inherited from superclasses or superinterfaces.) Following the method count are the methods themselves, described in a list of <FONT FACE="Courier New">method_info</FONT> tables. (The <FONT FACE="Courier New">methods_count</FONT> indicates the number of <FONT FACE="Courier New">method_info</FONT> tables in the list.)</P>
+<P>The <FONT FACE="Courier New">method_info</FONT> table contains several pieces of information about the method, including the methodís name and descriptor (its return type and argument types). If the method is not abstract, the <FONT FACE="Courier New">method_info</FONT> table includes the number of stack words required for the method's local variables, the maximum number of stack words required for the method's operand stack, a table of exceptions caught by the method, the bytecode sequence, and optional line number and local variable tables. If the method can throw any checked exceptions, the <FONT FACE="Courier New">method_info</FONT> table includes a list of those checked exceptions. The <FONT FACE="Courier New">method_info</FONT> table is described in detail later in this chapter.</P>
+<H3><P>attributes_count and attributes</P>
+</H3><P>The last component in the class file are the attributes, which give general information about the particular class or interface defined by the file. The attributes component starts with <FONT FACE="Courier New">attributes_count</FONT>, a count of the number of <FONT FACE="Courier New">attribute_info</FONT> tables appearing in the subsequent <FONT FACE="Courier New">attributes</FONT> list. The first item in each <FONT FACE="Courier New">attribute_info</FONT> table is an index into the constant pool of a <FONT FACE="Courier New">CONSTANT_Utf8_info</FONT> table that gives the attributeís name.</P>
+<P>Attributes come in many varieties. Several varieties are defined by the Java Virtual Machine specification, but anyone can create their own varieties of attributes (following certain rules) and place them into class files. Java Virtual Machine implementations must silently ignore any attributes they donít recognize. The rules surrounding the creation of new varieties of attributes are described later in this chapter.</P>
+<P>Attributes appear in several places in the class file, not just in the <FONT FACE="Courier New">attributes</FONT> item of the top-level <FONT FACE="Courier New">ClassFile</FONT> table. The attributes that appear in the <FONT FACE="Courier New">ClassFile</FONT> table give more information about the class or interface define by the file. Attributes that give more information about a field may be included as part of <FONT FACE="Courier New">field_info</FONT> table. Attributes that give more information about a method may be included as part of a <FONT FACE="Courier New">method_info</FONT> table.</P>
+<P>The Java Virtual Machine specification defines two kinds of attributes that may appear in the attributes list of the <FONT FACE="Courier New">ClassFile</FONT> table: <FONT FACE="Courier New">SourceCode</FONT> and <FONT FACE="Courier New">InnerClasses</FONT>. These two attributes are described in detail later in this chapter.</P>
+<H3><EM><P>Special Strings</P>
+</EM></H3><P>The symbolic references contained in the constant pool involve three special kinds of strings: fully qualified names, simple names, and descriptors. All symbolic references include the fully qualified name of a class or interface. Symbolic references to fields include a simple field name and field descriptor in addition to a fully qualified type name. Symbolic references to methods include a simple method name and method descriptor in addition to a fully qualified name.</P>
+<P>The same special strings are used to describe the class or interface that is defined by the class file. The class or interface name, the superclass name (if any), and the names of any superinterfaces are all given as fully qualified names. For each field declared by the class or interface, the constant pool contains a simple name and field descriptor. For each method declared by the class or interface, the constant pool contains a simple name and method descriptor.</P>
+<H3><P>Fully Qualified Names</P>
+</H3><P>Whenever constant pool entries refer to classes and interfaces, they give the fully qualified name of the class or interface. In the class file, fully qualified names have their dots replaced with slashes. For example, the representation of the fully qualified name of <FONT FACE="Courier New">java.lang.Object</FONT> in the class file is <FONT FACE="Courier New">java/lang/Object</FONT>. The fully qualified name of <FONT FACE="Courier New">java.util.Hashtable</FONT> in the class file is <FONT FACE="Courier New">java/util/Hashtable</FONT>.</P>
+<H3><P>Simple Names</P>
+</H3><P>The names of fields and methods appear in constant pool entries as simple (not fully qualified) names. For example, a constant pool entry that refers to the <FONT FACE="Courier New">String</FONT> <FONT FACE="Courier New">toString()</FONT> method of class <FONT FACE="Courier New">java.lang.Object</FONT> would give its method name as <FONT FACE="Courier New">"toString"</FONT>. A constant pool entry that refers to the <FONT FACE="Courier New">java.io.PrintStream</FONT> <FONT FACE="Courier New">out</FONT> field of class <FONT FACE="Courier New">java.lang.System</FONT> would specify the field name simply as <FONT FACE="Courier New">"out"</FONT>.</P>
+<H3><P>Descriptors</P>
+</H3><P>Symbolic references to fields and methods include a descriptor string in addition to a fully qualified class or interface name and a simple field or method name. A field descriptor gives the fieldís type. A method descriptor gives the methodís return type and the number and types of the methodís parameters.</P>
+<P>Field and method descriptors are defined by the context free grammar shown below. Nonterminals of this grammar, such as <I>FieldType</I>, are shown in italic font. Terminals, such as <FONT FACE="Courier New">B</FONT> or <FONT FACE="Courier New">V</FONT>, are shown in fixed width font. The asterisk character (*) stands for zero or more occurrences of the item that precedes it placed side by side (with no intervening white space).</P>
+<P><H4><EM>FieldDescriptor:</P></EM></H4>
+<P><I>FieldType</P></EM></H4>
+<P><H4><EM>ComponentType:</P></EM></H4>
+<P><I>FieldType</P></EM></H4>
+<P><H4><EM>FieldType:</P></EM></H4>
+<P><I>BaseType</P></EM></H4>
+<P><I>ObjectType</P></EM></H4>
+<P><I>ArrayType</P></EM></H4>
+<P><H4><EM>BaseType:</P></EM></H4>
+<P><FONT FACE="Courier New">B</FONT></P>
+<P><FONT FACE="Courier New">C</FONT></P>
+<P><FONT FACE="Courier New">D</FONT></P>
+<P><FONT FACE="Courier New">F</FONT></P>
+<P><FONT FACE="Courier New">I</FONT></P>
+<P><FONT FACE="Courier New">J</FONT></P>
+<P><FONT FACE="Courier New">S</FONT></P>
+<P><FONT FACE="Courier New">Z</FONT></P>
+<P><H4><EM>ObjectType:</P></EM></H4>
+<P><FONT FACE="Courier New">L&lt;classname</FONT>&gt;;</P>
+<P><H4><EM>ArrayType:</P></EM></H4>
+<P><FONT FACE="Courier New">[</FONT> <I>ComponentType</P></EM></H4>
+<P><H4><EM>ParameterDescriptor:</P></EM></H4>
+<P><I>FieldType</P></EM></H4>
+<P><H4><EM>MethodDescriptor:</P></EM></H4>
+<P><FONT FACE="Courier New">(</FONT> <I>ParameterDescriptor*</I> <FONT FACE="Courier New">)</FONT> <I>ReturnDescriptor</P></EM></H4>
+<P><H4><EM>ReturnDescriptor:</P></EM></H4>
+<P><I>FieldType</P></EM></H4>
+<P><FONT FACE="Courier New">V</FONT></P>
+<P>The meaning of each of the <I>BaseType</I> terminals is shown in Table 6-5. The <FONT FACE="Courier New">V</FONT> terminal represents methods that return <FONT FACE="Courier New">void</FONT>.</P>
+<P>Table 6-5. <I>BaseType</I> terminals</P>
+<TABLE WIDTH="500">
+<TR><TD VALIGN="TOP"><STRONG>Terminal</STRONG></TD><TD VALIGN="TOP"><STRONG>Type</STRONG></TD></TR>
+<TR><TD VALIGN="TOP"><FONT FACE="Courier New">B</FONT></TD><TD VALIGN="TOP"><FONT FACE="Courier New">byte</FONT></TD></TR>
+<TR><TD VALIGN="TOP"><FONT FACE="Courier New">C</FONT></TD><TD VALIGN="TOP"><FONT FACE="Courier New">char</FONT></TD></TR>
+<TR><TD VALIGN="TOP"><FONT FACE="Courier New">D</FONT></TD><TD VALIGN="TOP"><FONT FACE="Courier New">double</FONT></TD></TR>
+<TR><TD VALIGN="TOP"><FONT FACE="Courier New">F</FONT></TD><TD VALIGN="TOP"><FONT FACE="Courier New">float</FONT></TD></TR>
+<TR><TD VALIGN="TOP"><FONT FACE="Courier New">I</FONT></TD><TD VALIGN="TOP"><FONT FACE="Courier New">int</FONT></TD></TR>
+<TR><TD VALIGN="TOP"><FONT FACE="Courier New">J</FONT></TD><TD VALIGN="TOP"><FONT FACE="Courier New">long</FONT></TD></TR>
+<TR><TD VALIGN="TOP"><FONT FACE="Courier New">S</FONT></TD><TD VALIGN="TOP"><FONT FACE="Courier New">short</FONT></TD></TR>
+<TR><TD VALIGN="TOP"><FONT FACE="Courier New">Z</FONT></TD><TD VALIGN="TOP"><FONT FACE="Courier New">boolean</FONT></TD></TR>
+</TABLE>
+<P>Some examples of field descriptors are shown in Table 6-6.</P>
+<P>Table 6-6. Examples of field descriptors</P>
+<TABLE WIDTH="500">
+<TR><TD VALIGN="TOP"><STRONG>Descriptor</STRONG></TD><TD VALIGN="TOP"><STRONG>Field Declaration</STRONG></TD></TR>
+<TR><TD VALIGN="TOP"><FONT FACE="Courier New">I</FONT></TD><TD VALIGN="TOP"><FONT FACE="Courier New">int i;</FONT></TD></TR>
+<TR><TD VALIGN="TOP"><FONT FACE="Courier New">[[J</FONT></TD><TD VALIGN="TOP"><FONT FACE="Courier New">long[][] windingRoad;</FONT></TD></TR>
+<TR><TD VALIGN="TOP"><FONT FACE="Courier New">[Ljava/lang/Object;</FONT></TD><TD VALIGN="TOP"><FONT FACE="Courier New">java.lang.Object[] stuff;</FONT></TD></TR>
+<TR><TD VALIGN="TOP"><FONT FACE="Courier New">Ljava/util/Hashtable;</FONT></TD><TD VALIGN="TOP"><FONT FACE="Courier New">java.util.Hashtable ht;</FONT></TD></TR>
+<TR><TD VALIGN="TOP"><FONT FACE="Courier New">[[[Z</FONT></TD><TD VALIGN="TOP"><FONT FACE="Courier New">boolean[][][] isReady;</FONT></TD></TR>
+</TABLE>
+<P>Some examples of method descriptors are shown in Table 6-7. Note that method descriptors donít include the hidden <FONT FACE="Courier New">this</FONT> parameter passed as the first argument to all instance methods.</P>
+<P>Table 6-7. Examples of method descriptors</P>
+<TABLE WIDTH="500">
+<TR><TD VALIGN="TOP"><STRONG>Descriptor</STRONG></TD><TD VALIGN="TOP"><STRONG>Method Declaration</STRONG></TD></TR>
+<TR><TD VALIGN="TOP"><FONT FACE="Courier New">()I</FONT></TD><TD VALIGN="TOP"><FONT FACE="Courier New">int getSize();</FONT></TD></TR>
+<TR><TD VALIGN="TOP"><FONT FACE="Courier New">()Ljava/lang/String;</FONT></TD><TD VALIGN="TOP"><FONT FACE="Courier New">String toString();</FONT></TD></TR>
+<TR><TD VALIGN="TOP"><FONT FACE="Courier New">([Ljava/lang/String;)V</FONT></TD><TD VALIGN="TOP"><FONT FACE="Courier New">void main(String[] args);</FONT></TD></TR>
+<TR><TD VALIGN="TOP"><FONT FACE="Courier New">()V</FONT></TD><TD VALIGN="TOP"><FONT FACE="Courier New">void wait()</FONT></TD></TR>
+<TR><TD VALIGN="TOP"><FONT FACE="Courier New">(JI)V</FONT></TD><TD VALIGN="TOP"><FONT FACE="Courier New">void wait(long timeout, int nanos)</FONT></TD></TR>
+<TR><TD VALIGN="TOP"><FONT FACE="Courier New">(ZILjava/lang/String;II)Z</FONT></TD><TD VALIGN="TOP"><FONT FACE="Courier New">boolean regionMatches(boolean ignoreCase, int toOffset, String other, int ooffset, int len);</FONT></TD></TR>
+<TR><TD VALIGN="TOP"><FONT FACE="Courier New">([BII)I</FONT></TD><TD VALIGN="TOP"><FONT FACE="Courier New">int read(byte[] b, int off, int len);</FONT></TD></TR>
+</TABLE>
+<H3><EM><P>The Constant Pool</P>
+</EM></H3><P>The constant pool is an ordered list of <FONT FACE="Courier New">cp_info</FONT> tables, each of which follows the general form shown in Table 6-8. The <FONT FACE="Courier New">tag</FONT> item of a <FONT FACE="Courier New">cp_info</FONT> table, an unsigned byte, indicates the tableís variety and format. <FONT FACE="Courier New">cp_info</FONT> tables come in eleven varieties, each of which is described in detail in the following sections.</P>
+<P>Table 6-8. General form of a <FONT FACE="Courier New">cp_info</FONT> table</P>
+<TABLE WIDTH="500">
+<TR><TD VALIGN="TOP"><STRONG>Type</STRONG></TD><TD VALIGN="TOP"><STRONG>Name </STRONG></TD><TD VALIGN="TOP"><STRONG>Count</STRONG></TD></TR>
+<TR><TD VALIGN="TOP"><FONT FACE="Courier New">u1</FONT></TD><TD VALIGN="TOP"><FONT FACE="Courier New">tag</FONT></TD><TD VALIGN="TOP">1</TD></TR>
+<TR><TD VALIGN="TOP"><FONT FACE="Courier New">u1</FONT></TD><TD VALIGN="TOP"><FONT FACE="Courier New">info</FONT> </TD><TD VALIGN="TOP">depends on tag value</TD></TR>
+</TABLE>
+<H3><P>The CONSTANT_Utf8_info Table</P>
+</H3><P>A <FONT FACE="Courier New">CONSTANT_Utf8_info</FONT> table stores one constant string value in a modified UTF-8 format. This table is used to store many different kinds of strings, including:</P>
+<UL>
+<LI> string literals that get instantiated as <FONT FACE="Courier New">String</FONT> objects
+<LI> the fully qualified name of the class or interface being defined
+<LI> the fully qualified name of the superclass (if any) of the class being defined
+<LI> the fully qualified names of any superinterfaces of the class or interface being defined
+<LI> the simple names and descriptors of any fields declared by the class or interface
+<LI> the simple names and descriptors of any methods declared by the class or interface
+<LI> fully qualified names of any referenced classes and interfaces
+<LI> simple names and descriptors of any referenced fields
+<LI> simple names and descriptors of any referenced methods
+<LI> strings associated with attributes
+</UL>
+<P>As you can see from the above list, there are four basic kinds of information stored in <FONT FACE="Courier New">CONSTANT_Utf8_info</FONT> tables: string literals, descriptions of the class or interface being defined, symbolic references to other classes and interfaces, and strings associated with attributes. Some examples of strings associated with attributes are: the name of the attribute, the name of the source file from which the class file was generated, and the names and descriptors of local variables.</P>
+<P>The UTF-8 encoding scheme allows all two-byte Unicode characters to be represented in a string, but enables ASCII characters to be represented by just one byte. Table 6-9 shows the format of a <FONT FACE="Courier New">CONSTANT_Utf8_info</FONT> table.</P>
+<P>Table 6-9. Format of a <FONT FACE="Courier New">CONSTANT_Utf8_info</FONT> table</P>
+<TABLE WIDTH="500">
+<TR><TD VALIGN="TOP"><STRONG>Type</STRONG></TD><TD VALIGN="TOP"><STRONG>Name</STRONG></TD><TD VALIGN="TOP"><STRONG>Count</STRONG></TD></TR>
+<TR><TD VALIGN="TOP"><FONT FACE="Courier New">u1</FONT></TD><TD VALIGN="TOP"><FONT FACE="Courier New">tag</FONT></TD><TD VALIGN="TOP">1</TD></TR>
+<TR><TD VALIGN="TOP"><FONT FACE="Courier New">u2</FONT></TD><TD VALIGN="TOP"><FONT FACE="Courier New">length</FONT></TD><TD VALIGN="TOP">1</TD></TR>
+<TR><TD VALIGN="TOP"><FONT FACE="Courier New">u1</FONT></TD><TD VALIGN="TOP"><FONT FACE="Courier New">bytes</FONT> </TD><TD VALIGN="TOP"><FONT FACE="Courier New">length</FONT></TD></TR>
+</TABLE>
+<I><P><FONT FACE="Courier New">tag</FONT></P>
+</I><P>The <FONT FACE="Courier New">tag</FONT> item has the value <FONT FACE="Courier New">CONSTANT_Utf8</FONT> (1).</P>
+<I><P><FONT FACE="Courier New">length</FONT></P>
+</I><P>The <FONT FACE="Courier New">length</FONT> item gives the length in bytes of the subsequent <FONT FACE="Courier New">bytes</FONT> item.</P>
+<I><P><FONT FACE="Courier New">bytes</FONT></P>
+</I><P>The <FONT FACE="Courier New">bytes</FONT> item contains the characters of the string stored in a modified UTF-8 format. Characters in the range <FONT FACE="Courier New">'\u0001'</FONT> through <FONT FACE="Courier New">'\u007f'</FONT> (all the ASCII characters except the null character) are represented by one byte:</P>
+<P><IMG SRC="fig6-sgl.gif" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/venners/images/fig6-sgl.gif" ALT="Figure 6-Single"></P>
+<P>The <FONT FACE="Courier New">null</FONT> character, <FONT FACE="Courier New">'\u0000'</FONT>, and the characters in the range <FONT FACE="Courier New">'\u0080'</FONT> through <FONT FACE="Courier New">'\u07ff'</FONT> are represented by two bytes:</P>
+<P><IMG SRC="fig6-dbl.gif" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/venners/images/fig6-dbl.gif" ALT="Figure 6-Double"></P>
+<P>Characters in the range <FONT FACE="Courier New">'\u0800'</FONT> through <FONT FACE="Courier New">'\uffff'</FONT> are represented by three bytes:</P>
+<P><IMG SRC="fig6-tpl.gif" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/venners/images/fig6-tpl.gif" ALT="Figure 6-Triple"></P>
+<P>The encoding of UTF-8 strings in the <FONT FACE="Courier New">bytes</FONT> item of <FONT FACE="Courier New">CONSTANT_Utf8_info</FONT> tables differs from the standard UTF-8 format in two ways. First, in the standard UTF-8 encoding scheme, the <FONT FACE="Courier New">null</FONT> character is represented by one byte. In a <FONT FACE="Courier New">CONSTANT_Utf8_info</FONT> table, <FONT FACE="Courier New">null</FONT> characters are represented by two bytes. This two-byte encoding of <FONT FACE="Courier New">null</FONT>s means that the <FONT FACE="Courier New">bytes</FONT> item never contains any byte equal to zero. The second way the <FONT FACE="Courier New">bytes</FONT> item of a <FONT FACE="Courier New">CONSTANT_Utf8_info</FONT> departs from the standard UTF-8 encoding is that only one-, two-, and three-byte encodings are used in the <FONT FACE="Courier New">bytes</FONT> item.  The standard UTF-8 includes longer formats that arenít used in <FONT FACE="Courier New">CONSTANT_Utf8_info</FONT> tables.</P>
+<H3><P>The CONSTANT_Integer_info Table</P>
+</H3><P>The <FONT FACE="Courier New">CONSTANT_Integer_info</FONT> table stores a constant <FONT FACE="Courier New">int</FONT> value. This table is used only to store <FONT FACE="Courier New">int</FONT> literals. It is not used in symbolic references. Table 6-10 shows the format of a <FONT FACE="Courier New">CONSTANT_Integer_info</FONT> table.</P>
+<P>Table 6-10. Format of a <FONT FACE="Courier New">CONSTANT_Integer_info</FONT> table</P>
+<TABLE WIDTH="500">
+<TR><TD VALIGN="TOP"><STRONG>Type</STRONG></TD><TD VALIGN="TOP"><STRONG>Name</STRONG></TD><TD VALIGN="TOP"><STRONG>Count</STRONG></TD></TR>
+<TR><TD VALIGN="TOP"><FONT FACE="Courier New">u1</FONT></TD><TD VALIGN="TOP"><FONT FACE="Courier New">tag</FONT></TD><TD VALIGN="TOP">1</TD></TR>
+<TR><TD VALIGN="TOP"><FONT FACE="Courier New">u4</FONT></TD><TD VALIGN="TOP"><FONT FACE="Courier New">bytes</FONT></TD><TD VALIGN="TOP">1</TD></TR>
+</TABLE>
+<I><P><FONT FACE="Courier New">tag</FONT></P>
+</I><P>The <FONT FACE="Courier New">tag</FONT> item has the value <FONT FACE="Courier New">CONSTANT_Integer</FONT> (3).</P>
+<I><P><FONT FACE="Courier New">bytes</FONT></P>
+</I><P>The <FONT FACE="Courier New">bytes</FONT> item contains the <FONT FACE="Courier New">int</FONT> value stored in big-endian order.</P>
+<H3><P>The CONSTANT_Float_info Table</P>
+</H3><P>The <FONT FACE="Courier New">CONSTANT_Float_info</FONT> table stores a constant <FONT FACE="Courier New">float</FONT> value. This table is used only to store <FONT FACE="Courier New">float</FONT> literals. It is not used in symbolic references. Table 6-11 shows the format of a <FONT FACE="Courier New">CONSTANT_Float_info</FONT> table.</P>
+<P>Table 6-11. Format of a <FONT FACE="Courier New">CONSTANT_Float_info</FONT> table</P>
+<TABLE WIDTH="500">
+<TR><TD VALIGN="TOP"><STRONG>Type</STRONG></TD><TD VALIGN="TOP"><STRONG>Name</STRONG></TD><TD VALIGN="TOP"><STRONG>Count</STRONG></TD></TR>
+<TR><TD VALIGN="TOP"><FONT FACE="Courier New">u1</FONT></TD><TD VALIGN="TOP"><FONT FACE="Courier New">tag</FONT></TD><TD VALIGN="TOP">1</TD></TR>
+<TR><TD VALIGN="TOP"><FONT FACE="Courier New">u4</FONT></TD><TD VALIGN="TOP"><FONT FACE="Courier New">bytes</FONT></TD><TD VALIGN="TOP">1</TD></TR>
+</TABLE>
+<I><P><FONT FACE="Courier New">tag</FONT></P>
+</I><P>The <FONT FACE="Courier New">tag</FONT> item has the value <FONT FACE="Courier New">CONSTANT_Float</FONT> (4).</P>
+<I><P><FONT FACE="Courier New">bytes</FONT></P>
+</I><P>The <FONT FACE="Courier New">bytes</FONT> item contains the <FONT FACE="Courier New">float</FONT> value stored in big-endian order. For the details of the representation of <FONT FACE="Courier New">float</FONT> in the Java class file, see Chapter 14, &quot;Floating Point Arithmetic.&quot;</P>
+<H3><P>The CONSTANT_Long_info Table</P>
+</H3><P>The <FONT FACE="Courier New">CONSTANT_Long_info</FONT> table stores a constant <FONT FACE="Courier New">long</FONT> value. This table is used only to store <FONT FACE="Courier New">long</FONT> literals. It is not used in symbolic references. Table 6-12 shows the format of a <FONT FACE="Courier New">CONSTANT_Long_info</FONT> table.</P>
+<P>As noted above, a <FONT FACE="Courier New">long</FONT> occupies two slots in the constant pool table. In the class file, a <FONT FACE="Courier New">long</FONT> entry is just followed by the next entry, but the index of the next entry is two more than that of the <FONT FACE="Courier New">long</FONT> entry.</P>
+<P>Table 6-12. Format of a <FONT FACE="Courier New">CONSTANT_Long_info</FONT> table</P>
+<TABLE WIDTH="500">
+<TR><TD VALIGN="TOP"><STRONG>Type</STRONG></TD><TD VALIGN="TOP"><STRONG>Name</STRONG></TD><TD VALIGN="TOP"><STRONG>Count</STRONG></TD></TR>
+<TR><TD VALIGN="TOP"><FONT FACE="Courier New">u1</FONT></TD><TD VALIGN="TOP"><FONT FACE="Courier New">tag</FONT></TD><TD VALIGN="TOP">1</TD></TR>
+<TR><TD VALIGN="TOP"><FONT FACE="Courier New">u8</FONT></TD><TD VALIGN="TOP"><FONT FACE="Courier New">bytes</FONT></TD><TD VALIGN="TOP">1</TD></TR>
+</TABLE>
+<I><P><FONT FACE="Courier New">tag</FONT></P>
+</I><P>The <FONT FACE="Courier New">tag</FONT> item has the value <FONT FACE="Courier New">CONSTANT_Long</FONT> (5).</P>
+<I><P><FONT FACE="Courier New">bytes</FONT></P>
+</I><P>The <FONT FACE="Courier New">bytes</FONT> item contains the <FONT FACE="Courier New">long</FONT> value stored in big-endian order.</P>
+<H3><P>The CONSTANT_Double_info Table</P>
+</H3><P>The <FONT FACE="Courier New">CONSTANT_Double_info</FONT> table stores a constant <FONT FACE="Courier New">double</FONT> value. This table is used only to store <FONT FACE="Courier New">double</FONT> literals. It is not used in symbolic references. Table 6-13 shows the format of a <FONT FACE="Courier New">CONSTANT_Double_info</FONT> table.</P>
+<P>As noted above, a <FONT FACE="Courier New">double</FONT> occupies two slots in the constant pool table. In the class file, a <FONT FACE="Courier New">double</FONT> entry is just followed by the next entry, but the index of the next entry is two more than that of the <FONT FACE="Courier New">double</FONT> entry.</P>
+<P>Table 6-13. Format of a <FONT FACE="Courier New">CONSTANT_Double_info</FONT> table</P>
+<TABLE WIDTH="500">
+<TR><TD VALIGN="TOP"><STRONG>Type</STRONG></TD><TD VALIGN="TOP"><STRONG>Name</STRONG></TD><TD VALIGN="TOP"><STRONG>Count</STRONG></TD></TR>
+<TR><TD VALIGN="TOP"><FONT FACE="Courier New">u1</FONT></TD><TD VALIGN="TOP"><FONT FACE="Courier New">tag</FONT></TD><TD VALIGN="TOP">1</TD></TR>
+<TR><TD VALIGN="TOP"><FONT FACE="Courier New">u8</FONT></TD><TD VALIGN="TOP"><FONT FACE="Courier New">bytes</FONT></TD><TD VALIGN="TOP">1</TD></TR>
+</TABLE>
+<I><P><FONT FACE="Courier New">tag</FONT></P>
+</I><P>The <FONT FACE="Courier New">tag</FONT> item has the value <FONT FACE="Courier New">CONSTANT_Double</FONT> (6).</P>
+<I><P><FONT FACE="Courier New">bytes</FONT></P>
+</I><P>The <FONT FACE="Courier New">bytes</FONT> item contains the <FONT FACE="Courier New">double</FONT> value stored in big-endian order. For the details of the representation of <FONT FACE="Courier New">double</FONT> in the Java class file, see Chapter 14, &quot;Floating Point Arithmetic.&quot;</P>
+<H3><P>The CONSTANT_Class_info Table</P>
+</H3><P>The <FONT FACE="Courier New">CONSTANT_Class_info</FONT> table represents a class or interface in symbolic references. All symbolic references, whether they refer to a class, interface, field, or method, include a <FONT FACE="Courier New">CONSTANT_Class_info</FONT> table. Table 6-14 shows the format of a <FONT FACE="Courier New">CONSTANT_Class_info</FONT> table.</P>
+<P>Table 6-14. Format of a <FONT FACE="Courier New">CONSTANT_Class_info</FONT> table</P>
+<TABLE WIDTH="500">
+<TR><TD VALIGN="TOP"><STRONG>Type</STRONG></TD><TD VALIGN="TOP"><STRONG>Name</STRONG></TD><TD VALIGN="TOP"><STRONG>Count</STRONG></TD></TR>
+<TR><TD VALIGN="TOP"><FONT FACE="Courier New">u1</FONT></TD><TD VALIGN="TOP"><FONT FACE="Courier New">tag</FONT></TD><TD VALIGN="TOP">1</TD></TR>
+<TR><TD VALIGN="TOP"><FONT FACE="Courier New">u2</FONT></TD><TD VALIGN="TOP"><FONT FACE="Courier New">name_index</FONT></TD><TD VALIGN="TOP">1</TD></TR>
+</TABLE>
+<I><P><FONT FACE="Courier New">tag</FONT></P>
+</I><P>The <FONT FACE="Courier New">tag</FONT> item has the value <FONT FACE="Courier New">CONSTANT_Class</FONT> (7).</P>
+<I><P><FONT FACE="Courier New">name_index</FONT></P>
+</I><P>The <FONT FACE="Courier New">name_index</FONT> item gives the index of a <FONT FACE="Courier New">CONSTANT_Utf8_info</FONT> table that contains a fully qualified name of a class or interface.</P>
+<H3><P>The CONSTANT_String_info Table</P>
+</H3><P>A <FONT FACE="Courier New">CONSTANT_String_info</FONT> represents a literal string value, which will be represented as an instance of class <FONT FACE="Courier New">java.lang.String</FONT>. This table is only used to represent literal strings. It is not used in symbolic references. Table 6-15 shows the format of a <FONT FACE="Courier New">CONSTANT_String_info</FONT> table.</P>
+<P>Table 6-15. Format of a <FONT FACE="Courier New">CONSTANT_String_info</FONT> table</P>
+<TABLE WIDTH="500">
+<TR><TD VALIGN="TOP"><STRONG>Type</STRONG></TD><TD VALIGN="TOP"><STRONG>Name </STRONG></TD><TD VALIGN="TOP"><STRONG>Count</STRONG></TD></TR>
+<TR><TD VALIGN="TOP"><FONT FACE="Courier New">u1</FONT></TD><TD VALIGN="TOP"><FONT FACE="Courier New">tag</FONT></TD><TD VALIGN="TOP">1</TD></TR>
+<TR><TD VALIGN="TOP"><FONT FACE="Courier New">u2</FONT></TD><TD VALIGN="TOP"><FONT FACE="Courier New">string_index</FONT></TD><TD VALIGN="TOP">1</TD></TR>
+</TABLE>
+<I><P><FONT FACE="Courier New">tag</FONT></P>
+</I><P>The <FONT FACE="Courier New">tag</FONT> item has the value <FONT FACE="Courier New">CONSTANT_String</FONT> (8).</P>
+<I><P><FONT FACE="Courier New">string_index</FONT></P>
+</I><P>The <FONT FACE="Courier New">string_index</FONT> item gives the index of a <FONT FACE="Courier New">CONSTANT_Utf8_info</FONT> entry that contains the value of the literal string.</P>
+<H3><P>The CONSTANT_Fieldref_info Table</P>
+</H3><P>The <FONT FACE="Courier New">CONSTANT_Fieldref_info</FONT> table represents a symbolic reference to a field. Table 6-16 shows the format of a <FONT FACE="Courier New">CONSTANT_Fieldref_info</FONT> table.</P>
+<P>Table 6-16. Format of a <FONT FACE="Courier New">CONSTANT_Fieldref_info</FONT> table</P>
+<TABLE WIDTH="500">
+<TR><TD VALIGN="TOP"><STRONG>Type</STRONG></TD><TD VALIGN="TOP"><STRONG>Name </STRONG></TD><TD VALIGN="TOP"><STRONG>Count</STRONG></TD></TR>
+<TR><TD VALIGN="TOP"><FONT FACE="Courier New">u1</FONT></TD><TD VALIGN="TOP"><FONT FACE="Courier New">tag</FONT></TD><TD VALIGN="TOP">1</TD></TR>
+<TR><TD VALIGN="TOP"><FONT FACE="Courier New">u2</FONT></TD><TD VALIGN="TOP"><FONT FACE="Courier New">class_index</FONT></TD><TD VALIGN="TOP">1</TD></TR>
+<TR><TD VALIGN="TOP"><FONT FACE="Courier New">u2</FONT></TD><TD VALIGN="TOP"><FONT FACE="Courier New">name_and_type_index</FONT></TD><TD VALIGN="TOP">1</TD></TR>
+</TABLE>
+<I><P><FONT FACE="Courier New">tag</FONT></P>
+</I><P>The <FONT FACE="Courier New">tag</FONT> item has the value <FONT FACE="Courier New">CONSTANT_Fieldref</FONT> (9).</P>
+<I><P><FONT FACE="Courier New">class_index</FONT></P>
+</I><P>The <FONT FACE="Courier New">class_index</FONT> gives the index of the <FONT FACE="Courier New">CONSTANT_Class_info</FONT> entry for the class that declares the referenced field.</P>
+<P>Note that the <FONT FACE="Courier New">CONSTANT_Class_info</FONT> specified by <FONT FACE="Courier New">class_index</FONT> must represent a class and not an interface. Although interfaces can declare fields, those fields are by definition public, static, and final. As mentioned in earlier chapters, class files do not contain symbolic references to static final fields of other classes. Instead, class files contain a copy of the constant value of any static final fields it uses. For example, if a class uses a static final field of type <FONT FACE="Courier New">float</FONT> that is declared in an interface, the class would have a <FONT FACE="Courier New">CONSTANT_Float_info</FONT> table in its own constant pool that stores the <FONT FACE="Courier New">float</FONT> value. For more information about this special treatment of static final fields, see Chapter 8, &quot;The Linking Model.&quot;</P>
+<I><P><FONT FACE="Courier New">name_and_type_index</FONT></P>
+</I><P>The <FONT FACE="Courier New">name_and_type_index</FONT> gives the index of a <FONT FACE="Courier New">CONSTANT_NameAndType_info</FONT> entry that gives the fieldís simple name and descriptor.</P>
+<H3><P>The CONSTANT_Methodref_info Table</P>
+</H3><P>The <FONT FACE="Courier New">CONSTANT_Methodref_info</FONT> table represents a symbolic reference to a method declared in a class (not in an interface). Table 6-17 shows the format of a <FONT FACE="Courier New">CONSTANT_Methodref_info</FONT> table.</P>
+<P>Table 6-17. Format of a <FONT FACE="Courier New">CONSTANT_Methodref_info</FONT> table</P>
+<TABLE WIDTH="500">
+<TR><TD VALIGN="TOP"><STRONG>Type</STRONG></TD><TD VALIGN="TOP"><STRONG>Name </STRONG></TD><TD VALIGN="TOP"><STRONG>Count</STRONG></TD></TR>
+<TR><TD VALIGN="TOP"><FONT FACE="Courier New">u1</FONT></TD><TD VALIGN="TOP"><FONT FACE="Courier New">tag</FONT></TD><TD VALIGN="TOP">1</TD></TR>
+<TR><TD VALIGN="TOP"><FONT FACE="Courier New">u2</FONT></TD><TD VALIGN="TOP"><FONT FACE="Courier New">class_index</FONT></TD><TD VALIGN="TOP">1</TD></TR>
+<TR><TD VALIGN="TOP"><FONT FACE="Courier New">u2</FONT></TD><TD VALIGN="TOP"><FONT FACE="Courier New">name_and_type_index</FONT></TD><TD VALIGN="TOP">1</TD></TR>
+</TABLE>
+<I><P><FONT FACE="Courier New">tag</FONT></P>
+</I><P>The <FONT FACE="Courier New">tag</FONT> item has the value <FONT FACE="Courier New">CONSTANT_Methodref</FONT> (10).</P>
+<I><P><FONT FACE="Courier New">class_index</FONT></P>
+</I><P>The <FONT FACE="Courier New">class_index</FONT> gives the index of a <FONT FACE="Courier New">CONSTANT_Class_info</FONT> entry for the class that declares the referenced method. The <FONT FACE="Courier New">CONSTANT_Class_info</FONT> table specified by <FONT FACE="Courier New">class_index</FONT> must be a class and not an interface. Symbolic references to methods declared in interfaces use <FONT FACE="Courier New">CONSTANT_InterfaceMethodref</FONT>.</P>
+<I><P><FONT FACE="Courier New">name_and_type_index</FONT></P>
+</I><P>The <FONT FACE="Courier New">name_and_type_index</FONT> gives the index of a <FONT FACE="Courier New">CONSTANT_NameAndType_info</FONT> entry that gives the methodís simple name and descriptor.</P>
+<H3><P>The CONSTANT_InterfaceMethodref_info Table</P>
+</H3><P>The <FONT FACE="Courier New">CONSTANT_InterfaceMethodref_info</FONT> table represents a symbolic reference to a method declared in an interface (not in a class). Table 6-18 shows the format of a <FONT FACE="Courier New">CONSTANT_InterfaceMethodref_info</FONT> table.</P>
+<P>Table 6-18. Format of a <FONT FACE="Courier New">CONSTANT_InterfaceMethodref_info</FONT> table</P>
+<TABLE WIDTH="500">
+<TR><TD VALIGN="TOP"><STRONG>Type</STRONG></TD><TD VALIGN="TOP"><STRONG>Name </STRONG></TD><TD VALIGN="TOP"><STRONG>Count</STRONG></TD></TR>
+<TR><TD VALIGN="TOP"><FONT FACE="Courier New">u1</FONT></TD><TD VALIGN="TOP"><FONT FACE="Courier New">tag</FONT></TD><TD VALIGN="TOP">1</TD></TR>
+<TR><TD VALIGN="TOP"><FONT FACE="Courier New">u2</FONT></TD><TD VALIGN="TOP"><FONT FACE="Courier New">class_index</FONT></TD><TD VALIGN="TOP">1</TD></TR>
+<TR><TD VALIGN="TOP"><FONT FACE="Courier New">u2</FONT></TD><TD VALIGN="TOP"><FONT FACE="Courier New">name_and_type_index</FONT></TD><TD VALIGN="TOP">1</TD></TR>
+</TABLE>
+<I><P><FONT FACE="Courier New">tag</FONT></P>
+</I><P>The <FONT FACE="Courier New">tag</FONT> item has the value <FONT FACE="Courier New">CONSTANT_InterfaceMethodref</FONT> (11).</P>
+<I><P><FONT FACE="Courier New">class_index</FONT></P>
+</I><P>The <FONT FACE="Courier New">class_index</FONT> gives the index of a <FONT FACE="Courier New">CONSTANT_Class_info</FONT> entry for the interface that declares the referenced method. The <FONT FACE="Courier New">CONSTANT_Class_info</FONT> table specified by <FONT FACE="Courier New">class_index</FONT> must be an interface and not a class. Symbolic references to methods declared in classes use <FONT FACE="Courier New">CONSTANT_Methodref</FONT>.</P>
+<I><P><FONT FACE="Courier New">name_and_type_index</FONT></P>
+</I><P>The <FONT FACE="Courier New">name_and_type_index</FONT> gives the index of a <FONT FACE="Courier New">CONSTANT_NameAndType_info</FONT> entry that gives the methodís simple name and descriptor.</P>
+<H3><P>The CONSTANT_NameAndType_info Table</P>
+</H3><P>The <FONT FACE="Courier New">CONSTANT_NameAndType_info</FONT> table forms part of a symbolic reference to a field or method. This table gives constant pool entries of the simple name and the descriptor of the referenced field or method. Table 6-19 shows the format of a <FONT FACE="Courier New">CONSTANT_NameAndType_info</FONT> table.</P>
+<P>Table 6-19. Format of a <FONT FACE="Courier New">CONSTANT_NameAndType_info</FONT> table</P>
+<TABLE WIDTH="500">
+<TR><TD VALIGN="TOP"><STRONG>Type</STRONG></TD><TD VALIGN="TOP"><STRONG>Name </STRONG></TD><TD VALIGN="TOP"><STRONG>Count</STRONG></TD></TR>
+<TR><TD VALIGN="TOP"><FONT FACE="Courier New">u1</FONT></TD><TD VALIGN="TOP"><FONT FACE="Courier New">tag</FONT></TD><TD VALIGN="TOP">1</TD></TR>
+<TR><TD VALIGN="TOP"><FONT FACE="Courier New">u2</FONT></TD><TD VALIGN="TOP"><FONT FACE="Courier New">name_index</FONT></TD><TD VALIGN="TOP">1</TD></TR>
+<TR><TD VALIGN="TOP"><FONT FACE="Courier New">u2</FONT></TD><TD VALIGN="TOP"><FONT FACE="Courier New">descriptor_index</FONT></TD><TD VALIGN="TOP">1</TD></TR>
+</TABLE>
+<I><P><FONT FACE="Courier New">tag</FONT></P>
+</I><P>The <FONT FACE="Courier New">tag</FONT> item has the value <FONT FACE="Courier New">CONSTANT_NameAndType</FONT> (12).</P>
+<I><P><FONT FACE="Courier New">name_index</FONT></P>
+</I><P>The <FONT FACE="Courier New">name_index</FONT> gives the index of a <FONT FACE="Courier New">CONSTANT_Utf8_info</FONT> entry that gives the name of the field or method.</P>
+<I><P><FONT FACE="Courier New">descriptor_index</FONT></P>
+</I><P>The <FONT FACE="Courier New">descriptor_index</FONT> gives the index of a <FONT FACE="Courier New">CONSTANT_Utf8_info</FONT> entry that gives the descriptor of the field or method.</P>
+<H3><EM><P>Fields</P>
+</EM></H3><P>Each field (class variable and instance variable) declared in a class or interface is described by a <FONT FACE="Courier New">field_info</FONT> table in the class file. The format of the <FONT FACE="Courier New">field_info</FONT> table is shown in Table 6-20.</P>
+<P>Table 6-20. Format of a <FONT FACE="Courier New">field_info</FONT> table</P>
+<TABLE WIDTH="500">
+<TR><TD VALIGN="TOP"><STRONG>Type</STRONG></TD><TD VALIGN="TOP"><STRONG>Name </STRONG></TD><TD VALIGN="TOP"><STRONG>Count</STRONG></TD></TR>
+<TR><TD VALIGN="TOP"><FONT FACE="Courier New">u2</FONT></TD><TD VALIGN="TOP"><FONT FACE="Courier New">access_flags</FONT></TD><TD VALIGN="TOP">1</TD></TR>
+<TR><TD VALIGN="TOP"><FONT FACE="Courier New">u2</FONT></TD><TD VALIGN="TOP"><FONT FACE="Courier New">name_index</FONT></TD><TD VALIGN="TOP">1</TD></TR>
+<TR><TD VALIGN="TOP"><FONT FACE="Courier New">u2</FONT></TD><TD VALIGN="TOP"><FONT FACE="Courier New">descriptor_index</FONT></TD><TD VALIGN="TOP">1</TD></TR>
+<TR><TD VALIGN="TOP"><FONT FACE="Courier New">u2</FONT></TD><TD VALIGN="TOP"><FONT FACE="Courier New">attributes_count</FONT></TD><TD VALIGN="TOP">1</TD></TR>
+<TR><TD VALIGN="TOP"><FONT FACE="Courier New">attribute_info</FONT></TD><TD VALIGN="TOP"><FONT FACE="Courier New">attributes</FONT> </TD><TD VALIGN="TOP"><FONT FACE="Courier New">attributes_count</FONT></TD></TR>
+</TABLE>
+<H3><P>access_flags</P>
+</H3><P>The modifiers used in declaring the field are placed into the fieldís <FONT FACE="Courier New">access_flags</FONT> item. Table 6-21 shows the bits used by each flag.</P>
+<P>Table 6-21. Flags in the <FONT FACE="Courier New">access_flags</FONT> item of <FONT FACE="Courier New">field_info</FONT> tables</P>
+<TABLE WIDTH="500">
+<TR><TD VALIGN="TOP"><STRONG>Flag Name</STRONG></TD><TD VALIGN="TOP"><STRONG>Value</STRONG></TD><TD VALIGN="TOP"><STRONG>Meaning if Set</STRONG></TD><TD VALIGN="TOP"><STRONG>Set By</STRONG></TD></TR>
+<TR><TD VALIGN="TOP"><FONT FACE="Courier New">ACC_PUBLIC</FONT></TD><TD VALIGN="TOP">0x0001</TD><TD VALIGN="TOP">Field is public</TD><TD VALIGN="TOP">Classes and interfaces</TD></TR>
+<TR><TD VALIGN="TOP"><FONT FACE="Courier New">ACC_PRIVATE</FONT></TD><TD VALIGN="TOP">0x0002</TD><TD VALIGN="TOP">Field is private</TD><TD VALIGN="TOP">Classes only</TD></TR>
+<TR><TD VALIGN="TOP"><FONT FACE="Courier New">ACC_PROTECTED</FONT></TD><TD VALIGN="TOP">0x0004</TD><TD VALIGN="TOP">Field is protected</TD><TD VALIGN="TOP">Classes only</TD></TR>
+<TR><TD VALIGN="TOP"><FONT FACE="Courier New">ACC_STATIC</FONT></TD><TD VALIGN="TOP">0x0008</TD><TD VALIGN="TOP">Field is static</TD><TD VALIGN="TOP">Classes and interfaces</TD></TR>
+<TR><TD VALIGN="TOP"><FONT FACE="Courier New">ACC_FINAL</FONT></TD><TD VALIGN="TOP">0x0010</TD><TD VALIGN="TOP">Field is final</TD><TD VALIGN="TOP">Classes and interfaces</TD></TR>
+<TR><TD VALIGN="TOP"><FONT FACE="Courier New">ACC_VOLATILE</FONT></TD><TD VALIGN="TOP">0x0040</TD><TD VALIGN="TOP">Field is volatile</TD><TD VALIGN="TOP">Classes only</TD></TR>
+<TR><TD VALIGN="TOP"><FONT FACE="Courier New">ACC_TRANSIENT</FONT></TD><TD VALIGN="TOP">0x0080</TD><TD VALIGN="TOP">Field is transient</TD><TD VALIGN="TOP">Classes only</TD></TR>
+</TABLE>
+<P>For fields declared in a class (not an interface), at most one of <FONT FACE="Courier New">ACC_PUBLIC</FONT>, <FONT FACE="Courier New">ACC_PRIVATE</FONT>, and <FONT FACE="Courier New">ACC_PROTECTED</FONT> may be set. <FONT FACE="Courier New">ACC_FINAL</FONT> and <FONT FACE="Courier New">ACC_VOLATILE</FONT> must not both be set. All fields declared in interfaces must have the <FONT FACE="Courier New">ACC_PUBLIC</FONT>, <FONT FACE="Courier New">ACC_STATIC</FONT>, and <FONT FACE="Courier New">ACC_FINAL</FONT> flags set.</P>
+<P>All unused bits in <FONT FACE="Courier New">access_flags</FONT> must be set to zero and ignored by Java Virtual Machine implementations.</P>
+<H3><P>name_index</P>
+</H3><P>The <FONT FACE="Courier New">name_index</FONT> gives the index of a <FONT FACE="Courier New">CONSTANT_Utf8_info</FONT> entry that gives the simple (not fully qualified) name of the field.</P>
+<H3><P>descriptor_index</P>
+</H3><P>The <FONT FACE="Courier New">descriptor_index</FONT> gives the index of a <FONT FACE="Courier New">CONSTANT_Utf8_info</FONT> entry that gives the descriptor of the field.</P>
+<H3><P>attributes_count and attributes</P>
+</H3><P>The <FONT FACE="Courier New">attributes</FONT> item is a list of <FONT FACE="Courier New">attribute_info</FONT> tables. The <FONT FACE="Courier New">attributes_count</FONT> indicates the number of <FONT FACE="Courier New">attribute_info</FONT> tables in the list. Two kinds of attributes defined by the Java Virtual Machine specification that may appear in this item are <FONT FACE="Courier New">ConstantValue</FONT> and <FONT FACE="Courier New">Synthetic</FONT>. These two attributes are described in detail later in this chapter.</P>
+<H3><EM><P>Methods</P>
+</EM></H3><P>Each method declared in a class or interface or generated by the compiler is described in the class file by a <FONT FACE="Courier New">method_info</FONT> table. The two types of compiler-generated methods that may appear in class files are instance initialization methods (named <FONT FACE="Courier New">&lt;init</FONT>) and class initialization methods (named <FONT FACE="Courier New">&lt;clinit</FONT>). For more information on the compiler-generated methods, see Chapter 7, &quot;The Lifetime of a Class.&quot; The format of the <FONT FACE="Courier New">method_info</FONT> table is shown in Table 6-22.</P>
+<P>Table 6-22. Format of a <FONT FACE="Courier New">method_info</FONT> table</P>
+<TABLE WIDTH="500">
+<TR><TD VALIGN="TOP"><STRONG>Type</STRONG></TD><TD VALIGN="TOP"><STRONG>Name </STRONG></TD><TD VALIGN="TOP"><STRONG>Count</STRONG></TD></TR>
+<TR><TD VALIGN="TOP"><FONT FACE="Courier New">u2</FONT></TD><TD VALIGN="TOP"><FONT FACE="Courier New">access_flags</FONT></TD><TD VALIGN="TOP">1</TD></TR>
+<TR><TD VALIGN="TOP"><FONT FACE="Courier New">u2</FONT></TD><TD VALIGN="TOP"><FONT FACE="Courier New">name_index</FONT></TD><TD VALIGN="TOP">1</TD></TR>
+<TR><TD VALIGN="TOP"><FONT FACE="Courier New">u2</FONT></TD><TD VALIGN="TOP"><FONT FACE="Courier New">descriptor_index</FONT></TD><TD VALIGN="TOP">1</TD></TR>
+<TR><TD VALIGN="TOP"><FONT FACE="Courier New">u2</FONT></TD><TD VALIGN="TOP"><FONT FACE="Courier New">attributes_count</FONT></TD><TD VALIGN="TOP">1</TD></TR>
+<TR><TD VALIGN="TOP"><FONT FACE="Courier New">attribute_info</FONT></TD><TD VALIGN="TOP"><FONT FACE="Courier New">attributes</FONT> </TD><TD VALIGN="TOP"><FONT FACE="Courier New">attributes_count</FONT></TD></TR>
+</TABLE>
+<H3><P>access_flags</P>
+</H3><P>The modifiers used in declaring the method are placed into the methodís <FONT FACE="Courier New">access_flags</FONT> item. Table 6-23 shows the bits used by each flag.</P>
+<P>Table 6-23. Flags in the <FONT FACE="Courier New">access_flags</FONT> item of <FONT FACE="Courier New">method_info</FONT> tables</P>
+<TABLE WIDTH="500">
+<TR><TD VALIGN="TOP"><STRONG>Flag Name</STRONG></TD><TD VALIGN="TOP"><STRONG>Value</STRONG></TD><TD VALIGN="TOP"><STRONG>Meaning if Set</STRONG></TD><TD VALIGN="TOP"><STRONG>Set By</STRONG></TD></TR>
+<TR><TD VALIGN="TOP"><FONT FACE="Courier New">ACC_PUBLIC</FONT></TD><TD VALIGN="TOP">0x0001</TD><TD VALIGN="TOP">Method is public</TD><TD VALIGN="TOP">Classes and all methods of interfaces</TD></TR>
+<TR><TD VALIGN="TOP"><FONT FACE="Courier New">ACC_PRIVATE</FONT></TD><TD VALIGN="TOP">0x0002</TD><TD VALIGN="TOP">Method is private</TD><TD VALIGN="TOP">Classes only</TD></TR>
+<TR><TD VALIGN="TOP"><FONT FACE="Courier New">ACC_PROTECTED</FONT></TD><TD VALIGN="TOP">0x0004</TD><TD VALIGN="TOP">Method is protected</TD><TD VALIGN="TOP">Classes only</TD></TR>
+<TR><TD VALIGN="TOP"><FONT FACE="Courier New">ACC_STATIC</FONT></TD><TD VALIGN="TOP">0x0008</TD><TD VALIGN="TOP">Method is static</TD><TD VALIGN="TOP">Classes only</TD></TR>
+<TR><TD VALIGN="TOP"><FONT FACE="Courier New">ACC_FINAL</FONT></TD><TD VALIGN="TOP">0x0010</TD><TD VALIGN="TOP">Method is final</TD><TD VALIGN="TOP">Classes only</TD></TR>
+<TR><TD VALIGN="TOP"><FONT FACE="Courier New">ACC_SYNCHRONIZED</FONT></TD><TD VALIGN="TOP">0x0020</TD><TD VALIGN="TOP">Method is synchronized</TD><TD VALIGN="TOP">Classes only</TD></TR>
+<TR><TD VALIGN="TOP"><FONT FACE="Courier New">ACC_NATIVE</FONT></TD><TD VALIGN="TOP">0x0100</TD><TD VALIGN="TOP">Method is native</TD><TD VALIGN="TOP">Classes only</TD></TR>
+<TR><TD VALIGN="TOP"><FONT FACE="Courier New">ACC_ABSTRACT</FONT></TD><TD VALIGN="TOP">0x0400</TD><TD VALIGN="TOP">Method is abstract</TD><TD VALIGN="TOP">Classes and all methods of interfaces</TD></TR>
+</TABLE>
+<P>For methods declared in a class (not an interface), at most one of <FONT FACE="Courier New">ACC_PUBLIC</FONT>, <FONT FACE="Courier New">ACC_PRIVATE</FONT>, and <FONT FACE="Courier New">ACC_PROTECTED</FONT> may be set. If a methodís <FONT FACE="Courier New">ACC_FINAL</FONT> flag is set, then its <FONT FACE="Courier New">ACC_SYNCHRONIZED</FONT>, <FONT FACE="Courier New">ACC_NATIVE</FONT>, and <FONT FACE="Courier New">ACC_ABSTRACT</FONT> flags must not be set. If a methodís <FONT FACE="Courier New">ACC_PRIVATE</FONT> or <FONT FACE="Courier New">ACC_STATIC</FONT> flag is set, then its <FONT FACE="Courier New">ACC_ABSTRACT</FONT> flag must not be set. All methods declared in interfaces must have their <FONT FACE="Courier New">ACC_PUBLIC</FONT> and <FONT FACE="Courier New">ACC_ABSTRACT</FONT> flags set.</P>
+<P>Instance initialization (<FONT FACE="Courier New">&lt;init</FONT>) methods may only use flags <FONT FACE="Courier New">ACC_PUBLIC</FONT>, <FONT FACE="Courier New">ACC_PRIVATE</FONT>, and <FONT FACE="Courier New">ACC_PROTECTED</FONT>. Because class initialization (<FONT FACE="Courier New">&lt;clinit</FONT>) methods are invoked by the Java Virtual Machine, never directly by Java bytecodes, the the <FONT FACE="Courier New">access_flags</FONT> for <FONT FACE="Courier New">&lt;clinit</FONT> methods is ignored.</P>
+<P>All unused bits in <FONT FACE="Courier New">access_flags</FONT> must be set to zero and ignored by Java Virtual Machine implementations.</P>
+<H3><P>name_index</P>
+</H3><P>The <FONT FACE="Courier New">name_index</FONT> gives the index of a <FONT FACE="Courier New">CONSTANT_Utf8_info</FONT> entry that gives the simple (not fully qualified) name of the method.</P>
+<H3><P>descriptor_index</P>
+</H3><P>The <FONT FACE="Courier New">descriptor_index</FONT> gives the index of a <FONT FACE="Courier New">CONSTANT_Utf8_info</FONT> entry that gives the descriptor of the method.</P>
+<H3><P>attributes_count and attributes</P>
+</H3><P>The <FONT FACE="Courier New">attributes</FONT> item is a list of <FONT FACE="Courier New">attribute_info</FONT> tables. The <FONT FACE="Courier New">attributes_count</FONT> indicates the number of <FONT FACE="Courier New">attribute_info</FONT> tables in the list. Three kinds of attributes that are defined by the Java Virtual Machine specification that may appear in this item are <FONT FACE="Courier New">Code</FONT>, <FONT FACE="Courier New">Exceptions</FONT>, and <FONT FACE="Courier New">Synthetic</FONT>. These three attributes are described in detail later in this chapter.</P>
+<H3><EM><P>Attributes</P>
+</EM></H3><P>As mentioned above, attributes appear in several places inside a Java class file. They can appear in the <FONT FACE="Courier New">ClassFile</FONT>, <FONT FACE="Courier New">field_info</FONT>, <FONT FACE="Courier New">method_info</FONT>, and <FONT FACE="Courier New">Code_attribute</FONT> tables. The <FONT FACE="Courier New">Code_attribute</FONT> table, an attribute itself, is described later in this section.</P>
+<P>Every attribute follows the same general format of the <FONT FACE="Courier New">attribute_info</FONT> table, shown in Table 6-24. The first two bytes of an attribute, the <FONT FACE="Courier New">attribute_name_index</FONT>, form an index into the constant pool of a <FONT FACE="Courier New">CONSTANT_Utf8_info</FONT> table that contains the string name of the attribute. Each <FONT FACE="Courier New">attribute_info</FONT>, therefore, identifies its &quot;type&quot; by the first item in its table much like <FONT FACE="Courier New">cp_info</FONT> tables identify their type by the initial <FONT FACE="Courier New">tag</FONT> byte. The difference is that whereas the type of a <FONT FACE="Courier New">cp_info</FONT> table is indicated by an unsigned byte value, such as 3 (<FONT FACE="Courier New">CONSTANT_Integer_info</FONT>), the type of an <FONT FACE="Courier New">attribute_info</FONT> table is indicated by a string.</P>
+<P>Following the <FONT FACE="Courier New">attribute_name_index</FONT> is a four-byte <FONT FACE="Courier New">attribute_length</FONT> item, which gives the length of the entire <FONT FACE="Courier New">attribute_info</FONT> table minus the initial six bytes. This length is necessary because anyone, following certain rules (outlined below), is allowed to add attributes to a Java class file. Java Virtual Machine implementations are allowed to recognize new attributes. Implementations must ignore any attributes they donít recognize. The <FONT FACE="Courier New">attribute_length</FONT> allows virtual machines to skip unrecognized attributes as they parse the class file.</P>
+<P>Anyone who wishes to add a new attribute to a Java class file must follow these two rules:</P>
+<OL><LI>Any attribute that is not predefined by the specification must not affect the semantics of class or interface types. New attributes can only add more information to the class file, such as information used during debugging.<P>
+<LI>The attribute must be named using the reverse Internet domain name scheme that is defined for package naming in the Java Language Specification. For example, if your Internet domain name were <FONT FACE="Courier New">artima.com</FONT> and you wished to create a new attribute named <FONT FACE="Courier New">CompilerVersion</FONT>, you would name the attribute: <FONT FACE="Courier New">COM.artima.CompilerVersion</FONT>.</OL>
+<P>Table 6-24. Format of an <FONT FACE="Courier New">attribute_info</FONT> table</P>
+<TABLE WIDTH="500">
+<TR><TD VALIGN="TOP"><STRONG>Type</STRONG></TD><TD VALIGN="TOP"><STRONG>Name </STRONG></TD><TD VALIGN="TOP"><STRONG>Count</STRONG></TD></TR>
+<TR><TD VALIGN="TOP"><FONT FACE="Courier New">u2</FONT></TD><TD VALIGN="TOP"><FONT FACE="Courier New">attribute_name_index</FONT></TD><TD VALIGN="TOP">1</TD></TR>
+<TR><TD VALIGN="TOP"><FONT FACE="Courier New">u4</FONT></TD><TD VALIGN="TOP"><FONT FACE="Courier New">attribute_length</FONT></TD><TD VALIGN="TOP">1</TD></TR>
+<TR><TD VALIGN="TOP"><FONT FACE="Courier New">u1</FONT></TD><TD VALIGN="TOP"><FONT FACE="Courier New">info</FONT></TD><TD VALIGN="TOP"><FONT FACE="Courier New">attribute_length</FONT></TD></TR>
+</TABLE>
+<H3><P>attribute_name_index</P>
+</H3><P>The <FONT FACE="Courier New">attribute_name_index</FONT> gives the index in the constant pool of a <FONT FACE="Courier New">CONSTANT_Utf8_info</FONT> entry that contains the name of the attribute.</P>
+<H3><P>attribute_length</P>
+</H3><P>The <FONT FACE="Courier New">attribute_length</FONT> item indicates the length in bytes of the attribute data excluding the initial six bytes that contain the <FONT FACE="Courier New">attribute_name_index</FONT> and <FONT FACE="Courier New">attribute_length</FONT>.</P>
+<H3><P>info</P>
+</H3><P>The <FONT FACE="Courier New">info</FONT> item contains the attribute data.</P>
+<H3><EM><P>Attributes</FONT></P>
+</EM></H3><P>The Java Virtual Machine specification defines eight types of attributes, shown in Table 6-25. All Java Virtual Machine implementations must recognize three of these attributes: <FONT FACE="Courier New">Code</FONT>, <FONT FACE="Courier New">ConstantValue</FONT>, and <FONT FACE="Courier New">Exceptions</FONT>. Implementations can choose whether to recognize or ignore the other predefined attributes. (The <FONT FACE="Courier New">InnerClasses</FONT> and <FONT FACE="Courier New">Synthetic</FONT> attributes were added in Java 1.1). All of these predefined attributes are described in detail later in this chapter.</P>
+<P>Table 6-25. Types of <FONT FACE="Courier New">attribute_info</FONT> tables defined by the specification</P>
+<TABLE WIDTH="500">
+<TR><TD VALIGN="TOP"><STRONG>Name</STRONG></TD><TD VALIGN="TOP"><STRONG>Used By</STRONG></TD><TD VALIGN="TOP"><STRONG>Description</STRONG></TD></TR>
+<TR><TD VALIGN="TOP"><FONT FACE="Courier New">Code</FONT></TD><TD VALIGN="TOP"><FONT FACE="Courier New">method_info</FONT></TD><TD VALIGN="TOP">The bytecodes and other data for one method</TD></TR>
+<TR><TD VALIGN="TOP"><FONT FACE="Courier New">ConstantValue</FONT></TD><TD VALIGN="TOP"><FONT FACE="Courier New">field_info</FONT></TD><TD VALIGN="TOP">The value of a final variable</TD></TR>
+<TR><TD VALIGN="TOP"><FONT FACE="Courier New">Exceptions</FONT></TD><TD VALIGN="TOP"><FONT FACE="Courier New">method_info</FONT></TD><TD VALIGN="TOP">The checked exceptions that a method may throw</TD></TR>
+<TR><TD VALIGN="TOP"><FONT FACE="Courier New">InnerClasses</FONT></TD><TD VALIGN="TOP"><FONT FACE="Courier New">ClassFile</FONT></TD><TD VALIGN="TOP">A description of the inner classes defined inside a class</TD></TR>
+<TR><TD VALIGN="TOP"><FONT FACE="Courier New">LineNumberTable</FONT></TD><TD VALIGN="TOP"><FONT FACE="Courier New">Code_attribute</FONT></TD><TD VALIGN="TOP">A mapping of line numbers to bytecodes for one method</TD></TR>
+<TR><TD VALIGN="TOP"><FONT FACE="Courier New">LocalVariableTable</FONT></TD><TD VALIGN="TOP"><FONT FACE="Courier New">Code_attribute</FONT></TD><TD VALIGN="TOP">A description of the local variables for one method</TD></TR>
+<TR><TD VALIGN="TOP"><FONT FACE="Courier New">SourceFile</FONT></TD><TD VALIGN="TOP"><FONT FACE="Courier New">ClassFile</FONT></TD><TD VALIGN="TOP">The name of the source file</TD></TR>
+<TR><TD VALIGN="TOP"><FONT FACE="Courier New">Synthetic</FONT></TD><TD VALIGN="TOP"><FONT FACE="Courier New">field_info</FONT>, <FONT FACE="Courier New">method_info</FONT></TD><TD VALIGN="TOP">An indicator that a field or method was generated by the compiler</TD></TR>
+</TABLE>
+<H3><P>The Code Attribute</P>
+</H3><P>One <FONT FACE="Courier New">Code_attribute</FONT> table appears in the <FONT FACE="Courier New">method_info</FONT> table of every method that is not abstract or native. The format of a <FONT FACE="Courier New">Code_attribute</FONT> table is shown in Table 6-26.</P>
+<P>Table 6-26. Format of a <FONT FACE="Courier New">Code_attribute</FONT> table</P>
+<TABLE WIDTH="500">
+<TR><TD VALIGN="TOP"><STRONG>Type</STRONG></TD><TD VALIGN="TOP"><STRONG>Name </STRONG></TD><TD VALIGN="TOP"><STRONG>Count</STRONG></TD></TR>
+<TR><TD VALIGN="TOP"><FONT FACE="Courier New">u2</FONT></TD><TD VALIGN="TOP"><FONT FACE="Courier New">attribute_name_index</FONT></TD><TD VALIGN="TOP">1</TD></TR>
+<TR><TD VALIGN="TOP"><FONT FACE="Courier New">u4</FONT></TD><TD VALIGN="TOP"><FONT FACE="Courier New">attribute_length</FONT></TD><TD VALIGN="TOP">1</TD></TR>
+<TR><TD VALIGN="TOP"><FONT FACE="Courier New">u2</FONT></TD><TD VALIGN="TOP"><FONT FACE="Courier New">max_stack</FONT></TD><TD VALIGN="TOP">1</TD></TR>
+<TR><TD VALIGN="TOP"><FONT FACE="Courier New">u2</FONT></TD><TD VALIGN="TOP"><FONT FACE="Courier New">max_locals</FONT></TD><TD VALIGN="TOP">1</TD></TR>
+<TR><TD VALIGN="TOP"><FONT FACE="Courier New">u4</FONT></TD><TD VALIGN="TOP"><FONT FACE="Courier New">code_length</FONT></TD><TD VALIGN="TOP">1</TD></TR>
+<TR><TD VALIGN="TOP"><FONT FACE="Courier New">u1</FONT></TD><TD VALIGN="TOP"><FONT FACE="Courier New">code</FONT> </TD><TD VALIGN="TOP"><FONT FACE="Courier New">code_length</FONT></TD></TR>
+<TR><TD VALIGN="TOP"><FONT FACE="Courier New">u2</FONT></TD><TD VALIGN="TOP"><FONT FACE="Courier New">exception_table_length</FONT></TD><TD VALIGN="TOP">1</TD></TR>
+<TR><TD VALIGN="TOP"><FONT FACE="Courier New">exception_info</TD><TD VALIGN="TOP">exception_table </TD><TD VALIGN="TOP">exception_table_length</TD></TR>
+</FONT><TR><TD VALIGN="TOP"><FONT FACE="Courier New">u2</FONT></TD><TD VALIGN="TOP"><FONT FACE="Courier New">attributes_count</FONT></TD><TD VALIGN="TOP">1</TD></TR>
+<TR><TD VALIGN="TOP"><FONT FACE="Courier New">attribute_info</FONT></TD><TD VALIGN="TOP"><FONT FACE="Courier New">attributes</FONT> </TD><TD VALIGN="TOP"><FONT FACE="Courier New">attributes_count</FONT></TD></TR>
+</TABLE>
+<I><P><FONT FACE="Courier New">attribute_name_index</FONT></P>
+</I><P>The <FONT FACE="Courier New">attribute_name_index</FONT> gives the index in the constant pool of a <FONT FACE="Courier New">CONSTANT_Utf8_info</FONT> entry that contains the string <FONT FACE="Courier New">"Code"</FONT>.</P>
+<I><P><FONT FACE="Courier New">attribute_length</FONT></P>
+</I><P>The <FONT FACE="Courier New">attribute_length</FONT> item gives the length in bytes of the <FONT FACE="Courier New">Code</FONT> attribute excluding the initial six bytes that contain the <FONT FACE="Courier New">attribute_name_index</FONT> and <FONT FACE="Courier New">attribute_length</FONT> items.</P>
+<I><P><FONT FACE="Courier New">max_stack</FONT></P>
+</I><P>The <FONT FACE="Courier New">max_stack</FONT> item gives the maximum number of words that will be on the operand stack of this method at any point during its execution.</P>
+<I><P><FONT FACE="Courier New">max_locals</FONT></P>
+</I><P>The <FONT FACE="Courier New">max_locals</FONT> item gives the number of words in the local variables that are required by this method.</P>
+<I><P><FONT FACE="Courier New">code_length</FONT> and <FONT FACE="Courier New">code</FONT></P>
+</I><P>The <FONT FACE="Courier New">code_length</FONT> item gives the length in bytes of the bytecode stream for this method. The bytecodes themselves appear in the <FONT FACE="Courier New">code</FONT> item.</P>
+<I><P><FONT FACE="Courier New">exception_table_length</FONT> and </I><FONT FACE="Courier New">exception_table</FONT></P>
+<P>The <FONT FACE="Courier New">exception_table</FONT> item is a list of <FONT FACE="Courier New">exception_info</FONT> tables. Each <FONT FACE="Courier New">exception_info</FONT> table describes one exception table entry. The <FONT FACE="Courier New">exception_table_length</FONT> item gives the number of <FONT FACE="Courier New">exception_info</FONT> tables that appear in the <FONT FACE="Courier New">exception_table</FONT> list. The order in which the <FONT FACE="Courier New">exception_info</FONT> tables appear in the list is the order in which the Java Virtual Machine will check for a matching exception handler (catch clause) if an exception is thrown while this method executes. The format of a <FONT FACE="Courier New">exception_info</FONT> table is shown in Table 6-27. For more information about exception tables, see Chapter 17, &quot;Exceptions.&quot;</P>
+<P>Table 6-27. Format of an <FONT FACE="Courier New">exception_info</FONT> table</P>
+<TABLE WIDTH="500">
+<TR><TD VALIGN="TOP"><STRONG>Type</STRONG></TD><TD VALIGN="TOP"><STRONG>Name </STRONG></TD><TD VALIGN="TOP"><STRONG>Count</STRONG></TD></TR>
+<TR><TD VALIGN="TOP"><FONT FACE="Courier New">u2</FONT></TD><TD VALIGN="TOP"><FONT FACE="Courier New">start_pc</FONT></TD><TD VALIGN="TOP">1</TD></TR>
+<TR><TD VALIGN="TOP"><FONT FACE="Courier New">u2</FONT></TD><TD VALIGN="TOP"><FONT FACE="Courier New">end_pc</FONT></TD><TD VALIGN="TOP">1</TD></TR>
+<TR><TD VALIGN="TOP"><FONT FACE="Courier New">u2</FONT></TD><TD VALIGN="TOP"><FONT FACE="Courier New">handler_pc</FONT></TD><TD VALIGN="TOP">1</TD></TR>
+<TR><TD VALIGN="TOP"><FONT FACE="Courier New">u2</FONT></TD><TD VALIGN="TOP"><FONT FACE="Courier New">catch_type</FONT></TD><TD VALIGN="TOP">1</TD></TR>
+</TABLE>
+<P><H4><FONT FACE="Courier New">start_pc</FONT></H4></P>
+<P>The <FONT FACE="Courier New">start_pc</FONT> item gives the offset from the beginning of the code array for the beginning of the range covered by this exception handler.</P>
+<P><H4><FONT FACE="Courier New">end_pc</FONT></H4></P>
+<P>The <FONT FACE="Courier New">end_pc</FONT> item gives the offset from the beginning of the code array for one byte past the end of the range covered by this exception handler.</P>
+<P><H4><FONT FACE="Courier New">handler_pc</FONT></H4></P>
+<P>The <FONT FACE="Courier New">handler_pc</FONT> item gives the offset from the beginning of the code array for the instruction to jump to (the first instruction of the exception handler) if a thrown exception is caught by this entry.</P>
+<P><H4><FONT FACE="Courier New">catch_type</FONT></H4></P>
+<P>The <FONT FACE="Courier New">catch_type</FONT> item gives the constant pool index of a <FONT FACE="Courier New">CONSTANT_Class_info</FONT> entry for the type of exception caught by this exception handler. The <FONT FACE="Courier New">CONSTANT_Class_info</FONT> entry must represent class <FONT FACE="Courier New">java.lang.Throwable</FONT> or one of its subclasses.</P>
+<P>If the value of <FONT FACE="Courier New">catch_type</FONT> is zero (which isnít a valid index into the constant pool, because the constant pool starts at index one), the exception handler handles all exceptions. A <FONT FACE="Courier New">catch_type</FONT> of zero is used to implement finally clauses. See Chapter 18, &quot;Finally Clauses,&quot; for more information about how finally clauses are implemented.</P>
+<I><P><FONT FACE="Courier New">attributes_count</FONT> and <FONT FACE="Courier New">attributes</FONT></P>
+</I><P>The <FONT FACE="Courier New">attributes</FONT> item is a list of <FONT FACE="Courier New">attribute_info</FONT> tables. The <FONT FACE="Courier New">attributes_count</FONT> indicates the number of <FONT FACE="Courier New">attribute_info</FONT> tables in the list. The two kinds of attributes defined by the Java Virtual Machine specification that may appear in this item are <FONT FACE="Courier New">LineNumberTable</FONT> and <FONT FACE="Courier New">LocalVariableTable</FONT>. These two attributes are described in detail later in this chapter.</P>
+<H3><P>The ConstantValue Attribute</P>
+</H3><P>The <FONT FACE="Courier New">ConstantValue</FONT> attribute appears in <FONT FACE="Courier New">field_info</FONT> tables for fields that have a constant value. In the <FONT FACE="Courier New">access_flags</FONT> of a <FONT FACE="Courier New">field_info</FONT> table that includes a <FONT FACE="Courier New">ConstantValue</FONT> attribute, the <FONT FACE="Courier New">ACC_STATIC</FONT> flag must be set. The <FONT FACE="Courier New">ACC_FINAL</FONT> flag may also be set, though it is not required. When the virtual machine initializes a field that has a <FONT FACE="Courier New">ConstantValue</FONT> attribute, it assigns the constant value to the field. The format of a <FONT FACE="Courier New">ConstantValue_attribute</FONT> table is shown in Table 6-28.</P>
+<P>Table 6-28. Format of a <FONT FACE="Courier New">ConstantValue_attribute</FONT> table</P>
+<TABLE WIDTH="500">
+<TR><TD VALIGN="TOP"><STRONG>Type</STRONG></TD><TD VALIGN="TOP"><STRONG>Name </STRONG></TD><TD VALIGN="TOP"><STRONG>Count</STRONG></TD></TR>
+<TR><TD VALIGN="TOP"><FONT FACE="Courier New">u2</FONT></TD><TD VALIGN="TOP"><FONT FACE="Courier New">attribute_name_index</FONT></TD><TD VALIGN="TOP">1</TD></TR>
+<TR><TD VALIGN="TOP"><FONT FACE="Courier New">u4</FONT></TD><TD VALIGN="TOP"><FONT FACE="Courier New">attribute_length</FONT></TD><TD VALIGN="TOP">1</TD></TR>
+<TR><TD VALIGN="TOP"><FONT FACE="Courier New">u2</FONT></TD><TD VALIGN="TOP"><FONT FACE="Courier New">constantvalue_index</FONT></TD><TD VALIGN="TOP">1</TD></TR>
+</TABLE>
+<I><P><FONT FACE="Courier New">attribute_name_index</FONT></P>
+</I><P>The <FONT FACE="Courier New">attribute_name_index</FONT> gives the index in the constant pool of a <FONT FACE="Courier New">CONSTANT_Utf8_info</FONT> entry that contains the string <FONT FACE="Courier New">"ConstantValue"</FONT>.</P>
+<I><P><FONT FACE="Courier New">attribute_length</FONT></P>
+</I><P>The <FONT FACE="Courier New">attribute_length</FONT> item of a <FONT FACE="Courier New">ConstantValue_attribute</FONT> is always 2.</P>
+<I><P><FONT FACE="Courier New">constantvalue_index</FONT></P>
+</I><P>The <FONT FACE="Courier New">constantvalue_index</FONT> item gives the index in the constant pool of an entry that gives a constant value. Table 6-29 shows the type of entry for each type of field.</P>
+<P>Table 6-29. Constant pool entry types for constant value attributes</P>
+<TABLE WIDTH="500">
+<TR><TD VALIGN="TOP"><STRONG><FONT FACE="Courier New">byte</FONT>, <FONT FACE="Courier New">short</FONT>, <FONT FACE="Courier New">char</FONT>, <FONT FACE="Courier New">int</FONT>, <FONT FACE="Courier New">boolean</FONT></STRONG></TD><TD VALIGN="TOP"><STRONG><FONT FACE="Courier New">CONSTANT_Integer_info</FONT></STRONG></TD></TR>
+<TR><TD VALIGN="TOP"><FONT FACE="Courier New">long</FONT></TD><TD VALIGN="TOP"><FONT FACE="Courier New">CONSTANT_Long_info</FONT></TD></TR>
+<TR><TD VALIGN="TOP"><FONT FACE="Courier New">float</FONT></TD><TD VALIGN="TOP"><FONT FACE="Courier New">CONSTANT_Float_info</FONT></TD></TR>
+<TR><TD VALIGN="TOP"><FONT FACE="Courier New">double</FONT></TD><TD VALIGN="TOP"><FONT FACE="Courier New">CONSTANT_Double_info</FONT></TD></TR>
+<TR><TD VALIGN="TOP"><FONT FACE="Courier New">java.lang.String</FONT></TD><TD VALIGN="TOP"><FONT FACE="Courier New">CONSTANT_String_info</FONT></TD></TR>
+</TABLE>
+<H3><P>The Exceptions Attribute</P>
+</H3><P>The <FONT FACE="Courier New">Exceptions</FONT> attribute lists the checked exceptions that a method may throw. One <FONT FACE="Courier New">Exceptions_attribute</FONT> table appears in the <FONT FACE="Courier New">method_info</FONT> table of every method that may throw checked exceptions. The format of a <FONT FACE="Courier New">Exceptions_attribute</FONT> table is shown in Table 6-30.</P>
+<P>Table 6-30. Format of an <FONT FACE="Courier New">Exceptions_attribute</FONT> table</P>
+<TABLE WIDTH="500">
+<TR><TD VALIGN="TOP"><STRONG>Type</STRONG></TD><TD VALIGN="TOP"><STRONG>Name </STRONG></TD><TD VALIGN="TOP"><STRONG>Count</STRONG></TD></TR>
+<TR><TD VALIGN="TOP"><FONT FACE="Courier New">u2</FONT></TD><TD VALIGN="TOP"><FONT FACE="Courier New">attribute_name_index</FONT></TD><TD VALIGN="TOP">1</TD></TR>
+<TR><TD VALIGN="TOP"><FONT FACE="Courier New">u4</FONT></TD><TD VALIGN="TOP"><FONT FACE="Courier New">attribute_length</FONT></TD><TD VALIGN="TOP">1</TD></TR>
+<TR><TD VALIGN="TOP"><FONT FACE="Courier New">u2</FONT></TD><TD VALIGN="TOP"><FONT FACE="Courier New">number_of_exceptions</FONT></TD><TD VALIGN="TOP">1</TD></TR>
+<TR><TD VALIGN="TOP"><FONT FACE="Courier New">u2</FONT></TD><TD VALIGN="TOP"><FONT FACE="Courier New">exception_index_table</FONT></TD><TD VALIGN="TOP"><FONT FACE="Courier New">number_of_exceptions</FONT></TD></TR>
+</TABLE>
+<I><P><FONT FACE="Courier New">attribute_name_index</FONT></P>
+</I><P>The <FONT FACE="Courier New">attribute_name_index</FONT> gives the index in the constant pool of a <FONT FACE="Courier New">CONSTANT_Utf8_info</FONT> entry that contains the string <FONT FACE="Courier New">"Exceptions"</FONT>.</P>
+<I><P><FONT FACE="Courier New">attribute_length</FONT></P>
+</I><P>The <FONT FACE="Courier New">attribute_length</FONT> item gives the length in bytes of the <FONT FACE="Courier New">Exceptions_attribute</FONT> excluding the initial six bytes that contain the <FONT FACE="Courier New">attribute_name_index</FONT> and <FONT FACE="Courier New">attribute_length</FONT> items.</P>
+<I><P><FONT FACE="Courier New">number_of_exceptions</FONT> and </I><FONT FACE="Courier New">exception_index_table</FONT></P>
+<P>The <FONT FACE="Courier New">exception_index_table</FONT> is an array of indexes into the constant pool of <FONT FACE="Courier New">CONSTANT_Class_info</FONT> entries for the exceptions declared in this methodís <FONT FACE="Courier New">throws</FONT> clause. In other words, the <FONT FACE="Courier New">exception_index_table</FONT> lists all the checked exceptions that this method may throw. The <FONT FACE="Courier New">number_of_exceptions</FONT> item indicates the number of indexes in the array.</P>
+<H3><P>The InnerClasses Attribute</P>
+</H3><P>The <FONT FACE="Courier New">InnerClasses</FONT> attribute lists any inner classes declared in a class. The <FONT FACE="Courier New">InnerClasses_attribute</FONT> table appears in the attributes of the <FONT FACE="Courier New">ClassFile</FONT> table for those classes that have inner classes. The format of a <FONT FACE="Courier New">InnerClasses_attribute</FONT> table is shown in Table 6-31.</P>
+<P>Table 6-31. Format of a <FONT FACE="Courier New">InnerClasses_attribute</FONT> table</P>
+<TABLE WIDTH="500">
+<TR><TD VALIGN="TOP">Type</STRONG></TD><TD VALIGN="TOP"><STRONG>Name </STRONG></TD><TD VALIGN="TOP"><STRONG>Count</STRONG></TD></TR>
+<TR><TD VALIGN="TOP"><FONT FACE="Courier New">u2</FONT></TD><TD VALIGN="TOP"><FONT FACE="Courier New">attribute_name_index</FONT></TD><TD VALIGN="TOP">1</TD></TR>
+<TR><TD VALIGN="TOP"><FONT FACE="Courier New">u4</FONT></TD><TD VALIGN="TOP"><FONT FACE="Courier New">attribute_length</FONT></TD><TD VALIGN="TOP">1</TD></TR>
+<TR><TD VALIGN="TOP"><FONT FACE="Courier New">u2</FONT></TD><TD VALIGN="TOP"><FONT FACE="Courier New">number_of_classes</FONT></TD><TD VALIGN="TOP">1</TD></TR>
+<TR><TD VALIGN="TOP"><FONT FACE="Courier New">classes_info</FONT></TD><TD VALIGN="TOP"><FONT FACE="Courier New">classes</FONT></TD><TD VALIGN="TOP"><FONT FACE="Courier New">number_of_classes</FONT></TD></TR>
+</TABLE>
+<I><P><FONT FACE="Courier New">attribute_name_index</FONT></P>
+</I><P>The <FONT FACE="Courier New">attribute_name_index</FONT> gives the index in the constant pool of a <FONT FACE="Courier New">CONSTANT_Utf8_info</FONT> entry that contains the string <FONT FACE="Courier New">"InnerClasses"</FONT>.</P>
+<I><P><FONT FACE="Courier New">attribute_length</FONT></P>
+</I><P>The <FONT FACE="Courier New">attribute_length</FONT> item gives the length in bytes of the <FONT FACE="Courier New">Exceptions_attribute</FONT> excluding the initial six bytes that contain the <FONT FACE="Courier New">attribute_name_index</FONT> and <FONT FACE="Courier New">attribute_length</FONT> items.</P>
+<I><P><FONT FACE="Courier New">number_of_classes</FONT> and <FONT FACE="Courier New">classes</FONT></P>
+</I><P>The <FONT FACE="Courier New">classes</FONT> item is an array of <FONT FACE="Courier New">inner_class_info</FONT> tables. The <FONT FACE="Courier New">number_of_classes</FONT> gives the number of <FONT FACE="Courier New">inner_class_info</FONT> tables that appear in the <FONT FACE="Courier New">classes</FONT> array. The format of the <FONT FACE="Courier New">inner_class_info</FONT> table is shown in Table 6-32.</P>
+<P>Table 6-32. Format of an <FONT FACE="Courier New">inner_class_info</FONT> table</P>
+<TABLE WIDTH="500">
+<TR><TD VALIGN="TOP"><STRONG>Type</STRONG></TD><TD VALIGN="TOP"><STRONG>Name </STRONG></TD><TD VALIGN="TOP"><STRONG>Count</STRONG></TD></TR>
+<TR><TD VALIGN="TOP"><FONT FACE="Courier New">u2</FONT></TD><TD VALIGN="TOP"><FONT FACE="Courier New">inner_class_info_index</FONT></TD><TD VALIGN="TOP">1</TD></TR>
+<TR><TD VALIGN="TOP"><FONT FACE="Courier New">u2</FONT></TD><TD VALIGN="TOP"><FONT FACE="Courier New">outer_class_info_index</FONT></TD><TD VALIGN="TOP">1</TD></TR>
+<TR><TD VALIGN="TOP"><FONT FACE="Courier New">u2</FONT></TD><TD VALIGN="TOP"><FONT FACE="Courier New">inner_name_index</FONT></TD><TD VALIGN="TOP">1</TD></TR>
+<TR><TD VALIGN="TOP"><FONT FACE="Courier New">u2</FONT></TD><TD VALIGN="TOP"><FONT FACE="Courier New">inner_class_access_flags</FONT></TD><TD VALIGN="TOP">1</TD></TR>
+</TABLE>
+<I><P><FONT FACE="Courier New">inner_class_info_index</FONT></P>
+</I><P>The <FONT FACE="Courier New">inner_class_info_index</FONT> gives an index into the constant pool for a <FONT FACE="Courier New">CONSTANT_Class_info</FONT> entry for an inner class.</P>
+<I><P><FONT FACE="Courier New">outer_class_info_index</FONT></P>
+</I><P>The <FONT FACE="Courier New">outer_class_info_index</FONT> gives an index into the constant pool for a <FONT FACE="Courier New">CONSTANT_Class_info</FONT> entry for the class in which the inner class described by this <FONT FACE="Courier New">inner_class_info</FONT> table is defined. If the inner class is not a member, the <FONT FACE="Courier New">outer_class_info_index</FONT> is zero.</P>
+<I><P><FONT FACE="Courier New">inner_name_index</FONT></P>
+</I><P>The <FONT FACE="Courier New">inner_name_index</FONT> gives an index in the constant pool for a <FONT FACE="Courier New">CONSTANT_Utf8_info</FONT> entry that gives the simple name of the inner class. If the inner class is anonymous, the <FONT FACE="Courier New">inner_name_index</FONT> is zero.</P>
+<I><P><FONT FACE="Courier New">inner_class_access_flags</FONT></P>
+</I><P>The <FONT FACE="Courier New">inner_class_access_flags</FONT> item gives the access flags for the inner class. The flags used in this item are the same shown in Table 6-4 above for top-level classes.</P>
+<H3><P>The LineNumberTable Attribute</P>
+</H3><P>The <FONT FACE="Courier New">LineNumberTable</FONT> attribute maps offsets in a methodís bytecode stream to line numbers in the source file. One <FONT FACE="Courier New">LineNumberTable_attribute</FONT> table may appear (it is optional) in the attributes component of <FONT FACE="Courier New">Code_attribute</FONT> tables. The format of a <FONT FACE="Courier New">LineNumberTable_attribute</FONT> table is shown in Table 6-33.</P>
+<P>Table 6-33. Format of a <FONT FACE="Courier New">LineNumberTable_attribute</FONT> table</P>
+<TABLE WIDTH="500">
+<TR><TD VALIGN="TOP"><STRONG>Type</STRONG></TD><TD VALIGN="TOP"><STRONG>Name </STRONG></TD><TD VALIGN="TOP"><STRONG>Count</STRONG></TD></TR>
+<TR><TD VALIGN="TOP"><FONT FACE="Courier New">u2</FONT></TD><TD VALIGN="TOP"><FONT FACE="Courier New">attribute_name_index</FONT></TD><TD VALIGN="TOP">1</TD></TR>
+<TR><TD VALIGN="TOP"><FONT FACE="Courier New">u4</FONT></TD><TD VALIGN="TOP"><FONT FACE="Courier New">attribute_length</FONT></TD><TD VALIGN="TOP">1</TD></TR>
+<TR><TD VALIGN="TOP"><FONT FACE="Courier New">u2</FONT></TD><TD VALIGN="TOP"><FONT FACE="Courier New">line_number_table_length</FONT></TD><TD VALIGN="TOP">1</TD></TR>
+<TR><TD VALIGN="TOP"><FONT FACE="Courier New">line_number_info</FONT></TD><TD VALIGN="TOP"><FONT FACE="Courier New">line_number_table</FONT></TD><TD VALIGN="TOP"><FONT FACE="Courier New">line_number_table_length</FONT></TD></TR>
+</TABLE>
+<I><P><FONT FACE="Courier New">attribute_name_index</FONT></P>
+</I><P>The <FONT FACE="Courier New">attribute_name_index</FONT> gives the index in the constant pool of a <FONT FACE="Courier New">CONSTANT_Utf8_info</FONT> entry that contains the string <FONT FACE="Courier New">"LineNumberTable"</FONT>.</P>
+<I><P><FONT FACE="Courier New">attribute_length</FONT></P>
+</I><P>The <FONT FACE="Courier New">attribute_length</FONT> item gives the length in bytes of the <FONT FACE="Courier New">LineNumberTable_attribute</FONT> excluding the initial six bytes that contain the <FONT FACE="Courier New">attribute_name_index</FONT> and <FONT FACE="Courier New">attribute_length</FONT> items.</P>
+<I><P><FONT FACE="Courier New">line_number_table_length</FONT> and </I><FONT FACE="Courier New">line_number_table</FONT></P>
+<P>The <FONT FACE="Courier New">line_number_table</FONT> item is an array of <FONT FACE="Courier New">line_number_info</FONT> tables. The <FONT FACE="Courier New">line_number_table_length</FONT> gives the number of <FONT FACE="Courier New">line_number_info</FONT> tables that appear in the <FONT FACE="Courier New">line_number_table</FONT> array. The tables in this array may appear in any order, and there may be more than one table for the same line number. The format of a <FONT FACE="Courier New">line_number_info</FONT> is shown in Table 6-34.</P>
+<P>Table 6-34. Format of a <FONT FACE="Courier New">line_number_info</FONT></P>
+<TABLE WIDTH="500">
+<TR><TD VALIGN="TOP"><STRONG>Type</STRONG></TD><TD VALIGN="TOP"><STRONG>Name </STRONG></TD><TD VALIGN="TOP"><STRONG>Count</STRONG></TD></TR>
+<TR><TD VALIGN="TOP"><FONT FACE="Courier New">u2</FONT></TD><TD VALIGN="TOP"><FONT FACE="Courier New">start_pc</FONT></TD><TD VALIGN="TOP">1</TD></TR>
+<TR><TD VALIGN="TOP"><FONT FACE="Courier New">u2</FONT></TD><TD VALIGN="TOP"><FONT FACE="Courier New">line_number</FONT></TD><TD VALIGN="TOP">1</TD></TR>
+</TABLE>
+<P><H4><FONT FACE="Courier New">start_pc</FONT></H4></P>
+<P>The <FONT FACE="Courier New">start_pc</FONT> item gives an offset from the beginning of the code array where a new line begins.</P>
+<P><H4><FONT FACE="Courier New">line_number</FONT></H4></P>
+<P>The <FONT FACE="Courier New">line_number</FONT> item gives the line number of the line that begins at <FONT FACE="Courier New">start_pc</FONT>.</P>
+<H3><P>The LocalVariableTable Attribute</P>
+</H3><P>The <FONT FACE="Courier New">LocalVariableTable</FONT> attribute maps words in the local variables portion of the methodís stack frame to names and descriptors of local variables in the source code. One <FONT FACE="Courier New">LocalVariableTable_attribute</FONT> table may appear (it is optional) in the attributes component of <FONT FACE="Courier New">Code_attribute</FONT> tables. The format of a <FONT FACE="Courier New">LocalVariableTable_attribute</FONT> table is shown in Table 6-35.</P>
+<P>Table 6-35. Format of a <FONT FACE="Courier New">LocalVariableTable_attribute</FONT> table</P>
+<TABLE WIDTH="500">
+<TR><TD VALIGN="TOP"><STRONG>Type</STRONG></TD><TD VALIGN="TOP"><STRONG>Name </STRONG></TD><TD VALIGN="TOP"><STRONG>Count</STRONG></TD></TR>
+<TR><TD VALIGN="TOP"><FONT FACE="Courier New">u2</FONT></TD><TD VALIGN="TOP"><FONT FACE="Courier New">attribute_name_index</FONT></TD><TD VALIGN="TOP">1</TD></TR>
+<TR><TD VALIGN="TOP"><FONT FACE="Courier New">u4</FONT></TD><TD VALIGN="TOP"><FONT FACE="Courier New">attribute_length</FONT></TD><TD VALIGN="TOP">1</TD></TR>
+<TR><TD VALIGN="TOP"><FONT FACE="Courier New">u2</FONT></TD><TD VALIGN="TOP"><FONT FACE="Courier New">local_variable_table_length</FONT></TD><TD VALIGN="TOP">1</TD></TR>
+<TR><TD VALIGN="TOP"><FONT FACE="Courier New">local_variable_info</FONT></TD><TD VALIGN="TOP"><FONT FACE="Courier New">local_variable_table</FONT></TD><TD VALIGN="TOP"><FONT FACE="Courier New">local_variable_table_length</FONT></TD></TR>
+</TABLE>
+<I><P><FONT FACE="Courier New">attribute_name_index</FONT></P>
+</I><P>The <FONT FACE="Courier New">attribute_name_index</FONT> gives the index in the constant pool of a <FONT FACE="Courier New">CONSTANT_Utf8_info</FONT> entry that contains the string <FONT FACE="Courier New">"LocalVariableTable"</FONT>.</P>
+<I><P><FONT FACE="Courier New">attribute_length</FONT></P>
+</I><P>The <FONT FACE="Courier New">attribute_length</FONT> item gives the length in bytes of the <FONT FACE="Courier New">LocalVariableTable_attribute</FONT> excluding the initial six bytes that contain the <FONT FACE="Courier New">attribute_name_index</FONT> and <FONT FACE="Courier New">attribute_length</FONT> items.</P>
+<I><P><FONT FACE="Courier New">local_variable_table_length</FONT> and </I><FONT FACE="Courier New">local_variable_table</FONT></P>
+<P>The <FONT FACE="Courier New">local_variable_table</FONT> item is an array of <FONT FACE="Courier New">local_variable_info</FONT> tables. The <FONT FACE="Courier New">local_variable_table_length</FONT> gives the number of <FONT FACE="Courier New">local_variable_info</FONT> tables that appear in the <FONT FACE="Courier New">local_variable_table</FONT> array. The format of a <FONT FACE="Courier New">local_variable_info</FONT> table is shown in Table 6-36.</P>
+<P>Table 6-36. Format of a <FONT FACE="Courier New">local_variable_info</FONT> table</P>
+<TABLE WIDTH="500">
+<TR><TD VALIGN="TOP"><STRONG>Type</STRONG></TD><TD VALIGN="TOP"><STRONG>Name </STRONG></TD><TD VALIGN="TOP"><STRONG>Count</STRONG></TD></TR>
+<TR><TD VALIGN="TOP"><FONT FACE="Courier New">u2</FONT></TD><TD VALIGN="TOP"><FONT FACE="Courier New">start_pc</FONT></TD><TD VALIGN="TOP">1</TD></TR>
+<TR><TD VALIGN="TOP"><FONT FACE="Courier New">u2</FONT></TD><TD VALIGN="TOP"><FONT FACE="Courier New">length</FONT></TD><TD VALIGN="TOP">1</TD></TR>
+<TR><TD VALIGN="TOP"><FONT FACE="Courier New">u2</FONT></TD><TD VALIGN="TOP"><FONT FACE="Courier New">name_index</FONT></TD><TD VALIGN="TOP">1</TD></TR>
+<TR><TD VALIGN="TOP"><FONT FACE="Courier New">u2</FONT></TD><TD VALIGN="TOP"><FONT FACE="Courier New">descriptor_index</FONT></TD><TD VALIGN="TOP">1</TD></TR>
+<TR><TD VALIGN="TOP"><FONT FACE="Courier New">u2</FONT></TD><TD VALIGN="TOP"><FONT FACE="Courier New">index</FONT></TD><TD VALIGN="TOP">1</TD></TR>
+</TABLE>
+<P><H4><FONT FACE="Courier New">start_pc</FONT> and <FONT FACE="Courier New">length</FONT></H4></P>
+<P>The <FONT FACE="Courier New">start_pc</FONT> item gives an offset in the code array of the start of an instruction. The length item gives the length of the range of code that starts with <FONT FACE="Courier New">start_pc</FONT> for which a local variable is valid. The byte at offset <FONT FACE="Courier New">start_pc</FONT> <FONT FACE="Courier New">+</FONT> <FONT FACE="Courier New">length</FONT> from the beginning of the code array must either be the first byte of an instruction or the first byte past the end of the code array.</P>
+<P><H4><FONT FACE="Courier New"> name_index</FONT></H4></P>
+<P>The <FONT FACE="Courier New">name_index</FONT> item gives an index in the constant pool of a <FONT FACE="Courier New">CONSTANT_Utf8_info</FONT> entry for the name of the local variable.</P>
+<P><H4><FONT FACE="Courier New">descriptor_index</FONT></H4></P>
+<P>The descriptor_index item gives an index in the constant pool of a <FONT FACE="Courier New">CONSTANT_Utf8_info</FONT> entry that contains the descriptor for this local variable. (A local variable descriptor adheres to the same grammar as a field descriptor.)</P>
+<P><H4><FONT FACE="Courier New">index</FONT></H4></P>
+<P>The <FONT FACE="Courier New">index</FONT> item gives the index in the local variable portion of this methodís stack frame where the data for this local variable is kept as the method executes. If the local variable is of type <FONT FACE="Courier New">long</FONT> or <FONT FACE="Courier New">double</FONT>, the data occupies two words at positions <FONT FACE="Courier New">index</FONT> and <FONT FACE="Courier New">index</FONT> <FONT FACE="Courier New">+</FONT> <FONT FACE="Courier New">1</FONT>. Otherwise the data occupies one word at position <FONT FACE="Courier New">index</FONT>.</P>
+<H3><P>The SourceFile Attribute</P>
+</H3><P>The optional <FONT FACE="Courier New">SourceFile</FONT> attribute, which may appear in the attributes component of a <FONT FACE="Courier New">ClassFile</FONT> table, gives the name of the source file from which the class file was generated. The format of a <FONT FACE="Courier New">SourceFile_attribute</FONT> table is shown in Table 6-37.</P>
+<P>Table 6-37. Format of a <FONT FACE="Courier New">SourceFile_attribute</FONT> table</P>
+<TABLE WIDTH="500">
+<TR><TD VALIGN="TOP"><STRONG>Type</STRONG></TD><TD VALIGN="TOP"><STRONG>Name </STRONG></TD><TD VALIGN="TOP"><STRONG>Count</STRONG></TD></TR>
+<TR><TD VALIGN="TOP"><FONT FACE="Courier New">u2</FONT></TD><TD VALIGN="TOP"><FONT FACE="Courier New">attribute_name_index</FONT></TD><TD VALIGN="TOP">1</TD></TR>
+<TR><TD VALIGN="TOP"><FONT FACE="Courier New">u4</FONT></TD><TD VALIGN="TOP"><FONT FACE="Courier New">attribute_length</FONT></TD><TD VALIGN="TOP">1</TD></TR>
+<TR><TD VALIGN="TOP"><FONT FACE="Courier New">u2</FONT></TD><TD VALIGN="TOP"><FONT FACE="Courier New">sourcefile_index</FONT></TD><TD VALIGN="TOP">1</TD></TR>
+</TABLE>
+<I><P><FONT FACE="Courier New">attribute_name_index</FONT></P>
+</I><P>The <FONT FACE="Courier New">attribute_name_index</FONT> gives the index in the constant pool of a <FONT FACE="Courier New">CONSTANT_Utf8_info</FONT> entry that contains the string <FONT FACE="Courier New">"SourceFile"</FONT>.</P>
+<I><P><FONT FACE="Courier New">attribute_length</FONT></P>
+</I><P>The <FONT FACE="Courier New">attribute_length</FONT> item of a <FONT FACE="Courier New">SourceFile_attribute</FONT> is always 2.</P>
+<I><P><FONT FACE="Courier New">sourcefile_index</FONT></P>
+</I><P>The <FONT FACE="Courier New">sourcefile_index</FONT> item gives the index in the constant pool of a <FONT FACE="Courier New">CONSTANT_Utf8_info</FONT> entry that contains the name of the source file. The source file name never includes a directory path.</P>
+<H3><P>The Synthetic Attribute</P>
+</H3><P>The Synthetic attribute, which may optionally appear in the attributes components of <FONT FACE="Courier New">field_info</FONT> and <FONT FACE="Courier New">method_info</FONT> tables, indicates that a field or method was generated by the compiler. The <FONT FACE="Courier New">Synthetic</FONT> attribute was added in Java 1.1 to support inner classes. The format of a <FONT FACE="Courier New">Synthetic_attribute</FONT> is shown in Table 6-38.</P>
+<P>Table 6-38. Format of a <FONT FACE="Courier New">Synthetic_attribute</FONT> table</P>
+<TABLE WIDTH="500">
+<TR><TD VALIGN="TOP"><STRONG>Type</STRONG></TD><TD VALIGN="TOP"><STRONG>Name </STRONG></TD><TD VALIGN="TOP"><STRONG>Count</STRONG></TD></TR>
+<TR><TD VALIGN="TOP"><FONT FACE="Courier New">u2</FONT></TD><TD VALIGN="TOP"><FONT FACE="Courier New">attribute_name_index</FONT></TD><TD VALIGN="TOP">1</TD></TR>
+<TR><TD VALIGN="TOP"><FONT FACE="Courier New">u4</FONT></TD><TD VALIGN="TOP"><FONT FACE="Courier New">attribute_length</FONT></TD><TD VALIGN="TOP">1</TD></TR>
+</TABLE>
+<I><P><FONT FACE="Courier New">attribute_name_index</FONT></P>
+</I><P>The <FONT FACE="Courier New">attribute_name_index</FONT> gives the index in the constant pool of a <FONT FACE="Courier New">CONSTANT_Utf8_info</FONT> entry that contains the string <FONT FACE="Courier New">"Synthetic"</FONT>.</P>
+<I><P><FONT FACE="Courier New">attribute_length</FONT></P>
+</I><P>The <FONT FACE="Courier New">attribute_length</FONT> must be zero.</P>
+<H3><EM><P>Getting Loaded: A Simulation</P>
+</EM></H3><P>The <I>Getting Loaded</I> applet, shown in Figure 6-3, simulates a Java Virtual Machine loading a class file. The class file being loaded in the simulation was generated by the 1.1 <FONT FACE="Courier New">javac</FONT> compiler from the Java source code shown below. Although the snippet of code used in the simulation may not be very useful in the real world, it does compile to a real class file and provides a reasonably simple example of the class file format. This is the same class used in the <I>Eternal Math</I> simulation applet described in Chapter 5, &quot;The Java Virtual Machine.&quot;</P>
+<P><!--<IMG SRC="./images/fig6-3.gif" ALT="Figure 6-3">--></P>
+<PRE><P><FONT FACE="Courier New">// On CD-ROM in file classfile/ex1/Act.java
+<P>class Act {</P>
+<P>&nbsp;</P>
+<P>    public static void doMathForever() {</P>
+<P>        int i = 0;</P>
+<P>        for (;;) {</P>
+<P>            i += 1;</P>
+<P>            i *= 2;</P>
+<P>        }</P>
+<P>    }</P>
+<P>}</P>
+</FONT><FONT SIZE="2"><P>&nbsp;</P></FONT><FONT FACE="Courier New">end</FONT></P></PRE>
+<P>The <I>Getting Loaded</I> applet allows you to drive the class load simulation one step at a time. For each step along the way you can read about the next chunk of bytes that is about to be consumed and interpreted by the Java Virtual Machine. Just press the "Step" button to cause the Java Virtual Machine to consume the next chunk. Pressing "Back" will undo the previous step, and pressing "Reset" will return the simulation to its original state, allowing you to start over from the beginning.</P>
+<P>The Java Virtual Machine is shown at the bottom left consuming the stream of bytes that makes up the class file <FONT FACE="Courier New">Act.class</FONT>. The bytes are shown in hex streaming out of a server on the bottom right. The bytes travel right to left, between the server and the Java Virtual Machine, one chunk at a time. The chunk of bytes to be consumed by the Java Virtual Machine on the next "Step" button press are shown in red. These highlighted bytes are described in the large text area above the Java Virtual Machine. Any remaining bytes beyond the next chunk are shown in black.</P>
+<P>As mentioned in previous sections, many items in the class file refer to constant pool entries. To make it easier for you to look up constant pool entries as you step through the simulation, a list of the contents of <FONT FACE="Courier New">Act</FONT>ís constant pool is shown in Table 6-39.</P>
+<P>Table 6-39. Class <FONT FACE="Courier New">Act</FONT>ís constant pool</P>
+<TABLE WIDTH="500">
+<TR><TD VALIGN="TOP"><STRONG>Index</STRONG></TD><TD VALIGN="TOP"><STRONG>Type</STRONG></TD><TD VALIGN="TOP"><STRONG>Value</STRONG></TD></TR>
+<TR><TD VALIGN="TOP">1</TD><TD VALIGN="TOP"> <FONT FACE="Courier New">CONSTANT_Class_info</FONT></TD><TD VALIGN="TOP">7</TD></TR>
+<TR><TD VALIGN="TOP">2</TD><TD VALIGN="TOP"><FONT FACE="Courier New">CONSTANT_Class_info</FONT></TD><TD VALIGN="TOP">16</TD></TR>
+<TR><TD VALIGN="TOP">3</TD><TD VALIGN="TOP"><FONT FACE="Courier New">CONSTANT_Methodref_info</FONT></TD><TD VALIGN="TOP">2, 4</TD></TR>
+<TR><TD VALIGN="TOP">4</TD><TD VALIGN="TOP"><FONT FACE="Courier New">CONSTANT_NameAndType_info</FONT></TD><TD VALIGN="TOP">6, 5</TD></TR>
+<TR><TD VALIGN="TOP">5</TD><TD VALIGN="TOP"><FONT FACE="Courier New">CONSTANT_Utf8_info</FONT></TD><TD VALIGN="TOP"><FONT FACE="Courier New">"()V"</FONT></TD></TR>
+<TR><TD VALIGN="TOP">6</TD><TD VALIGN="TOP"><FONT FACE="Courier New">CONSTANT_Utf8_info</FONT></TD><TD VALIGN="TOP"><FONT FACE="Courier New">"&lt;init</FONT>"</FONT></TD></TR>
+<TR><TD VALIGN="TOP">7</TD><TD VALIGN="TOP"><FONT FACE="Courier New">CONSTANT_Utf8_info</FONT></TD><TD VALIGN="TOP"><FONT FACE="Courier New">"Act"</FONT></TD></TR>
+<TR><TD VALIGN="TOP">8</TD><TD VALIGN="TOP"><FONT FACE="Courier New">CONSTANT_Utf8_info</FONT></TD><TD VALIGN="TOP"><FONT FACE="Courier New">"Act.java"</FONT></TD></TR>
+<TR><TD VALIGN="TOP">9</TD><TD VALIGN="TOP"><FONT FACE="Courier New">CONSTANT_Utf8_info</FONT></TD><TD VALIGN="TOP"><FONT FACE="Courier New">"Code"</FONT></TD></TR>
+<TR><TD VALIGN="TOP">10</TD><TD VALIGN="TOP"><FONT FACE="Courier New">CONSTANT_Utf8_info</FONT></TD><TD VALIGN="TOP"><FONT FACE="Courier New">"ConstantValue"</FONT></TD></TR>
+<TR><TD VALIGN="TOP">11</TD><TD VALIGN="TOP"><FONT FACE="Courier New">CONSTANT_Utf8_info</FONT></TD><TD VALIGN="TOP"><FONT FACE="Courier New">"Exceptions"</FONT></TD></TR>
+<TR><TD VALIGN="TOP">12</TD><TD VALIGN="TOP"><FONT FACE="Courier New">CONSTANT_Utf8_info</FONT></TD><TD VALIGN="TOP"><FONT FACE="Courier New">"LineNumberTable"</FONT></TD></TR>
+<TR><TD VALIGN="TOP">13</TD><TD VALIGN="TOP"><FONT FACE="Courier New">CONSTANT_Utf8_info</FONT></TD><TD VALIGN="TOP"><FONT FACE="Courier New">"LocalVariables"</FONT></TD></TR>
+<TR><TD VALIGN="TOP">14</TD><TD VALIGN="TOP"><FONT FACE="Courier New">CONSTANT_Utf8_info</FONT></TD><TD VALIGN="TOP"><FONT FACE="Courier New">"SourceFile"</FONT></TD></TR>
+<TR><TD VALIGN="TOP">15</TD><TD VALIGN="TOP"><FONT FACE="Courier New">CONSTANT_Utf8_info</FONT></TD><TD VALIGN="TOP"><FONT FACE="Courier New">"doMathForever"</FONT></TD></TR>
+<TR><TD VALIGN="TOP">16</TD><TD VALIGN="TOP"><FONT FACE="Courier New">CONSTANT_Utf8_info</FONT></TD><TD VALIGN="TOP"><FONT FACE="Courier New">"java/lang/Object"</FONT></TD></TR>
+</TABLE>
+<P>Each chunk of bytes is fully explained in the text area. Because there is a lot of detail in the text area, you may wish to skim through all the steps first to get the general idea, then look back for more details. Happy clicking.</P>
+<P><!--<IMG SRC="./images/fig6-3.gif" ALT="Figure 6-3">--></P>
+
+<H3><EM><P>On the CD-ROM</P>
+</EM></H3><P>The CD-ROM contains the source code examples from this chapter in the <FONT FACE="Courier New">classfile</FONT> directory. The <I>Getting Loaded</I> applet is contained in a web page on the CD-ROM in file <FONT FACE="Courier New">applets/GettingLoaded.html</FONT>. The source code for this applet is found alongside its class files, in the <FONT FACE="Courier New">applets/GettingLoaded</FONT> directory.</P>
+<H3><EM><P>The Resources Page</P>
+</EM></H3><P>For more information about class files visit the resources page for this chapter: <FONT FACE="Courier New"><A HREF="http://www.artima.com/insidejvm/classfile.html" tppabs="http://www.artima.com/insidejvm/classfile.html">http://www.artima.com/insidejvm/classfile.html</A></FONT>.</P>
+<TABLE BORDER="0" WIDTH="100%">
+<TR><TD><A HREF="http://www.pbg.mcgraw-hill.com/betabooks/stores.html" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/stores.html" target="bottom"><IMG SRC="hotkey.gif" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/images/hotkey.gif" ALIGN="LEFT" BORDER="0" WIDTH="40" HEIGHT="40" ALT="Orders"></A>
+<IMG SRC="order_text.gif" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/images/order_text.gif" WIDTH="103" HEIGHT="41" ALT="Orders"></TD>
+<TD ALIGN="RIGHT"><A HREF="chap05.html" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/venners/chap05.html"><IMG SRC="backward.gif" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/images/backward.gif" BORDER="0" ALT="Backward" WIDTH="32" HEIGHT="32"></A>&nbsp;<A HREF="chap07.html" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/venners/chap07.html"><IMG SRC="forward.gif" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/images/forward.gif" BORDER="0" ALT="Forward" WIDTH="32" HEIGHT="32"></A></TD></TR>
+<TR><TD COLSPAN="2"><A HREF="mailto:computing@mcgraw-hill.com"><IMG SRC="hotkey.gif" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/images/hotkey.gif" ALIGN="LEFT" BORDER="0" WIDTH="40" HEIGHT="40" ALT="Comments"></A>
+<IMG SRC="comment_text.gif" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/images/comment_text.gif" WIDTH="73" HEIGHT="39" ALT="Comments"></TD></TR>
+
+</TABLE>
+<HR>
+<P ALIGN=CENTER>&nbsp;<A HREF="http://www.pbg.mcgraw-hill.com/computing/computing-home.html" tppabs="http://www.pbg.mcgraw-hill.com/computing/computing-home.html" TARGET="_top">COMPUTING
+MCGRAW-HILL</A> | <A HREF="http://www.pbg.mcgraw-hill.com/betabooks/betabooks-home.html" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/betabooks-home.html" TARGET="_top">Beta Books</A>
+| <A HREF="http://www.pbg.mcgraw-hill.com/computing/contact.html" tppabs="http://www.pbg.mcgraw-hill.com/computing/contact.html" TARGET="_top">Contact Us</A>
+| <A HREF="http://www.pbg.mcgraw-hill.com/betabooks/stores.html" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/stores.html" TARGET="_top">Order Information</A>
+| <A HREF="http://mcgraw-hill.inforonics.com/compsearch.shtml" tppabs="http://mcgraw-hill.inforonics.com/compsearch.shtml" TARGET="_top">Online Catalog</A></P>
+
+<P ALIGN=CENTER><FONT SIZE="-1"><A HREF="http://www.pbg.mcgraw-hill.com/computing/computing-home.html" tppabs="http://www.pbg.mcgraw-hill.com/computing/computing-home.html" TARGET="_top">Computing McGraw-Hill</A> is an imprint of the <A HREF="http://www.pbg.mcgraw-hill.com/pbg-home.html" tppabs="http://www.pbg.mcgraw-hill.com/pbg-home.html" TARGET="_top">McGraw-Hill Professional Book Group</A>.</FONT></P>
+
+<!-- begin footer -->
+<HR>
+<A HREF="http://www.mcgraw-hill.com/" tppabs="http://www.mcgraw-hill.com/" TARGET="_top"><IMG SRC="division-white.gif" tppabs="http://www.pbg.mcgraw-hill.com/images/division-white.gif" WIDTH="350" HEIGHT="44" ALT="A Division of the McGraw-Hill Companies" BORDER="0"></A><BR>
+<FONT SIZE="-2">Copyright &copy; 1997 <A HREF="http://www.mcgraw-hill.com/" tppabs="http://www.mcgraw-hill.com/" TARGET="_top">
+The McGraw-Hill Companies</A>. All rights reserved. Any use is subject to the 
+<A HREF="http://www.mcgraw-hill.com/corporate/news_info/copyrttm.htm" tppabs="http://www.mcgraw-hill.com/corporate/news_info/copyrttm.htm" TARGET="_top">
+Terms of Use</A>; the corporation also has a comprehensive <A HREF="http://www.mcgraw-hill.com/corporate/news_info/privacy.html" tppabs="http://www.mcgraw-hill.com/corporate/news_info/privacy.html" TARGET="_top">
+Privacy Policy</A> governing information we may collect from our customers.</FONT>
+<!-- end footer -->
+</BODY>
+</HTML>

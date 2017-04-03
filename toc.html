@@ -1,0 +1,482 @@
+<!-- All material contained herein is copyright (c) McGraw-Hill Professional Books
+All Rights Reserved. No use of this material may be made without express written
+permission of the copyright holder. HTML conversions by Mega Space [barry@megaspace.com] -->
+
+<HTML>
+<HEAD>
+<META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=ISO-8859-1">
+<TITLE>Understanding Digital Signatures: Inside the Java Virtual Machine
+ by Bill Venners - Beta Version</TITLE>
+</HEAD>
+<BODY BGCOLOR="#FFFFFF">
+<TABLE BORDER="0" WIDTH="100%">
+<TR><TD><A HREF="http://www.pbg.mcgraw-hill.com/betabooks/stores.html" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/stores.html" target="bottom"><IMG SRC="hotkey.gif" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/images/hotkey.gif" ALIGN="LEFT" BORDER="0" WIDTH="40" HEIGHT="40" ALT="Orders"></A>
+<IMG SRC="order_text.gif" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/images/order_text.gif" WIDTH="103" HEIGHT="41" ALT="Orders"></TD>
+<TD ALIGN="RIGHT"><A HREF="cover.html" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/venners/cover.html"><IMG SRC="backward.gif" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/images/backward.gif" BORDER="0" ALT="Backward" WIDTH="32" HEIGHT="32"></A>&nbsp;<A HREF="preface.html" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/venners/preface.html"><IMG SRC="forward.gif" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/images/forward.gif" BORDER="0" ALT="Forward" WIDTH="32" HEIGHT="32"></A></TD></TR>
+<TR><TD COLSPAN="2"><A HREF="mailto:computing@mcgraw-hill.com"><IMG SRC="hotkey.gif" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/images/hotkey.gif" ALIGN="LEFT" BORDER="0" WIDTH="40" HEIGHT="40" ALT="Comments"></A>
+<IMG SRC="comment_text.gif" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/images/comment_text.gif" WIDTH="73" HEIGHT="39" ALT="Comments"></TD></TR>
+
+<TR><TD COLSPAN="2"><FONT FACE="ARIEL,HELVETICA" SIZE="-1"><I>&copy; 1997 The McGraw-Hill Companies, Inc.  All rights reserved.  <BR>Any use of this Beta Book is subject to the rules stated in the <A HREF="http://www.mcgraw-hill.com/corporate/news_info/copyrttm.htm" tppabs="http://www.mcgraw-hill.com/corporate/news_info/copyrttm.htm" target="_top">Terms of Use</A>.</I></FONT></TD></TR>
+
+</TABLE>
+<HR>
+<P>
+<CENTER><H1>Inside the Java Virtual Machine</H1></CENTER>
+
+<H2> Acknowledgments</H2>
+<H2><A HREF="intro.html" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/venners/intro.html">Introduction</A></H2>
+<H2> Part One: Java's Architecture</H2><DIR>
+<H3><EM><A HREF="chap01.html" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/venners/chap01.html"> 1 Introduction to Java's Architecture</A></EM></H3>
+<DIR>
+
+Why Java?
+<BR> The Architecture<DIR>
+<DIR>
+
+<BR> The Java Virtual Machine
+<BR>The Class Loader Architecture
+<BR> The Java Class File
+<BR> The Java API
+<BR> The Java Programming Language</DIR>
+</DIR>
+
+<BR> Architectural Tradeoffs
+<BR> Future Trends
+<BR> On the CD-ROM
+<BR> The Resources Page</DIR></DIR>
+
+<DIR><H3><EM><A HREF="chap02.html" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/venners/chap02.html"> 2 Platform independence</A></EM></H3></DIR><DIR>
+<DIR>
+
+Why Platform Independence?
+<BR> Java's Architectural Support for Platform Independence
+<BR> Scalability
+<BR> Factors that Influence Platform Independence<DIR>
+<DIR>
+
+<BR> The Java Platform
+<BR> Native Methods
+<BR> Other Factors</DIR>
+</DIR>
+
+<BR> Seven Steps to Platform Independence
+<BR> The Politics of Platform Independence
+<BR> The Resources Page</DIR>
+</DIR>
+
+<DIR><H3><EM><A HREF="chap03.html" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/venners/chap03.html"> 3 Security</A></EM></H3><DIR></DIR>
+<DIR>
+
+Why Security?
+<BR> The Sandbox
+<BR> The Class Loader Architecture
+<BR> The Class File Verifier<DIR>
+<DIR>
+
+<BR> Phase One: Internal Checks
+<BR> Phase Two: Verification of Symbolic References</DIR>
+</DIR>
+
+<BR> Safety Features Built Into the Java Virtual Machine
+<BR> The Security Manager and the Java API
+<BR> The Security API
+<BR> Security Beyond the Architecture
+<BR> The Resources Page</DIR>
+</DIR>
+
+<DIR><H3><EM><A HREF="chap04.html" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/venners/chap04.html"> 4 Network-mobility</A></EM></H3></DIR><DIR>
+<DIR>
+<DIR>
+<DIR>
+
+Why Network Mobility?</DIR>
+</DIR>
+
+<BR> A New Software Paradigm
+<BR> Java's Architectural Support for Network-Mobility
+<BR> The Applet: An Example of Network-Mobile Java
+<BR>The Resources Page</DIR>
+</DIR>
+
+<H2> Part Two: Java Internals</H2>
+<DIR><H3><EM><A HREF="chap05.html" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/venners/chap05.html"> 5 The Java Virtual Machine</A></EM></H3></DIR><DIR>
+<DIR>
+
+What is a Java Virtual Machine?
+<BR> The Lifetime of a Java Virtual Machine
+<BR> The Architecture of the Java Virtual Machine<DIR>
+<DIR>
+
+<BR> Data Types
+<BR> Word Size
+<BR> The Class Loader Subsystem<DIR>
+<DIR>
+
+<BR> Loading, Linking and Initialization
+<BR> The Primordial Class Loader
+<BR> Class Loader Objects
+<BR> Name Spaces</DIR>
+</DIR>
+
+<BR>The Method Area<DIR>
+<DIR>
+
+<BR> Type Information
+<BR> The Constant Pool
+<BR> Field Information
+<BR> Method Information Class Variables
+<BR> A Reference to Class ClassLoader
+<BR> A Reference to Class Class
+<BR> Method Tables
+<BR> An Example of Method Area Use</DIR>
+</DIR>
+
+<BR> The Heap<DIR>
+<DIR>
+
+<BR> Garbage Collection
+<BR> Object Representation
+<BR> Array Representation</DIR>
+</DIR>
+
+<BR> The Program Counter
+<BR> The Java Stack
+<BR> The Stack Frame<DIR>
+<DIR>
+
+<BR> Local Variables
+<BR> Operand Stack
+<BR> Frame Data
+<BR> Possible Implementations of the Java Stack</DIR>
+</DIR>
+
+<BR> Native Method Stacks
+<BR>Execution Engine<DIR>
+<DIR>
+
+<BR> The Instruction Set
+<BR> Execution Techniques
+<BR> Threads</DIR>
+</DIR>
+
+<BR> Native Method Interface</DIR>
+</DIR>
+
+<BR> The Real Machine
+<BR> Eternal Math: A Simulation
+<BR> On the CD-ROM
+<BR> The Resources Page</DIR>
+</DIR>
+
+<DIR><H3><EM><A HREF="chap06.html" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/venners/chap06.html"> 6 The Java Class File</A></EM></H3></DIR><DIR>
+<DIR>
+
+What is a Java Class File?
+<BR> What's in a Class File?
+<BR> Special Strings<DIR>
+<DIR>
+
+<BR> Fully Qualified Names
+<BR> Simple Names
+<BR> Descriptors</DIR>
+</DIR>
+
+<BR> The Constant Pool<DIR>
+<DIR>
+
+<BR> The CONSTANT_Utf8_info Table
+<BR> The CONSTANT_Integer_info Table
+<BR> The CONSTANT_Float_info Table
+<BR> The CONSTANT_Long_info Table
+<BR> The CONSTANT_Double_info Table
+<BR> The CONSTANT_Class_info Table
+<BR> The CONSTANT_String_info Table
+<BR> The CONSTANT_Fieldref_info Table
+<BR> The CONSTANT_Methodref_info Table
+<BR> The CONSTANT_InterfaceMethodref_info Table
+<BR> The CONSTANT_NameAndType_info Table</DIR>
+</DIR>
+
+<BR> Fields
+<BR> Methods
+<BR> Attributes<DIR>
+<DIR>
+
+<BR> The Code Attribute
+<BR> The ConstantValue Attribute
+<BR> The Exceptions Attribute
+<BR> The InnerClasses Attribute
+<BR> The LineNumberTable Attribute
+<BR> The LocalVariableTable Attribute
+<BR> The SourceFile Attribute
+<BR> The Synthetic Attribute</DIR>
+</DIR>
+
+<BR> Getting Loaded: A Simulation
+<BR> On the CD-ROM
+<BR> The Resources Page</DIR>
+</DIR>
+
+<DIR><H3><EM><A HREF="chap07.html" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/venners/chap07.html"> 7 The Lifetime of a Class</A></EM></H3></DIR><DIR>
+<DIR>
+
+Class Loading, Linking, and Initialization<DIR>
+<DIR>
+
+<BR> Loading
+<BR> Verification
+<BR> Preparation
+<BR> Resolution
+<BR> Initialization<DIR>
+<DIR>
+
+<BR> The Class Initialization Method
+<BR> Active versus Passive Use</DIR>
+</DIR>
+</DIR>
+</DIR>
+
+<BR> The Lifetime of an Object<DIR>
+<DIR>
+
+<BR> Class Instantiation
+<BR> Garbage Collection and Finalization of Objects</DIR>
+</DIR>
+
+<BR> Unloading and Finalization of Classes
+<BR> On the CD-ROM
+<BR> The Resources Page</DIR>
+</DIR>
+
+<DIR><H3><EM><A HREF="chap08.html" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/venners/chap08.html"> 8 The Linking Model</A></EM></H3></DIR><DIR>
+<DIR>
+
+Dynamic Linking and Resolution
+<BR> Resolution and Dynamic Extension
+<BR> Constant Pool Resolution<DIR>
+<DIR>
+
+<BR> Resolution of CONSTANT_Class_info Entries<DIR>
+<DIR>
+
+<BR> Array Classes
+<BR> Non-Array Classes and Interfaces</DIR>
+</DIR>
+
+<BR> Resolution of CONSTANT_Fieldref_info Entries
+<BR> Resolution of CONSTANT_Methodref_info Entries
+<BR> Resolution of CONSTANT_InterfaceMethodref_info Entries
+<BR> Resolution of CONSTANT_String_info Entries
+<BR>Resolution of Other Types of Entries</DIR>
+</DIR>
+
+<BR> Compile-Time Resolution of Constants
+<BR> Direct References
+<BR> _quick Instructions
+<BR> Example: The Linking of the Salutation Application
+<BR> Example: The Dynamic Extension of the Greet Application
+<BR>Example: Unloading Unreachable Greeters
+<BR> On the CD-ROM
+<BR> The Resources Page</DIR>
+</DIR>
+
+<DIR><H3><EM><A HREF="chap09.html" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/venners/chap09.html"> 9 Garbage Collection</A></EM></H3></DIR><DIR>
+<DIR>
+
+Why Garbage Collection?
+<BR> Garbage Collection Algorithms
+<BR>Reference Counting Collectors
+<BR> Tracing Collectors
+<BR> Compacting Collectors
+<BR> Copying Collectors
+<BR> Generational Collectors
+<BR> Adaptive Collectors
+<BR> Finalization
+<BR> Heap of Fish: A Simulation<DIR>
+<DIR>
+
+<BR> Allocate Fish
+<BR> Assign References
+<BR> Garbage Collect
+<BR>Compact Heap</DIR>
+</DIR>
+
+<BR> On the CD-ROM
+<BR> The Resources Page</DIR>
+</DIR>
+
+<DIR><H3><EM><A HREF="chap10.html" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/venners/chap10.html"> 10 Stack and Local Variable Operations</A></EM></H3></DIR><DIR>
+<DIR>
+
+Pushing Constants Onto the Stack
+<BR> Generic Stack Operations
+<BR>Pushing Local Variables Onto the Stack
+<BR> Popping to Local Variables
+<BR> The wide Instruction
+<BR> Fibonacci Forever: A Simulation
+<BR> On the CD-ROM
+<BR> The Resources Page</DIR>
+</DIR>
+
+<DIR><H3><EM><A HREF="chap11.html" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/venners/chap11.html"> 11 Type Conversion</A></EM></H3></DIR><DIR>
+<DIR>
+
+The Conversion Opcodes
+<BR> Conversion Diversion: A Simulation
+<BR> On the CD-ROM
+<BR> The Resources Page</DIR>
+</DIR>
+
+<DIR><H3><EM><A HREF="chap12.html" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/venners/chap12.html"> 12 Integer Arithmetic</A></EM></H3></DIR><DIR>
+<DIR>
+
+Two's Complement Arithmetic
+<BR> Inner Int: A Java int Reveals its Inner Nature
+<BR> Arithmetic Opcodes
+<BR> Prime Time: A Simulation
+<BR> On the CD-ROM
+<BR> The Resources Page</DIR>
+</DIR>
+
+<DIR><H3><EM><A HREF="chap13.html" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/venners/chap13.html"> 13 Logic</A></EM></H3></DIR><DIR>
+<DIR>
+
+The Logic Opcodes
+<BR> Logical Results: A Simulation
+<BR> On the CD-ROM
+<BR> The Resources Page</DIR>
+</DIR>
+
+<DIR><H3><EM><A HREF="chap14.html" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/venners/chap14.html"> 14 Floating Point Arithmetic</A></EM></H3></DIR><DIR>
+<DIR>
+
+<BR> Floating Point Numbers
+<BR> Inner Float: A Java float Reveals its Inner Nature
+<BR> The Floating Point Opcodes
+<BR> Circle of Squares: A Simulation
+<BR> On the CD-ROM
+<BR> The Resources Page</DIR>
+</DIR>
+
+<DIR><H3><EM><A HREF="chap15.html" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/venners/chap15.html"> 15 Objects and Arrays</A></EM></H3></DIR><DIR>
+<DIR>
+
+<BR> A Refresher on Objects and Arrays
+<BR> Opcodes for Objects
+<BR> Opcodes for Arrays
+<BR> Three-Dimensional Array: A Simulation
+<BR> On the CD-ROM
+<BR> The Resources Page</DIR>
+</DIR>
+
+<DIR><H3><EM><A HREF="chap16.html" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/venners/chap16.html"> 16 Control Flow</A></EM></H3></DIR><DIR>
+<DIR>
+
+Conditional Branching
+<BR> Unconditional Branching
+<BR> Conditional Branching with Tables
+<BR> Saying Tomato: A Simulation
+<BR> On the CD-ROM
+<BR> The Resources Page</DIR>
+</DIR>
+
+<DIR><H3><EM><A HREF="chap17.html" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/venners/chap17.html"> 17 Exceptions</A></EM></H3></DIR><DIR>
+<DIR>
+
+Throwing and Catching Exceptions
+<BR> The Exception Table
+<BR> Play Ball!: A Simulation
+<BR> On the CD-ROM
+<BR> The Resources Page</DIR>
+</DIR>
+
+<DIR><H3><EM><A HREF="chap18.html" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/venners/chap18.html"> 18 Finally Clauses</A></EM></H3></DIR><DIR>
+<DIR>
+
+Miniature Subroutines
+<BR> Asymmetrical Invocation and Return
+<BR> Hop Around: A Simulation
+<BR> On the CD-ROM
+<BR> The Resources Page</DIR>
+</DIR>
+
+<DIR><H3><EM><A HREF="chap19.html" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/venners/chap19.html"> 19 Method Invocation and Return</A></EM></H3></DIR><DIR>
+<DIR>
+
+Method Invocation<DIR>
+<DIR>
+
+<BR> Invoking a Java Method
+<BR>Invoking a Native Method</DIR>
+</DIR>
+
+<BR> Other Forms of Method Invocation
+<BR> The invokespecial instruction<DIR>
+<DIR>
+
+<BR> invokespecial and &lt;init</FONT>()
+<BR> invokespecial and Private Methods
+<BR> invokespecial and super</DIR>
+</DIR>
+
+<BR> The invokeinterface Instruction
+<BR> Invocation Instructions and Speed
+<BR> Examples of Method Invocation
+<BR> Returning from Methods
+<BR> On the CD-ROM
+<BR> The Resources Page</DIR>
+</DIR>
+
+<DIR><H3><EM><A HREF="chap20.html" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/venners/chap20.html"> 20 Thread Synchronization</A></EM></H3></DIR><DIR>
+<DIR>
+
+Monitors
+<BR> Object Locking
+<BR> Synchronization Support in the Instruction Set<DIR>
+<DIR>
+
+<BR> Synchronized Statements
+<BR> Synchronized Methods</DIR>
+</DIR>
+
+<BR> Coordination Support in Class Object
+<BR> On the CD-ROM
+<BR> The Resources Page</DIR>
+</DIR>
+
+<H2><A HREF="appa.html" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/venners/appa.html">Appendix A. Instructions by Opcode Mnemonic</A></H2>
+<H2><A HREF="appa.html" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/venners/appa.html">Appendix B. Opcode Mnemonic by Functional Group</A></H2>
+<H2><A HREF="appa.html" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/venners/appa.html">Appendix C. Opcode Mnemonic by Opcode</A></H2>
+<H2><A HREF="appa.html" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/venners/appa.html">Appendix D. Slices of Pi: A Simulation of the Java Virtual Machine</A></H2>
+<H2> Index</H2>
+<H2> About the Author</H2>
+
+<TABLE BORDER="0" WIDTH="100%">
+<TR><TD><A HREF="http://www.pbg.mcgraw-hill.com/betabooks/stores.html" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/stores.html" target="bottom"><IMG SRC="hotkey.gif" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/images/hotkey.gif" ALIGN="LEFT" BORDER="0" WIDTH="40" HEIGHT="40" ALT="Orders"></A>
+<IMG SRC="order_text.gif" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/images/order_text.gif" WIDTH="103" HEIGHT="41" ALT="Orders"></TD>
+<TD ALIGN="RIGHT"><A HREF="cover.html" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/venners/cover.html"><IMG SRC="backward.gif" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/images/backward.gif" BORDER="0" ALT="Backward" WIDTH="32" HEIGHT="32"></A>&nbsp;<A HREF="preface.html" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/venners/preface.html"><IMG SRC="forward.gif" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/images/forward.gif" BORDER="0" ALT="Forward" WIDTH="32" HEIGHT="32"></A></TD></TR>
+<TR><TD COLSPAN="2"><A HREF="mailto:computing@mcgraw-hill.com"><IMG SRC="hotkey.gif" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/images/hotkey.gif" ALIGN="LEFT" BORDER="0" WIDTH="40" HEIGHT="40" ALT="Comments"></A>
+<IMG SRC="comment_text.gif" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/images/comment_text.gif" WIDTH="73" HEIGHT="39" ALT="Comments"></TD></TR>
+
+</TABLE>
+<HR>
+<P ALIGN=CENTER>&nbsp;<A HREF="http://www.pbg.mcgraw-hill.com/computing/computing-home.html" tppabs="http://www.pbg.mcgraw-hill.com/computing/computing-home.html" TARGET="_top">COMPUTING
+MCGRAW-HILL</A> | <A HREF="http://www.pbg.mcgraw-hill.com/betabooks/betabooks-home.html" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/betabooks-home.html" TARGET="_top">Beta Books</A>
+| <A HREF="http://www.pbg.mcgraw-hill.com/computing/contact.html" tppabs="http://www.pbg.mcgraw-hill.com/computing/contact.html" TARGET="_top">Contact Us</A>
+| <A HREF="http://www.pbg.mcgraw-hill.com/betabooks/stores.html" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/stores.html" TARGET="_top">Order Information</A>
+| <A HREF="http://mcgraw-hill.inforonics.com/compsearch.shtml" tppabs="http://mcgraw-hill.inforonics.com/compsearch.shtml" TARGET="_top">Online Catalog</A></P>
+
+<P ALIGN=CENTER><FONT SIZE="-1"><A HREF="http://www.pbg.mcgraw-hill.com/computing/computing-home.html" tppabs="http://www.pbg.mcgraw-hill.com/computing/computing-home.html" TARGET="_top">Computing McGraw-Hill</A> is an imprint of the <A HREF="http://www.pbg.mcgraw-hill.com/pbg-home.html" tppabs="http://www.pbg.mcgraw-hill.com/pbg-home.html" TARGET="_top">McGraw-Hill Professional Book Group</A>.</FONT></P>
+
+<!-- begin footer -->
+<HR>
+<A HREF="http://www.mcgraw-hill.com/" tppabs="http://www.mcgraw-hill.com/" TARGET="_top"><IMG SRC="division-white.gif" tppabs="http://www.pbg.mcgraw-hill.com/images/division-white.gif" WIDTH="350" HEIGHT="44" ALT="A Division of the McGraw-Hill Companies" BORDER="0"></A><BR>
+<FONT SIZE="-2">Copyright &copy; 1997 <A HREF="http://www.mcgraw-hill.com/" tppabs="http://www.mcgraw-hill.com/" TARGET="_top">
+The McGraw-Hill Companies</A>. All rights reserved. Any use is subject to the 
+<A HREF="http://www.mcgraw-hill.com/corporate/news_info/copyrttm.htm" tppabs="http://www.mcgraw-hill.com/corporate/news_info/copyrttm.htm" TARGET="_top">
+Terms of Use</A>; the corporation also has a comprehensive <A HREF="http://www.mcgraw-hill.com/corporate/news_info/privacy.html" tppabs="http://www.mcgraw-hill.com/corporate/news_info/privacy.html" TARGET="_top">
+Privacy Policy</A> governing information we may collect from our customers.</FONT>
+<!-- end footer -->
+</BODY>
+</HTML>
+

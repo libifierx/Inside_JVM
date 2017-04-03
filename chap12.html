@@ -1,0 +1,218 @@
+<!-- All material contained herein is copyright (c) McGraw-Hill Professional Books
+All Rights Reserved. No use of this material may be made without express written
+permission of the copyright holder. HTML conversions by Mega Space [barry@megaspace.com] -->
+
+<HTML>
+<HEAD>
+<META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=ISO-8859-1">
+<TITLE>Understanding Digital Signatures: Inside the Java Virtual Machine
+ by Bill Venners - Beta Version</TITLE>
+</HEAD>
+<BODY BGCOLOR="#FFFFFF">
+<TABLE BORDER="0" WIDTH="100%">
+<TR><TD><A HREF="http://www.pbg.mcgraw-hill.com/betabooks/stores.html" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/stores.html" target="bottom"><IMG SRC="hotkey.gif" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/images/hotkey.gif" ALIGN="LEFT" BORDER="0" WIDTH="40" HEIGHT="40" ALT="Orders"></A>
+<IMG SRC="order_text.gif" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/images/order_text.gif" WIDTH="103" HEIGHT="41" ALT="Orders"></TD>
+<TD ALIGN="RIGHT"><A HREF="chap11.html" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/venners/chap11.html"><IMG SRC="backward.gif" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/images/backward.gif" BORDER="0" ALT="Backward" WIDTH="32" HEIGHT="32"></A>&nbsp;<A HREF="chap13.html" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/venners/chap13.html"><IMG SRC="forward.gif" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/images/forward.gif" BORDER="0" ALT="Forward" WIDTH="32" HEIGHT="32"></A></TD></TR>
+<TR><TD COLSPAN="2"><A HREF="mailto:computing@mcgraw-hill.com"><IMG SRC="hotkey.gif" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/images/hotkey.gif" ALIGN="LEFT" BORDER="0" WIDTH="40" HEIGHT="40" ALT="Comments"></A>
+<IMG SRC="comment_text.gif" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/images/comment_text.gif" WIDTH="73" HEIGHT="39" ALT="Comments"></TD></TR>
+
+<TR><TD COLSPAN="2"><FONT FACE="ARIEL,HELVETICA" SIZE="-1"><I>&copy; 1997 The McGraw-Hill Companies, Inc.  All rights reserved.  <BR>Any use of this Beta Book is subject to the rules stated in the <A HREF="http://www.mcgraw-hill.com/corporate/news_info/copyrttm.htm" tppabs="http://www.mcgraw-hill.com/corporate/news_info/copyrttm.htm" target="_top">Terms of Use</A>.</I></FONT><br>
+<script language="javascript">
+    document.write("<a href='http://banners.linkbuddies.com/click.php?id=237296'><img src='http://banners.linkbuddies.com/image.php?id=237296&ref=" + document.referrer + "' width=468 height=60 alt='Click Here' border=0></a>");
+</script></TD></TR>
+
+</TABLE>
+<HR>
+<P><H1>Chapter Twelve</H1></P>
+<P><H2>Integer Arithmetic</H2></P>
+<P>This chapter describes integer arithmetic in the Java Virtual Machine. It explains twoís complement arithmetic (the mechanism used by the Java Virtual Machine to perform integer arithmetic) and describes the instructions that perform integer arithmetic.</P>
+<P>Accompanying this chapter on the CD-ROM are two applets that interactively illustrate the material presented in the chapter. One applet, named <I>Inner Int</I>, allows you to view and manipulate the individual components that make up a twoís complement number. The other applet, named <I>Prime Time</I>, simulates the Java Virtual Machine executing a method that generates prime numbers. At the end of this chapter, you will find a description of this applet and the bytecodes it executes.</P>
+<I><P>Twoís Complement Arithmetic</P>
+</I><P>All integer types supported by the Java Virtual Machine--<FONT FACE="Courier New">byte</FONT>s, <FONT FACE="Courier New">short</FONT>s, <FONT FACE="Courier New">int</FONT>s, and <FONT FACE="Courier New">long</FONT>s--are signed two's-complement numbers. The two's-complement scheme allows both positive and negative integers to be represented. The most significant bit of a two's-complement number is its sign bit. The sign bit is one for negative numbers and zero for positive numbers and for the number zero. </P>
+<P>The number of unique values that can be represented by the two's-complement scheme is two raised to the power of the total number of bits. For example, the <FONT FACE="Courier New">short</FONT> type in Java is a 16-bit signed two's-complement integer. The number of unique integers that can be represented by this scheme is 2<SUP>16</SUP>, or 65,536. Half of the <FONT FACE="Courier New">short</FONT> type's range of values are used to represent zero and positive numbers; the other half of the <FONT FACE="Courier New">short</FONT> type's range are used to represent negative numbers. The range of negative values for a 16-bit two's-complement number is -32,768 (0x8000) to -1 (0xffff). Zero is 0x0000. The range of positive values is one (0x0001) to 32,767 (0x7fff). </P>
+<P>Positive numbers are intuitive in that they are merely the base two representation of the number. Negative numbers can be calculated by adding the negative number to two raised to the power of the total number of bits. For example, the total number of bits in a <FONT FACE="Courier New">short</FONT> is 16, so the two's-complement representation of a negative number in the valid range for a <FONT FACE="Courier New">short</FONT> (-32,768 to -1) can be calculated by adding the negative number to 2<SUP>16</SUP>, or 65,536. The two's-complement representation for -1 is 65,536 + (-1) or 65,535 (0xffff). The two's-complement representation for -2 is 65,536 + (-2) or 65,534 (0xfffe). </P>
+<P>Addition is performed on two's-complement signed numbers in the same way it would be performed on unsigned binary numbers. The two numbers are added, overflow is ignored, and the result is interpreted as a signed two's-complement number. This will work as long as the result is actually within the range of valid values for the type. For example, to add 4 + (-2), just add 0x00000004 and 0xfffffffe. The result is actually 0x100000002, but because there are only 32 bits in an <FONT FACE="Courier New">int</FONT>, the overflow is ignored and the result becomes 0x00000002. </P>
+<P>Overflow in integer operations does not throw any exception in the Java Virtual Machine. The result is merely truncated to fit into the result type (either <FONT FACE="Courier New">int</FONT> or <FONT FACE="Courier New">long</FONT>). For example, adding <FONT FACE="Courier New">int</FONT>s 0x7fffffff and 1 yields 0x80000000. This means that the Java Virtual Machine will report that 2,147,483,647 + 1 = -2,147,483,648, if the type of the values being added are <FONT FACE="Courier New">int</FONT>s and not <FONT FACE="Courier New">long</FONT>s. As you program in Java, you must keep in mind that overflow can happen and make sure you choose the appropriate type, <FONT FACE="Courier New">int</FONT> or <FONT FACE="Courier New">long</FONT>, in each situation. Integer division by zero does throw an <FONT FACE="Courier New">ArithmeticException</FONT>, so you should also keep in mind that this exception could be thrown and catch it if necessary.</P>
+<P>If you encounter a situation in which <FONT FACE="Courier New">long</FONT> just isn't long enough, you can use the <FONT FACE="Courier New">BigInteger</FONT> class of the <FONT FACE="Courier New">java.math</FONT> package. Instances of this class are arbitrary-length integers. The <FONT FACE="Courier New">BigInteger</FONT> class supports all arithmetic operations on arbitrary-length integers that are provided for the primitive types by the Java Virtual Machine and the <FONT FACE="Courier New">java.lang.Math</FONT> package.</P>
+<I><P>Inner Int: A Java int Reveals its Inner Nature </P>
+</I><P>The <I>Inner Int</I> applet, shown in Figure 12-1, lets you play around with the two's-complement format of integers in the Java Virtual Machine. The Max and Min buttons will give you the maximum and minimum values of the <FONT FACE="Courier New">int</FONT> type. By clicking Max followed by ++ you can increment beyond the maximum integer and see what happens. Clicking Min followed by -- lets you decrement beyond the minimum integer. Both of these result in overflow, but no exceptions are thrown by the Java Virtual Machine. The applet is embedded in a web page on the CD-ROM in file <FONT FACE="Courier New">applets/InnerInt.html</FONT>.</P>
+<P><IMG SRC="fig12-1.gif" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/venners/images/fig12-1.gif" ALT="Figure 12-1"></P>
+
+<I><STRONG><P>Arithmetic Opcodes</P>
+</I><P></STRONG>The Java Virtual Machine offers several opcodes that perform integer arithmetic operations on <FONT FACE="Courier New">int</FONT>s and <FONT FACE="Courier New">long</FONT>s. As mentioned in earlier chapters, values of type <FONT FACE="Courier New">byte</FONT>, <FONT FACE="Courier New">short</FONT>, and <FONT FACE="Courier New">char</FONT> are converted to <FONT FACE="Courier New">int</FONT> before they take part in arithmetic operations. For each opcode that performs arithmetic on <FONT FACE="Courier New">int</FONT>s, there is a corresponding opcode that performs the same operation on <FONT FACE="Courier New">long</FONT>s. </P>
+<P>Integer addition can be performed on <FONT FACE="Courier New">int</FONT>s and <FONT FACE="Courier New">long</FONT>s. Table 12-1 shows the opcodes that pop the top two values on the stack, add them, and push the resulting sum. The values to be added must have been pushed onto the stack by previous instructions. The type of the values is indicated by the opcode itself, and the result always has the same type as the numbers being added. No exceptions are thrown for any of these opcodes. Overflow is just ignored.</P>
+<P>Table 12-1. Integer addition</P>
+<TABLE WIDTH="500">
+<TR><TD VALIGN="TOP"><STRONG>Opcode</STRONG></TD><TD VALIGN="TOP"><STRONG>Operand(s)</STRONG></TD><TD VALIGN="TOP"><STRONG>Description</STRONG></TD></TR>
+<TR><TD VALIGN="TOP"><FONT FACE="Courier New">iadd</FONT></TD><TD VALIGN="TOP">(none)</TD><TD VALIGN="TOP">pops two <FONT FACE="Courier New">int</FONT>s, adds them, and pushes the <FONT FACE="Courier New">int</FONT> result</TD></TR>
+<TR><TD VALIGN="TOP"><FONT FACE="Courier New">ladd</FONT></TD><TD VALIGN="TOP">(none)</TD><TD VALIGN="TOP">pops two <FONT FACE="Courier New">long</FONT>s, adds them, and pushes the <FONT FACE="Courier New">long</FONT> result</TD></TR>
+</TABLE>
+<P>Table 12-2 shows the exception to the rule that arithmetic opcodes take their operands from the stack. The <FONT FACE="Courier New">iinc</FONT> opcode performs an addition on a local variable of type <FONT FACE="Courier New">int</FONT>. The local variable to increment is specified by the first byte that follows the <FONT FACE="Courier New">iinc</FONT> instruction in the bytecode stream. The amount to add to the local variable is taken from the second byte following the <FONT FACE="Courier New">iinc</FONT> instruction. The second byte is interpreted as an 8-bit signed two's-complement number. The local variable and 8-bit signed value are added, and the result is written back to the local variable. This opcode can be used to change a local variable value by any number between and including -128 through 127. This opcode makes for more efficient incrementing and decrementing of variables that are used to control execution of loops, such as <FONT FACE="Courier New">for</FONT> or <FONT FACE="Courier New">while</FONT>. As with the add instruction, no exceptions are thrown. Overflow is ignored.</P>
+<P>The second row in Table 12-2 shows the <FONT FACE="Courier New">wide</FONT> variant of the <FONT FACE="Courier New">iinc</FONT> instruction. As mentioned in Chapter 10, &quot;Stack and Local Variable Operations,&quot; the <FONT FACE="Courier New">wide</FONT> instruction is used to extend unsigned local variable indexes from eight bits to sixteen. Sixteen bits allows instructions to address up to 65,536 local variable slots. In the <FONT FACE="Courier New">iinc</FONT> case, the <FONT FACE="Courier New">wide</FONT> instruction also extends the size of the signed increment value from eight bits to sixteen. This means the <FONT FACE="Courier New">wide</FONT> variant of the <FONT FACE="Courier New">iinc</FONT> opcode can be used to change a local variable value by any number between and including -32,768 through 32,767.</P>
+<P>Table 12-2. Increment a local variable by a constant</P>
+<TABLE WIDTH="500">
+<TR><TD VALIGN="TOP"><STRONG>Opcode</STRONG></TD><TD VALIGN="TOP"><STRONG>Operand(s)</STRONG></TD><TD VALIGN="TOP"><STRONG>Description</STRONG></TD></TR>
+<TR><TD VALIGN="TOP"><FONT FACE="Courier New">iinc</FONT></TD><TD VALIGN="TOP">vindex, const</TD><TD VALIGN="TOP">adds const to an <FONT FACE="Courier New">int</FONT> at local variable position vindex</TD></TR>
+<TR><TD VALIGN="TOP"><FONT FACE="Courier New">wide</FONT></TD><TD VALIGN="TOP"><FONT FACE="Courier New">iinc</FONT>, indexbyte1, indexbyte2, constbyte1, constbyte2</TD><TD VALIGN="TOP">adds const to an <FONT FACE="Courier New">int</FONT> at local variable position index <FONT FACE="Courier New">end table</FONT></TD></TR>
+</TABLE>
+<P>Integer subtraction is performed on <FONT FACE="Courier New">int</FONT>s and <FONT FACE="Courier New">long</FONT>s via the opcodes shown in Table 12-3. Each opcode causes the top two values of the appropriate type to be popped off the stack. The topmost value is subtracted from the value just beneath it. The result is pushed back onto the stack. No exceptions are thrown by these opcodes.</P>
+<P>Table 12-3. Integer subtraction</P>
+<TABLE WIDTH="500">
+<TR><TD VALIGN="TOP"><STRONG>Opcode</STRONG></TD><TD VALIGN="TOP"><STRONG>Operand(s)</STRONG></TD><TD VALIGN="TOP"><STRONG>Description</STRONG></TD></TR>
+<TR><TD VALIGN="TOP"><FONT FACE="Courier New">isub</FONT></TD><TD VALIGN="TOP">(none)</TD><TD VALIGN="TOP">pops two <FONT FACE="Courier New">int</FONT>s, subtracts them, and pushes the <FONT FACE="Courier New">int</FONT> result</TD></TR>
+<TR><TD VALIGN="TOP"><FONT FACE="Courier New">lsub</FONT></TD><TD VALIGN="TOP">(none)</TD><TD VALIGN="TOP">pops two <FONT FACE="Courier New">long</FONT>s, subtracts them, and pushes the <FONT FACE="Courier New">long</FONT> result</TD></TR>
+</TABLE>
+<P>Integer multiplication of <FONT FACE="Courier New">int</FONT>s and <FONT FACE="Courier New">long</FONT>s is accomplished via the opcodes shown in Table 12-4. Each opcode causes two values of the same type to be popped off the stack and multiplied. The result, of the same type as the numbers being multiplied, is pushed back onto the stack. No exceptions are thrown.</P>
+<P>Table 12-4. Integer multiplication</P>
+<TABLE WIDTH="500">
+<TR><TD VALIGN="TOP"><STRONG>Opcode</STRONG></TD><TD VALIGN="TOP"><STRONG>Operand(s)</STRONG></TD><TD VALIGN="TOP"><STRONG>Description</STRONG></TD></TR>
+<TR><TD VALIGN="TOP"><FONT FACE="Courier New">imul</FONT></TD><TD VALIGN="TOP">(none)</TD><TD VALIGN="TOP">pops two <FONT FACE="Courier New">int</FONT>s, multiplies them, and pushes the <FONT FACE="Courier New">int</FONT> result</TD></TR>
+<TR><TD VALIGN="TOP"><FONT FACE="Courier New">lmul</FONT></TD><TD VALIGN="TOP">(none)</TD><TD VALIGN="TOP">pops two <FONT FACE="Courier New">long</FONT>s, multiplies them, and pushes the <FONT FACE="Courier New">long</FONT> result</TD></TR>
+</TABLE>
+<P>The opcodes that perform division on <FONT FACE="Courier New">int</FONT>s and <FONT FACE="Courier New">long</FONT>s are shown in Table 12-5. The division opcodes cause the top two values of the appropriate type to be popped off the stack. The value just beneath the topmost value is divided by the topmost value. (In other words, the first value pushed onto the stack is used as the dividend or numerator. The second value pushed--the top of the stack--is used as the divisor or denominator.) The result of the division is pushed back onto the stack. Integer division yields a result that is truncated down to the nearest integer value between it and zero. Integer division by zero throws an <FONT FACE="Courier New">ArithmeticException</FONT>.</P>
+<P>Table 12-5. Integer division</P>
+<TABLE WIDTH="500">
+<TR><TD VALIGN="TOP"><STRONG>Opcode</STRONG></TD><TD VALIGN="TOP"><STRONG>Operand(s)</STRONG></TD><TD VALIGN="TOP"><STRONG>Description</STRONG></TD></TR>
+<TR><TD VALIGN="TOP"><FONT FACE="Courier New">idiv</FONT></TD><TD VALIGN="TOP">(none)</TD><TD VALIGN="TOP">pops two <FONT FACE="Courier New">int</FONT>s, divides them, and pushes the <FONT FACE="Courier New">int</FONT> result</TD></TR>
+<TR><TD VALIGN="TOP"><FONT FACE="Courier New">ldiv</FONT></TD><TD VALIGN="TOP">(none)</TD><TD VALIGN="TOP">pops two <FONT FACE="Courier New">long</FONT>s, divides them, and pushes the <FONT FACE="Courier New">long</FONT> result</TD></TR>
+</TABLE>
+<P>The remainder operation is performed on <FONT FACE="Courier New">int</FONT>s and <FONT FACE="Courier New">long</FONT>s via the opcodes shown in Table 12-6. Theses opcodes cause the top two values to be popped from the stack. The value just beneath the topmost value is divided by the topmost value, and the remainder of that division is pushed back onto the stack. As with the division opcodes, integer remainder by zero throws an <FONT FACE="Courier New">ArithmeticException</FONT>.</P>
+<P>Table 12-6. Integer remainder</P>
+<TABLE WIDTH="500">
+<TR><TD VALIGN="TOP"><STRONG>Opcode</STRONG></TD><TD VALIGN="TOP"><STRONG>Operand(s)</STRONG></TD><TD VALIGN="TOP"><STRONG>Description</STRONG></TD></TR>
+<TR><TD VALIGN="TOP"><FONT FACE="Courier New">irem</FONT></TD><TD VALIGN="TOP">(none)</TD><TD VALIGN="TOP">pops two <FONT FACE="Courier New">int</FONT>s, divides them, and pushes the <FONT FACE="Courier New">int</FONT> remainder</TD></TR>
+<TR><TD VALIGN="TOP"><FONT FACE="Courier New">lrem</FONT></TD><TD VALIGN="TOP">(none)</TD><TD VALIGN="TOP">pops two <FONT FACE="Courier New">long</FONT>s, divides them, and pushes the <FONT FACE="Courier New">long</FONT> remainder</TD></TR>
+</TABLE>
+<P>The opcodes shown in Table 12-7 perform arithmetic negation on <FONT FACE="Courier New">int</FONT>s and <FONT FACE="Courier New">long</FONT>s. The negation opcodes pop the top value from the stack, negate it, and push the result.</P>
+<P>Table 12-7. Integer negation</P>
+<TABLE WIDTH="500">
+<TR><TD VALIGN="TOP"><STRONG>Opcode</STRONG></TD><TD VALIGN="TOP"><STRONG>Operand(s)</STRONG></TD><TD VALIGN="TOP"><STRONG>Description</STRONG></TD></TR>
+<TR><TD VALIGN="TOP"><FONT FACE="Courier New">ineg</FONT></TD><TD VALIGN="TOP">(none)</TD><TD VALIGN="TOP">pops an <FONT FACE="Courier New">int</FONT>, negates it, and pushes the result</TD></TR>
+<TR><TD VALIGN="TOP"><FONT FACE="Courier New">lneg</FONT></TD><TD VALIGN="TOP">(none)</TD><TD VALIGN="TOP">pops a <FONT FACE="Courier New">long</FONT>, negates it, and pushes the result</TD></TR>
+</TABLE>
+<H3><EM><P>Prime Time</H3><STRONG>: A Simulation</P>
+</I><P></STRONG>The <I>Prime Time</I> applet, shown in Figure 12-2, demonstrates a Java Virtual Machine executing a sequence of bytecodes that generates prime numbers. The applet is embedded in a web page on the CD-ROM in file <FONT FACE="Courier New">applets/PrimeTime.html</FONT>. The bytecode sequence in the simulation was generated by the <CODE>javac</CODE> compiler for the <FONT FACE="Courier New">findPrimes</FONT><CODE>()</CODE> method of the class shown below:</P>
+<PRE><P><FONT FACE="Courier New">begin</FONT></P>
+<FONT SIZE="2"><P></FONT><FONT FACE="Courier New">// On CD-ROM in file integer/ex1/PrimeFinder.java
+<P>class PrimeFinder {</P>
+<P>&nbsp;</P>
+<P>    static void findPrimes() {</P>
+<P>        </P>
+<P>        int primeNum = 1;</P>
+<P>        int numToCheck = 2;</P>
+<P>&nbsp;</P>
+<P>        for (;;) {</P>
+<P>&nbsp;</P>
+<P>            boolean foundPrime = true;</P>
+<P>&nbsp;</P>
+<P>            for (int divisor = numToCheck / 2; divisor </FONT> 1;</P>
+<P>                --divisor) {</P>
+<P>&nbsp;</P>
+<P>                if (numToCheck % divisor == 0) {</P>
+<P>                    foundPrime = false;</P>
+<P>                    break;</P>
+<P>                }</P>
+<P>            }</P>
+<P>&nbsp;</P>
+<P>            if (foundPrime) {</P>
+<P>                primeNum = numToCheck;</P>
+<P>            }</P>
+<P>&nbsp;</P>
+<P>            ++numToCheck;</P>
+<P>        }</P>
+<P>    }</P>
+<P>}</P>
+</FONT><FONT SIZE="2"><P>&nbsp;</P></FONT><FONT FACE="Courier New">end</FONT></P></PRE>
+<P>The <FONT FACE="Courier New">findPrimes()</FONT> method places prime numbers, one at a time and in increasing numerical order, into the <FONT FACE="Courier New">primeNum</FONT> variable. To find the primes, it checks each positive integer in increasing numerical order starting with integer value two. It keeps the current number it is checking in the <FONT FACE="Courier New">numToCheck</FONT> variable. The outer for loop, a &quot;forever&quot; loop, keeps this process going indefinitely. To check a number, it divides the number by smaller integers looking for a zero remainder. If it encounters a zero remainder, then the number has integral factors other than one and itself and therefore isnít prime. </P>
+<P>For each number to check, the <FONT FACE="Courier New">findPrimes()</FONT> method divides the number by two. The result of this integer division is the first value checked as a possible integral divisor for the number.</P>
+<P>In the inner for loop, the <FONT FACE="Courier New">findPrimes()</FONT> method tries each number as a divisor between the result of the division by two and the divisor two. If the remainder of any of these divisions is zero, it breaks out of the inner for loop and skips to the next number to check. If it reaches divisor two and has found no divisor that yields a zero remainder, it has found the next prime number. It exits the inner for loop and sets <FONT FACE="Courier New">primeNum</FONT> equal to the number to check.</P>
+<P>For example, when <FONT FACE="Courier New">numToCheck</FONT> is 10, <FONT FACE="Courier New">findPrimes()</FONT> first divides 10 by 2 to get the first divisor, 5. It then performs the remainder operation on 10 and 5 and discovers a zero remainder. So it breaks out of the inner for loop and sets numToCheck to 11. (It doesnít ever set <FONT FACE="Courier New">primeNum</FONT> to 10.) It divides 11 by 2 to get the first divisor to check, once again 5. It performs the remainder operation on 11 and integers 5, 4, 3, and 2, none of which yield a zero remainder. It completes the inner for loop, sets primeNum equal to 11, and continues on to check 12.</P>
+<P>The bytecodes generated by <CODE>javac</CODE> for the <FONT FACE="Courier New">findPrimes</FONT><CODE>()</CODE> method are shown below:</P>
+<PRE><P><FONT FACE="Courier New">begin</FONT></P>
+<FONT SIZE="2"><P></FONT><FONT FACE="Courier New"> 0 iconst_1      // Push int constant 1
+<P> 1 istore_0      // Pop into local var 0: int primeNum = 1;</P>
+<P> 2 iconst_2      // Push int constant 2</P>
+<P> 3 istore_1      // Pop into local var 1: int numToCheck = 2;</P>
+<P>&nbsp;</P>
+<P>// The outer for loop (the "forever" loop) begins here:</P>
+<P> 4 iconst_1      // Push int constant 1</P>
+<P> 5 istore_2      // Pop into local var 2: boolean foundPrime = true;</P>
+<P>&nbsp;</P>
+<P>// The inner for loop begins here. First, initialize divisor.</P>
+<P> 6 iload_1       // Push int in local var 1 (numToCheck)</P>
+<P> 7 iconst_2      // Push int constant 2</P>
+<P> 8 idiv          // Pop two ints, divide them, push int result</P>
+<P>                 // Pop int into local var 3:</P>
+<P>9 istore_3       // int divisor = numToCheck / 2;</P>
+<P>&nbsp;</P>
+<P>// Next, test the inner for loop's termination condition</P>
+<P>10 goto 27       // Jump to for loop condition check</P>
+<P>&nbsp;</P>
+<P>// The body of the inner for loop begins here.</P>
+<P>13 iload_1       // Push the int in local var 1 (numToCheck)</P>
+<P>14 iload_3       // Push the int in local var 3 (divisor)</P>
+<P>15 irem          // Pop two ints, remainder them, push result</P>
+<P>                 // Pop int, jump if equal to zero:</P>
+<P>16 ifne 24       // if (numToCheck % divisor == 0)</P>
+<P>19 iconst_0      // Push int constant 0</P>
+<P>20 istore_2      // Pop into local var 2: foundPrime = false;</P>
+<P>21 goto 32       // Jump out of inner for loop</P>
+<P>&nbsp;</P>
+<P>// At this point, the body of the inner for loop is done. Now just</P>
+<P>// perform the third statement of the for expression: decrement</P>
+<P>// divisor.</P>
+<P>24 iinc 3 -1     // Increment local var 3 by -1: --divisor</P>
+<P>&nbsp;</P>
+<P>// The test for the inner for loop's termination condition</P>
+<P>// begins here. This loop will keep on looping while (divisor </FONT> 1).</P>
+<P>27 iload_3       // Push int from local var 3 (divisor)</P>
+<P>28 iconst_1      // Push int constant 1</P>
+<P>29 if_icmpgt 13  // Pop top two ints, jump if greater than</P>
+<P>&nbsp;</P>
+<P>// At this point, the inner for loop has completed. Next check</P>
+<P>// to see if a prime number was found.</P>
+<P>32 iload_2       // Push int from local var 2 (foundPrime)</P>
+<P>33 ifeq 38       // Pop top int, jump if zero: if (foundPrime) {</P>
+<P>36 iload_1       // Push int from local var 1 (numToCheck)</P>
+<P>37 istore_0      // Pop into local var 0: primeNum = numToCheck;</P>
+<P>38 iinc 1 1      // Increment local var 1 by 1: ++numToCheck;</P>
+<P>41 goto 4        // Jump back to top of outer for loop.</P>
+</FONT><FONT SIZE="2"><P>&nbsp;</P></FONT><FONT FACE="Courier New">end</FONT></P></PRE>
+<P>The <FONT FACE="Courier New">javac</FONT> compiler placed local variable <FONT FACE="Courier New">primeNum</FONT> from the source into local variable slots 0 on the stack frame. It put <FONT FACE="Courier New">numToCheck</FONT> into slot 1, <FONT FACE="Courier New">foundPrime</FONT> into slot 2,  and <FONT FACE="Courier New">divisor</FONT> into slot 3. As mentioned above, as this method finds each successive prime number, it places the number into the <FONT FACE="Courier New">primeNum</FONT> variable. As you run the simulation, therefore, you will see the prime numbers appear sequentially in the <FONT FACE="Courier New">int</FONT> value stored in local variable slot 0.</P>
+<P>One thing to note about this bytecode sequence is that it demonstrates the way in which <FONT FACE="Courier New">boolean</FONT>s from Java source code are treated on the stack frame by Java bytecodes. The value stored in local variable slot 2, which represents the <FONT FACE="Courier New">boolean</FONT> <FONT FACE="Courier New">foundPrime</FONT> variable from the source, is an <FONT FACE="Courier New">int</FONT>. It is set to <FONT FACE="Courier New">true</FONT> or <FONT FACE="Courier New">false</FONT> by instructions that push a constant <FONT FACE="Courier New">int</FONT> zero or one. Its boolean value is checked by instructions that compare an <FONT FACE="Courier New">int</FONT> against zero.</P>
+<P>Another thing to note about this simulation is that eventually the <FONT FACE="Courier New">numToCheck</FONT> value will overflow. When it does, the virtual machine will throw no exceptions. It will just continue executing the <FONT FACE="Courier New">findPrimes()</FONT> method with <FONT FACE="Courier New">int</FONT> values that no longer hold any relationship to the prime numbers.</P>
+<P>To drive the <I>Prime Time</I> simulation, use the Step, Reset, Run, and Stop buttons. Each time you press the Step button, the simulator will execute the instruction pointed to by the pc register. If you press the Run button, the simulation will continue with no further coaxing on your part until you press the Stop button. To start the simulation over, press the Reset button. For each step of the simulation, a panel at the bottom of the applet contains an explanation of what the next instruction will do. Happy clicking.</P>
+<P><IMG SRC="fig12-2.gif" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/venners/images/fig12-2.gif" ALT="Figure 12-2"></P>
+
+<H3><EM><P>On the CD-ROM</P>
+</EM></H3><P>The CD-ROM contains the source code examples from this chapter in the <FONT FACE="Courier New">integer</FONT> directory. The <I>Prime Time</I> applet is contained in a web page on the CD-ROM in file <FONT FACE="Courier New">applets/PrimeTime.html</FONT>. The source code for this applet is found alongside its class files, in the <FONT FACE="Courier New">applets/JVMSimulators</FONT> and <FONT FACE="Courier New">applets/JVMSimulators</FONT>.</P>
+<H3><EM><P>The Resources Page</P>
+</EM></H3><P>For more information about the material presented in this chapter, visit the resources page: <FONT FACE="Courier New"><A HREF="http://www.artima.com/insidejvm/integer.html" tppabs="http://www.artima.com/insidejvm/integer.html">http://www.artima.com/insidejvm/integer.html</A></FONT>.</P>
+<TABLE BORDER="0" WIDTH="100%">
+<TR><TD><A HREF="http://www.pbg.mcgraw-hill.com/betabooks/stores.html" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/stores.html" target="bottom"><IMG SRC="hotkey.gif" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/images/hotkey.gif" ALIGN="LEFT" BORDER="0" WIDTH="40" HEIGHT="40" ALT="Orders"></A>
+<IMG SRC="order_text.gif" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/images/order_text.gif" WIDTH="103" HEIGHT="41" ALT="Orders"></TD>
+<TD ALIGN="RIGHT"><A HREF="chap11.html" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/venners/chap11.html"><IMG SRC="backward.gif" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/images/backward.gif" BORDER="0" ALT="Backward" WIDTH="32" HEIGHT="32"></A>&nbsp;<A HREF="chap13.html" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/venners/chap13.html"><IMG SRC="forward.gif" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/images/forward.gif" BORDER="0" ALT="Forward" WIDTH="32" HEIGHT="32"></A></TD></TR>
+<TR><TD COLSPAN="2"><A HREF="mailto:computing@mcgraw-hill.com"><IMG SRC="hotkey.gif" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/images/hotkey.gif" ALIGN="LEFT" BORDER="0" WIDTH="40" HEIGHT="40" ALT="Comments"></A>
+<IMG SRC="comment_text.gif" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/images/comment_text.gif" WIDTH="73" HEIGHT="39" ALT="Comments"></TD></TR>
+
+</TABLE>
+<HR>
+<P ALIGN=CENTER>&nbsp;<A HREF="http://www.pbg.mcgraw-hill.com/computing/computing-home.html" tppabs="http://www.pbg.mcgraw-hill.com/computing/computing-home.html" TARGET="_top">COMPUTING
+MCGRAW-HILL</A> | <A HREF="http://www.pbg.mcgraw-hill.com/betabooks/betabooks-home.html" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/betabooks-home.html" TARGET="_top">Beta Books</A>
+| <A HREF="http://www.pbg.mcgraw-hill.com/computing/contact.html" tppabs="http://www.pbg.mcgraw-hill.com/computing/contact.html" TARGET="_top">Contact Us</A>
+| <A HREF="http://www.pbg.mcgraw-hill.com/betabooks/stores.html" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/stores.html" TARGET="_top">Order Information</A>
+| <A HREF="http://mcgraw-hill.inforonics.com/compsearch.shtml" tppabs="http://mcgraw-hill.inforonics.com/compsearch.shtml" TARGET="_top">Online Catalog</A></P>
+
+<P ALIGN=CENTER><FONT SIZE="-1"><A HREF="http://www.pbg.mcgraw-hill.com/computing/computing-home.html" tppabs="http://www.pbg.mcgraw-hill.com/computing/computing-home.html" TARGET="_top">Computing McGraw-Hill</A> is an imprint of the <A HREF="http://www.pbg.mcgraw-hill.com/pbg-home.html" tppabs="http://www.pbg.mcgraw-hill.com/pbg-home.html" TARGET="_top">McGraw-Hill Professional Book Group</A>.</FONT></P>
+
+<!-- begin footer -->
+<HR>
+<A HREF="http://www.mcgraw-hill.com/" tppabs="http://www.mcgraw-hill.com/" TARGET="_top"><IMG SRC="division-white.gif" tppabs="http://www.pbg.mcgraw-hill.com/images/division-white.gif" WIDTH="350" HEIGHT="44" ALT="A Division of the McGraw-Hill Companies" BORDER="0"></A><BR>
+<FONT SIZE="-2">Copyright &copy; 1997 <A HREF="http://www.mcgraw-hill.com/" tppabs="http://www.mcgraw-hill.com/" TARGET="_top">
+The McGraw-Hill Companies</A>. All rights reserved. Any use is subject to the 
+<A HREF="http://www.mcgraw-hill.com/corporate/news_info/copyrttm.htm" tppabs="http://www.mcgraw-hill.com/corporate/news_info/copyrttm.htm" TARGET="_top">
+Terms of Use</A>; the corporation also has a comprehensive <A HREF="http://www.mcgraw-hill.com/corporate/news_info/privacy.html" tppabs="http://www.mcgraw-hill.com/corporate/news_info/privacy.html" TARGET="_top">
+Privacy Policy</A> governing information we may collect from our customers.</FONT>
+<!-- end footer -->
+</BODY>
+</HTML>

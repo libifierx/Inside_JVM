@@ -1,0 +1,347 @@
+<!-- All material contained herein is copyright (c) McGraw-Hill Professional Books
+All Rights Reserved. No use of this material may be made without express written
+permission of the copyright holder. HTML conversions by Mega Space [barry@megaspace.com] -->
+
+<HTML>
+<HEAD>
+<META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=ISO-8859-1">
+<TITLE>Understanding Digital Signatures: Inside the Java Virtual Machine
+ by Bill Venners - Beta Version</TITLE>
+</HEAD>
+<BODY BGCOLOR="#FFFFFF">
+<TABLE BORDER="0" WIDTH="100%">
+<TR><TD><A HREF="http://www.pbg.mcgraw-hill.com/betabooks/stores.html" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/stores.html" target="bottom"><IMG SRC="hotkey.gif" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/images/hotkey.gif" ALIGN="LEFT" BORDER="0" WIDTH="40" HEIGHT="40" ALT="Orders"></A>
+<IMG SRC="order_text.gif" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/images/order_text.gif" WIDTH="103" HEIGHT="41" ALT="Orders"></TD>
+<TD ALIGN="RIGHT"><A HREF="chap19.html" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/venners/chap19.html"><IMG SRC="backward.gif" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/images/backward.gif" BORDER="0" ALT="Backward" WIDTH="32" HEIGHT="32"></A>&nbsp;<A HREF="appa.html" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/venners/appa.html"><IMG SRC="forward.gif" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/images/forward.gif" BORDER="0" ALT="Forward" WIDTH="32" HEIGHT="32"></A></TD></TR>
+<TR><TD COLSPAN="2"><A HREF="mailto:computing@mcgraw-hill.com"><IMG SRC="hotkey.gif" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/images/hotkey.gif" ALIGN="LEFT" BORDER="0" WIDTH="40" HEIGHT="40" ALT="Comments"></A>
+<IMG SRC="comment_text.gif" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/images/comment_text.gif" WIDTH="73" HEIGHT="39" ALT="Comments"></TD></TR>
+
+<TR><TD COLSPAN="2"><FONT FACE="ARIEL,HELVETICA" SIZE="-1"><I>&copy; 1997 The McGraw-Hill Companies, Inc.  All rights reserved.  <BR>Any use of this Beta Book is subject to the rules stated in the <A HREF="http://www.mcgraw-hill.com/corporate/news_info/copyrttm.htm" tppabs="http://www.mcgraw-hill.com/corporate/news_info/copyrttm.htm" target="_top">Terms of Use</A>.</I></FONT><br>
+<script language="javascript">
+    document.write("<a href='http://banners.linkbuddies.com/click.php?id=237296'><img src='http://banners.linkbuddies.com/image.php?id=237296&ref=" + document.referrer + "' width=468 height=60 alt='Click Here' border=0></a>");
+</script></TD></TR>
+
+</TABLE>
+<HR>
+<P><H1>Chapter Twenty</H1></P>
+<P><H2>Thread Synchronization</H2></P>
+<P>One of the strengths of the Java programming language is its support for multithreading at the language level. Much of this support centers on <I>synchronization</I>: coordinating activities and data access among multiple threads. The mechanism that Java uses to support synchronization is the <I>monitor</I>. This chapter describes monitors and shows how they are used by the Java Virtual Machine. It describes how one aspect of monitors, the locking and unlocking of data, is supported in the instruction set.</P>
+<H3><EM><P>Monitors</P>
+</EM></H3><P>A monitor supports two kinds of thread synchronization: <I>mutual exclusion</I> and <I>cooperation</I>. Mutual exclusion, which is supported in the Java Virtual Machine via object locks, enables multiple threads to independently work on shared data without interfering with each other. Cooperation, which is supported in the Java Virtual Machine via the wait and notify methods of class <FONT FACE="Courier New">Object</FONT>, enables threads to work together towards a common goal.</P>
+<P>A monitor is like a building that contains one special room that can be occupied by only one thread at a time. The room usually contains some data. From the time a thread enters this room to the time it leaves, it has exclusive access to any data in the room. Entering the monitor building is called &quot;entering the monitor.&quot; Entering the special room inside the building is called &quot;acquiring the monitor.&quot; Occupying the room is called &quot;owning the monitor,&quot; and leaving the room is called &quot;releasing the monitor.&quot; Leaving the entire building is called &quot;exiting the monitor.&quot;</P>
+<P>In addition to being associated with a bit of data, a monitor is associated with one or more bits of code called <I>critical sections</I>. A critical section is code that needs to be executed as one indivisible operation. In other words, one thread must be able to execute a critical section from beginning to end without another thread concurrently executing a critical section of the same monitor. A monitor enforces this one-thread-at-a-time execution of its critical sections. The only way a thread can enter a monitor is by arriving at the beginning of one of the critical sections associated with that monitor. The only way a thread can move forward and execute the critical section is by acquiring the monitor.</P>
+<P>When a thread arrives at the beginning of a critical section, it is placed into an <I>entry set</I> for the associated monitor. The entry set is like the front hallway of the monitor building. If no other thread is waiting in the entry set and no other thread currently owns the monitor, the thread aquires the monitor and continues executing the critical section. When the thread finishes executing the critical section, it exits (and releases) the monitor.</P>
+<P>If a thread arrives at the beginning of a critical section of a monitor that is already owned by another thread, the newly arrived thread must wait in the entry set. When the current owner exits the monitor, the newly arrived thread must compete with any other threads also waiting in the entry set. Only one thread will win the competition and acquire the monitor.</P>
+<P>The first kind of synchronization listed above, mutual exclusion, refers to the mutually exclusive execution of critical sections by multiple threads. At any one time, only one thread can be executing a critical section of a particular monitor. In general, mutual exclusion is important only when multiple threads are sharing data. If two threads are not working with any common data, they usually canít interfere with each other and neednít execute in a mutually exclusive way. On a Java Virtual Machine implementation that doesnít time slice, however, a higher priority thread that is never blocked will interfere with any lower priority threads, even if none of the threads share data. The higher priority thread will monopolize the CPU at the expense of the lower priority threads. Lower priority threads will never get any CPU time. In such a case, a monitor that protects no data may be used to orchestrate these threads to ensure all threads get some CPU time. Nevertheless, in most cases a monitor protects data that is accessed through the critical section code. In cases where the data can be accessed only through the critical sections, the monitor enforces mutually exclusive access to that data.</P>
+<P>The other kind of synchronization listed above as supported by monitors is cooperation. Whereas mutual exclusion helps keep threads from interfering with one another while sharing data, cooperation helps threads to work together towards some common goal.</P>
+<P>Cooperation is important when one thread needs some data to be in a particular state and another thread is responsible for getting the data into that state. For example, one thread, a &quot;read thread,&quot; may be reading data from a buffer that another thread, a &quot;write thread,&quot; is filling. The read thread needs the buffer to be in a &quot;not empty&quot; state before it can read any data out of the buffer. If the read thread discovers that the buffer is empty, it must wait. The write thread is responsible for filling the buffer with data. Once the write thread has done some more writing, the read thread can do some more reading.</P>
+<P>The form of monitor used by the Java Virtual Machine is called a &quot;Wait and Notify&quot; monitor. (It is also sometimes called a &quot;Signal and Continue&quot; monitor.) In this kind of monitor, a thread that currently owns the monitor can suspend itself inside the monitor by executing a <I>wait command</I>. When a thread executes a wait, it releases the monitor and enters a <I>wait set</I>. The thread will stay suspended in the wait set until some time after another thread executes a <I>notify command</I> inside the monitor. When a thread executes a notify, it continues to own the monitor until it releases the monitor of its own accord, either by executing a wait or by completing the critical section. After the notifying thread has released the monitor, the waiting thread will be resurrected and will reacquire the monitor.</P>
+<P>The kind of monitor used in the Java Virtual Machine is sometimes called a Signal and Continue monitor because after a thread does a notify (the signal) it retains ownership of the monitor and continues executing the critical section (the continue). At some later time, the notifying thread releases the monitor and a waiting thread is resurrected. Presumably, the waiting thread suspended itself because the data protected by the monitor wasnít in a state that would allow the thread to continue doing useful work. Also, the notifying thread presumably executed the notify command after it had placed the data protected by the monitor into the state desired by the waiting thread. But because the notifying thread continued, it may have altered the state after the notify such that the waiting thread still canít do useful work. Alternatively, a third thread may have acquired the monitor after the notifying thread released it but before the waiting thread acquired it, and the third thread may have changed the state of the protected data. As a result, a notify must often be considered by waiting threads merely as a hint that the desired state <I>may</I> exist. Each time a waiting thread is resurrected, it may need to check the state again to determine whether it can move forward and do useful work. If it finds the data still isnít in the desired state, the thread could execute another wait or give up and exit the monitor.</P>
+<P>As an example, consider once again the scenario described above that involves a buffer, a read thread, and a write thread. Assume the buffer is protected by a monitor. When a read thread enters the monitor that protects the buffer, it checks to see if the buffer is empty. If the buffer is not empty, the read thread reads (and removes) some data from the buffer. Satisfied, it exits the monitor. On the other hand, if the buffer is empty, the read thread executes a wait command. As soon as it executes the wait, the read thread is suspended and placed into the monitorís wait set. In the process, the read thread releases the monitor, which becomes available to other threads. At some later time, the write thread enters the monitor, writes some data into the buffer, executes a notify, and exits the monitor. When the write thread executes the notify, the read thread is marked for eventual resurrection. After the write thread has exited the monitor, the read thread is resurrected as the owner of the monitor. If there is any chance that some other thread has come along and consumed the data left by the write thread, the read thread must explicitly check to make sure the buffer is not empty. If there is no chance that any other thread has consumed the data, then the read thread can just assume the data exists. The read thread reads some data from the buffer and exits the monitor.</P>
+<P>A graphical depiction of the kind of monitor used by a Java Virtual Machine is shown in Figure 20-1. This figure shows the monitor as three rectangles. In the center, a large rectangle contains a single thread, the monitorís owner. On the left, a small rectangle contains the entry set. On the right, another small rectangle contains the wait set. Active threads are shown as dark gray circles. Suspended threads are shown as light gray circles.</P>
+<P><IMG SRC="fig20-1.gif" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/venners/images/fig20-1.gif" ALT="Figure 20-1"></P>
+
+<P>Figure 20-1 also shows several numbered doors that threads must &quot;pass through&quot; to interact with the monitor. When a thread arrives at the start of a critical section, it enters the monitor via the leftmost door, door number one, and finds itself in the rectangle that houses the entry set. If no thread currently owns the monitor and no other threads are waiting in the entry set, the thread passes immediately through the next door, door number two, and becomes the owner of the monitor. As the monitor owner, the thread continues executing the critical section. If, on the other hand, there is another thread currently claiming ownership of the monitor, the newly arrived thread must wait in the entry set, possibly along with other threads already waiting there. The newly arrived thread is blocked and therefore doesnít execute any further into the critical section.</P>
+<P>Figure 20-1 shows three threads suspended in the entry set and four threads suspended in the wait set. These threads will remain where they are until the current owner of the monitor--the active thread--releases the monitor. The active thread can release the monitor in either of two ways: it can complete the critical section it is executing or it can execute a wait command. If it completes the critical section, it exits the monitor via the door at the bottom of the central rectangle, door number five. If it executes a wait command, it releases the monitor as it travels through door number three, the door to the wait set.</P>
+<P>If the former owner did not execute a notify before it released the monitor, then only the threads in the entry set will compete to acquire the monitor. If the former owner did execute a notify, then the entry set threads will have to compete with one or more threads from the wait set. If a thread from the entry set wins the competition, it passes through the door number two and becomes the new owner of the monitor. If a thread from the wait set wins the competition, it exits the wait set and reacquires the monitor as it passes through door number four. Note that doors three and four are the only ways a thread can enter or exit the wait set. A thread can only execute a wait command if it currently owns the monitor, and it canít leave the wait set without automatically becoming again the owner of the monitor.</P>
+<P>In the Java Virtual Machine, threads can optionally specify a timeout when they execute a wait command. If a thread does specify a timeout, and no other thread executes a notify before the timeout expires, the waiting thread in effect receives an automatic notify from the virtual machine. After the timeout expires, the waiting thread will be resurrected even if no other thread has executed an explicit notify.</P>
+<P>The Java Virtual Machine offers two kinds of notify commands: &quot;notify&quot; and &quot;notify all.&quot; A notify command selects one thread arbitrarily from the wait set and marks it for eventual resurrection. A notify all command marks all threads currently in the wait set for eventual resurrection.</P>
+<P>To a great extent, the manner in which a Java Virtual Machine implementation selects the next thread from the wait or entry sets is a decision of individual implementation designers. For example, implementation designers can decide how to select:</P>
+<UL><LI> a thread from the wait set given a notify command
+<LI> the order to resurrect threads from the wait set given a notify all command
+<LI> the order to allow threads from the entry set to acquire the monitor
+<LI> how to choose between threads suspended in the wait set versus the entry set after a notify command</UL>
+<P>You might think it would make sense to implement entry set and wait sets as first-in-first-out (FIFO) queues, so that the thread that waits the longest will be the first chosen to acquire the monitor. Alternatively, it might make sense to have ten FIFO queues, one for each priority a thread can have inside the Java Virtual Machine. The virtual machine could then choose the thread that has been waiting the longest in the highest priority queue that contains any waiting threads. Implementations may take approaches such as these, but you canít depend on it. Implementations are free to implement the entry and wait sets as last-in-first-out (LIFO) queues, to select lower priority threads before higher priority threads, or to do anything else that may not seem to make sense. Implementations are free to select threads in an arbitrary manner that defies analysis and yields surprising orderings.</P>
+<P>As a programmer, you must not rely on any particular selection algorithm or treatment of priorities, at least if you are trying to write a Java program that is platform independent. For example, because you donít know what order threads in the wait set will be chosen for resurrection by the notify command, you should use notify (as opposed to notify all) only when you are absolutely certain there will only be one thread suspended in the wait set. If there is a chance more than one thread will be suspended in the wait set at any one time, you should probably use notify all. Otherwise, on some Java Virtual Machine implementations a particular thread may be stuck in the wait set for a very long time. If a notify always selects the most recent arrival from the wait set and the wait set always contains multiple threads, some threads that have been waiting the longest may never be resurrected. </P>
+<H3><EM><P>Object Locking</P>
+</EM></H3><P>As mentioned in earlier chapters, some of the Java Virtual Machineís runtime data areas are shared by all threads, others are private to individual threads.  Because the heap and method area are shared by all threads, Java programs need to coordinate multi-threaded access to two kinds of data:</P>
+<UL><LI> instance variables, which are stored on the heap
+<LI> class variables, which are stored in the method area</UL>
+<P>Programs never need to coordinate access to local variables, which reside on Java stacks, because data on the Java stack is private to the thread to which the Java stack belongs.</P>
+<P>In the Java Virtual Machine, every object and class is logically associated with a monitor. For objects, the associated monitor protects the objectís instance variables. For classes, the monitor protects the classís class variables. If an object has no instance variables, or a class has no class variables, the associated monitor protects no data.</P>
+<P>To implement the mutual exclusion capability of monitors, the Java Virtual Machine associates a <I>lock</I> (sometimes called a <I>mutex</I>) with each object and class. A lock is like a privilege that only one thread can &quot;own&quot; at any one time. Threads need not obtain a lock to access instance or class variables. If a thread does obtain a lock, however, no other thread can access the locked data until the thread that owns the lock releases it. (To &quot;lock an object&quot; is to acquire the monitor associated with that object.)</P>
+<P>Class locks are actually implemented as object locks. As mentioned in earlier chapters, when the Java Virtual Machine loads a class file, it creates an instance of class <FONT FACE="Courier New">java.lang.Class</FONT>. When you lock a class, you are actually locking that classís <FONT FACE="Courier New">Class</FONT> object.  </P>
+<P>A single thread is allowed to lock the same object multiple times. For each object, the Java Virtual Machine maintains a count of the number of times the object has been locked. An unlocked object has a count of zero. When a thread acquires the lock for the first time, the count is again incremented to one. Each time the thread acquires a lock on the same object, the count is again incremented. (Only the thread that already owns an objectís lock is allowed to lock it again. No other thread can lock the object until the owning thread releases the lock.) Each time the thread releases the lock, the count is decremented. When the count reaches zero, the lock is released and made available to other threads. </P>
+<P>A thread in the Java Virtual Machine requests a lock when it arrives at the beginning of a critical section. In Java, there are two kinds of critical sections: synchronized statements and synchronized methods. (These are described in detail later in this chapter.) Each critical section in a Java program is associated with an object reference. When a thread arrives at the first instruction in a critical section, the thread must obtain a lock on the referenced object. The thread is not allowed to execute the code until it obtains the lock. Once it has obtained the lock, the thread enters the block of protected code. When the thread leaves the block, no matter how it leaves the block, it releases the lock on the associated object.</P>
+<P>Note that as a Java programmer, you never explicitly lock an object. Object locks are internal to the Java Virtual Machine. In your Java programs, you identify the critical sections of your program by writing synchronized statements and methods. As the Java Virtual Machine runs your program, it automatically locks an object or class every time it encounters a critical section.</P>
+<H3><EM><P>Synchronization Support in the Instruction Set</P>
+</EM></H3><P>As mentioned above, the language provides two built-in ways to identify critical sections in your programs: synchronized statements and synchronized methods. These two mechanisms, which implement the mutual exclusion aspect of synchronization, are supported by the Java Virtual Machineís instruction set.</P>
+<H3><P>Synchronized Statements</P>
+</H3><P>To create a synchronized statement, you use the synchronized keyword with an expression that evaluates to an object reference, as in the <FONT FACE="Courier New">reverseOrder()</FONT> method below:</P>
+<PRE><P><FONT FACE="Courier New">begin</FONT></P>
+<FONT SIZE="2"><P></FONT><FONT FACE="Courier New">// On CD-ROM in file threads/ex1/KitchenSync.java
+<P>class KitchenSync {</P>
+<P>&nbsp;</P>
+<P>    private int[] intArray = new int[10];</P>
+<P>&nbsp;</P>
+<P>    void reverseOrder() {</P>
+<P>        synchronized (this) {</P>
+<P>            int halfWay = intArray.length / 2;</P>
+<P>            for (int i = 0; i &lt; halfWay; ++i) {</P>
+<P>                int upperIndex = intArray.length - 1 - i;</P>
+<P>                int save = intArray[upperIndex];</P>
+<P>                intArray[upperIndex] = intArray[i];</P>
+<P>                intArray[i] = save;</P>
+<P>            }</P>
+<P>        }</P>
+<P>    }</P>
+<P>    // ...</P>
+<P>}</P>
+</FONT><FONT SIZE="2"><P>&nbsp;</P></FONT><FONT FACE="Courier New">end</FONT></P></PRE>
+<P>In the above case, the statements contained within the synchronized block will not be executed until a lock is acquired on the current object (<FONT FACE="Courier New">this</FONT>). If instead of a <FONT FACE="Courier New">this</FONT> reference, the expression yielded a reference to another object, the lock associated with that object would be acquired before the thread continued. If the expression yields a reference to an instance of class <FONT FACE="Courier New">Class</FONT>, the lock associated with the class is acquired.</P>
+<P>Two opcodes, <FONT FACE="Courier New">monitorenter</FONT> and <FONT FACE="Courier New">monitorexit</FONT>, are used for synchronization blocks within methods. These opcodes are shown in the Table 20-1.</P>
+<P>Table 20-1. Monitors</P>
+<P><FONT FACE="Courier New">3 columns</FONT></P>
+<P>OpcodeOperand(s)Description</P>
+<P><FONT FACE="Courier New">monitorenter</FONT>nonepop objectref, acquire the lock associated with objectref</P>
+<P><FONT FACE="Courier New">monitorexit</FONT>nonepop objectref, release the lock associated with objectref</P>
+<P><FONT FACE="Courier New">end table</FONT></P>
+<P>When <FONT FACE="Courier New">monitorenter</FONT> is encountered by the Java Virtual Machine, it acquires the lock for the object referred to by objectref on the stack. If the thread already owns the lock for that object, the count that is associated with the lock is incremented. Each time <FONT FACE="Courier New">monitorexit</FONT> is executed for the thread on the object, the count is decremented. When the count reaches zero, the monitor is released. </P>
+<P>Here is the bytecode sequence generated by the <FONT FACE="Courier New">reverseOrder()</FONT> method of the <FONT FACE="Courier New">KitchenSync</FONT> class:</P>
+<PRE><P><FONT FACE="Courier New">begin</FONT></P>
+<FONT SIZE="2"><P></FONT><FONT FACE="Courier New">// First place the reference to the object to lock into local
+<P>// variable 1. This local variable will be used by both the</P>
+<P>// monitorenter and monitorexit instructions.</P>
+<P> 0 aload_0        // Push local var 0 (the this reference)</P>
+<P> 1 astore_1       // Store into local var 1</P>
+<P>&nbsp;</P>
+<P>// Now acquire the lock on the referenced object</P>
+<P>                 // Push local var 1 (the this reference; the</P>
+<P> 2 aload_1        // object to lock)</P>
+<P>                 // Pop reference, acquire the lock</P>
+<P> 3 monitorenter   // on referenced object</P>
+<P>&nbsp;</P>
+<P>// The code of the synchronized block begins here. A thread will not</P>
+<P>// execute the next instruction, aload_0, until a lock has been</P>
+<P>// successfully acquired on the this reference above.</P>
+<P> 4 aload_0        // Push the object ref at loc var 0 (the this ref)</P>
+<P>                 // Pop object ref, push ref to instance variable</P>
+<P>                 // intArray</P>
+<P> 5 getfield #4 &lt;Field int intArray[]</FONT></P>
+<P> 8 arraylength    // Pop array ref, push int array length </P>
+<P> 9 iconst_2       // Push constant int 2</P>
+<P>10 idiv          // Pop two ints, divide, push int result </P>
+<P>                 // Pop int into local var 3:</P>
+<P>11 istore_3      // int halfway = intArray.length/2;</P>
+<P>&nbsp;</P>
+<P>// This is the start of the code for the for loop</P>
+<P>12 iconst_0      // Push constant int 0</P>
+<P>13 istore 4      // Pop into local var 2: int i = 0;</P>
+<P>15 goto 65       // Jump to for loop condition check</P>
+<P>&nbsp;</P>
+<P>// This is the start of the body of the for loop</P>
+<P>18 aload_0       // Push the object ref at loc var 0 (the this ref)</P>
+<P>                 // Pop object ref, push ref to instance variable</P>
+<P>                 // intArray</P>
+<P>19 getfield #4 &lt;Field int intArray[]</FONT></P>
+<P>22 arraylength   // Pop array ref, push int array length </P>
+<P>23 iconst_1      // Push constant int 1</P>
+<P>24 isub          // Pop two ints, subtract, push int result</P>
+<P>25 iload 4       // Push int at local var 4 (i)</P>
+<P>27 isub          // Pop two ints, subtract, push int result</P>
+<P>                 // Pop int into local var 5:</P>
+<P>28 istore 5      // int upperindex = intArray.length - 1 - i;</P>
+<P>30 aload_0       // Push the object ref at loc var 0 (the this ref)</P>
+<P>                 // Pop object ref, push ref to instance variable</P>
+<P>                 // intArray</P>
+<P>31 getfield #4 &lt;Field int intArray[]</FONT></P>
+<P>34 iload 5       // Push int at local var 5 (upperIndex)</P>
+<P>36 iaload        // Pop index, arrayref, push int at arrayref[index]</P>
+<P>                 // Pop into local var 6:</P>
+<P>37 istore 6      // int save = intArray[upperIndex];</P>
+<P>39 aload_0       // Push the object ref at loc var 0 (the this ref)</P>
+<P>                 // Pop object ref, push ref to instance variable</P>
+<P>                 // intArray</P>
+<P>40 getfield #4 &lt;Field int intArray[]</FONT></P>
+<P>43 iload 5       // Push int at local var 5 (upperIndex)</P>
+<P>45 aload_0       // Push the object ref at loc var 0 (the this ref)</P>
+<P>                 // Pop object ref, push ref to instance variable</P>
+<P>                 // intArray</P>
+<P>46 getfield #4 &lt;Field int intArray[]</FONT></P>
+<P>49 iload 4       // Push int at local var 4 (i)</P>
+<P>51 iaload        // Pop index, arrayref, push int at arrayref[index]</P>
+<P>                 // Set arrayref[index] = value:</P>
+<P>52 iastore       // intArray[upperIndex] = intArray[i];</P>
+<P>53 aload_0       // Push the object ref at loc var 0 (the this ref)</P>
+<P>                 // Pop object ref, push ref to instance variable</P>
+<P>                 // intArray</P>
+<P>54 getfield #4 &lt;Field int intArray[]</FONT></P>
+<P>57 iload 4       // Push int at local var 4 (i)</P>
+<P>59 iload 6       // Push int at local var 6 (save)</P>
+<P>                 // Set arrayref[index] = value:</P>
+<P>61 iastore       // intArray[i] = save;</P>
+<P>&nbsp;</P>
+<P>// The body of the for loop is now done, this instruction does</P>
+<P>// the incrementing of the loop variable i</P>
+<P>62 iinc 4 1      // Increment by 1 int at local var 4: ++i;</P>
+<P>&nbsp;</P>
+<P>// This is the for loop condition check:</P>
+<P>65 iload 4       // Push int at local var 4 (i)</P>
+<P>67 iload_3       // Push int at local var 3 (halfway)</P>
+<P>                 // Pop two ints, compare, jump if less than to</P>
+<P>68 if_icmplt 18  // top of for loop body: for (; i &lt; halfway;)</P>
+<P>// The code of the synchronized block ends here</P>
+<P>&nbsp;</P>
+<P>// The next two instructions unlock the object, making it available</P>
+<P>// for other threads. The reference to the locked object was stored</P>
+<P>// in local variable 1 above.</P>
+<P>71 aload_1            // Push local var 1 (the this reference)</P>
+<P>72 monitorexit        // Pop ref, unlock object</P>
+<P>73 return             // return normally from method</P>
+<P>&nbsp;</P>
+<P>// This is a catch clause for any exception thrown (and not caught</P>
+<P>// from within the synchronized block. If an exception is thrown,</P>
+<P>// the locked object is unlocked, making it available for other</P>
+<P>// threads.</P>
+<P>74 aload_1            // Push local var 1 (the this reference)</P>
+<P>75 monitorexit        // Pop ref, unlock object</P>
+<P>76 athrow             // rethrow the same exception</P>
+<P>&nbsp;</P>
+<P>// The exception table shows the "catch all" clause covers the</P>
+<P>// entire synchronized block, from just after the lock is acquired</P>
+<P>// to just before the lock is released.</P>
+<P>Exception table:</P>
+<P>from to target type</P>
+<P>  4  71   74   any</P>
+</FONT><FONT SIZE="2"><P>&nbsp;</P></FONT><FONT FACE="Courier New">end</FONT></P></PRE>
+<P>Note that a catch clause ensures the locked object will be unlocked even if an exception is thrown from within the synchronized block. No matter how the synchronized block is exited, the object lock acquired when the thread entered the block will definitely be released.</P>
+<H3><P>Synchronized Methods</P>
+</H3><P>To synchronize an entire method, you just include the synchronized keyword as one of<H3> </H3>the method qualifiers, as in:</P>
+<PRE><P><FONT FACE="Courier New">begin</FONT></P>
+<FONT SIZE="2"><P></FONT><FONT FACE="Courier New">// On CD-ROM in file threads/ex1/HeatSync.java
+<P>class HeatSync {</P>
+<P>&nbsp;</P>
+<P>    private int[] intArray = new int[10];</P>
+<P>&nbsp;</P>
+<P>    synchronized void reverseOrder() {</P>
+<P>        int halfWay = intArray.length / 2;</P>
+<P>        for (int i = 0; i &lt; halfWay; ++i) {</P>
+<P>            int upperIndex = intArray.length - 1 - i;</P>
+<P>            int save = intArray[upperIndex];</P>
+<P>            intArray[upperIndex] = intArray[i];</P>
+<P>            intArray[i] = save;</P>
+<P>        }</P>
+<P>    }</P>
+<P>    // ...</P>
+<P>}</P>
+</FONT><FONT SIZE="2"><P>&nbsp;</P></FONT><FONT FACE="Courier New">end</FONT></P></PRE>
+<P>The Java Virtual Machine does not use any special opcodes to invoke or return from synchronized methods. When the virtual machine resolves the symbolic reference to a method, it determines whether the method is synchronized. If so, the virtual machine acquires a lock before invoking the method. For an instance method, the virtual machine acquires the lock associated with the object upon which the method is being invoked. For a class method, it acquires the lock associated with the class to which the method belongs (it locks a <FONT FACE="Courier New">Class</FONT> object). After a synchronized method completes, whether it completes by returning or by throwing an exception, the virtual machine releases the lock.</P>
+<P>Here are the bytecodes that <FONT FACE="Courier New">javac</FONT> generates for <FONT FACE="Courier New">HeatSync</FONT>ís <FONT FACE="Courier New">reverseOrder()</FONT> method:</P>
+<PRE><P><FONT FACE="Courier New">begin</FONT></P>
+<FONT SIZE="2"><P></FONT><FONT FACE="Courier New"> 0 aload_0       // Push the object ref at loc var 0 (the this ref)
+<P>                 // Pop object ref, push ref to instance variable</P>
+<P>                 // intArray</P>
+<P> 1 getfield #4 &lt;Field int intArray[]</FONT></P>
+<P> 4 arraylength   // Pop array ref, push int array length</P>
+<P> 5 iconst_2      // Push constant int 2</P>
+<P> 6 idiv          // Pop two ints, divide, push int result</P>
+<P>                 // Pop int into local var 1: </P>
+<P> 7 istore_1      // int halfway = intArray.length/2;</P>
+<P>&nbsp;</P>
+<P>// This is the start of the code for the for loop</P>
+<P> 8 iconst_0      // Push int constant 0</P>
+<P> 9 istore_2      // Pop into local var 2: int i = 0;</P>
+<P>10 goto 54       // Jump to for loop condition check</P>
+<P>&nbsp;</P>
+<P>// This is the start of the body of the for loop</P>
+<P>13 aload_0       // Push the object ref at loc var 0 (the this ref)</P>
+<P>                 // Pop object ref, push ref to instance variable</P>
+<P>                 // intArray</P>
+<P>14 getfield #4 &lt;Field int intArray[]</FONT></P>
+<P>17 arraylength   // Pop array ref, push int array length</P>
+<P>18 iconst_1      // Push constant int 1</P>
+<P>19 isub          // Pop two ints, subtract, push int result</P>
+<P>20 iload_2       // Push int at local var 2 (i)</P>
+<P>21 isub          // Pop two ints, subtract, push int result</P>
+<P>                 // Pop int into local var 3:</P>
+<P>22 istore_3      // int upperindex = intArray.length - 1 - i;</P>
+<P>23 aload_0       // Push the object ref at loc var 0 (the this ref)</P>
+<P>                 // Pop object ref, push ref to instance variable</P>
+<P>                 // intArray</P>
+<P>24 getfield #4 &lt;Field int intArray[]</FONT></P>
+<P>27 iload_3       // Push int at local var 3 (upperIndex)</P>
+<P>28 iaload        // Pop index, arrayref, push int at arrayref[index]</P>
+<P>                 // Pop into local var 4:</P>
+<P>29 istore 4      // int save = intArray[upperIndex];</P>
+<P>31 aload_0       // Push the object ref at loc var 0 (the this ref)</P>
+<P>                 // Pop object ref, push ref to instance variable</P>
+<P>                 // intArray</P>
+<P>32 getfield #4 &lt;Field int intArray[]</FONT></P>
+<P>35 iload_3       // Push int at local var 3 (upperIndex)</P>
+<P>36 aload_0       // Push the object ref at loc var 0 (the this ref)</P>
+<P>                 // Pop object ref, push ref to instance variable</P>
+<P>                 // intArray</P>
+<P>37 getfield #4 &lt;Field int intArray[]</FONT></P>
+<P>40 iload_2       // Push int at local var 2 (i)</P>
+<P>41 iaload        // Pop index, arrayref, push int at arrayref[index]</P>
+<P>                 // Pop value, index, and arrayref,</P>
+<P>                 // Set arrayref[index] = value:</P>
+<P>42 iastore       // intArray[upperIndex] = intArray[i];</P>
+<P>43 aload_0       // Push the object ref at loc var 0 (the this ref)</P>
+<P>                 // Pop object ref, push ref to instance variable</P>
+<P>                 // intArray</P>
+<P>44 getfield #4 &lt;Field int intArray[]</FONT></P>
+<P>47 iload_2       // Push int at local var 2 (i)</P>
+<P>48 iload 4       // Push int at local var 4 (save)</P>
+<P>                 // Pop value, index, and arrayref,</P>
+<P>                 // Set arrayref[index] = value:</P>
+<P>50 iastore       // intArray[i] = save;</P>
+<P>&nbsp;</P>
+<P>// The body of the for loop is now done, this instruction does</P>
+<P>// the incrementing of the loop variable i</P>
+<P>51 iinc 2 1      // Increment by 1 int at local var 2: ++i;</P>
+<P>&nbsp;</P>
+<P>// This is the for loop condition check:</P>
+<P>54 iload_2       // Push int at local var 2 (i)</P>
+<P>55 iload_1       // Push int at local var 1 (halfway)</P>
+<P>                 // Pop two ints, compare, jump if less than to</P>
+<P>56 if_icmplt 13  // top of for loop body: for (; i &lt; halfway;)</P>
+<P>&nbsp;</P>
+<P>59 return        // return (void) from method</P>
+</FONT><FONT SIZE="2"><P>&nbsp;</P></FONT><FONT FACE="Courier New">end</FONT></P></PRE>
+<P>If you compare these bytecodes with the ones shown earlier for <FONT FACE="Courier New">KitchenSync</FONT>ís <FONT FACE="Courier New">reverseOrder()</FONT> method, you will see that these bytecodes are in effect those of <FONT FACE="Courier New">KitchenSync</FONT> with the support for entering and exiting the monitor removed. Instructions at offset 0 through 56 of <FONT FACE="Courier New">HeatSync</FONT>ís bytecodes correspond to instructions at offset 4 through 68 of <FONT FACE="Courier New">KitchenSync</FONT>ís bytecodes. Because <FONT FACE="Courier New">HeatSync</FONT>ís <FONT FACE="Courier New">reverseOrder()</FONT> method doesnít need a local variable slot to store the reference to the locked object, the local variable positions used by each method are different. The function of the instructions themselves, however, match up exactly.</P>
+<P>Another difference between the two <FONT FACE="Courier New">reverseOrder()</FONT> methods is that the compiler doesnít create an exception table for <FONT FACE="Courier New">HeatSync</FONT>ís <FONT FACE="Courier New">reverseOrder()</FONT> method. In <FONT FACE="Courier New">HeatSync</FONT>ís case, an exception table isnít necessary. When this method is invoked, the Java Virtual Machine automatically acquires the lock on the <FONT FACE="Courier New">this</FONT> object. If this method completes abruptly, just as if it completes normally, the virtual machine will release the lock on the <FONT FACE="Courier New">this</FONT> object automatically.</P>
+<P>A synchronized class (static) method operates in the same way as the synchronized instance method shown in the example above. The one difference is that instead of acquiring a lock on <FONT FACE="Courier New">this</FONT> (as there is no <FONT FACE="Courier New">this</FONT> in a class method), the thread must acquire a lock on the appropriate <FONT FACE="Courier New">Class</FONT> instance.</P>
+<H3><EM><P>Coordination Support in Class Object</P>
+</EM></H3><P>Class <FONT FACE="Courier New">Object</FONT> declares five methods that enable programmers to access the Java Virtual Machineís support for the coordination aspect of synchronization. These methods are declared public and final, so they are inherited by all classes. They can only be invoked from within a synchronized method or statement. In other words, the lock associated with an object must already be acquired before any of these methods are invoked. The methods are listed in Table 20-2.</P>
+<P>Table 20-2. The wait and notify methods of class <FONT FACE="Courier New">Object</FONT></P>
+<TABLE WIDTH="500">
+<TR><TD VALIGN="TOP"><STRONG>Method</STRONG></TD><TD VALIGN="TOP"><STRONG>Description</STRONG></TD></TR>
+<TR><TD VALIGN="TOP"><FONT FACE="Courier New">void wait();</FONT></TD><TD VALIGN="TOP">Enter a monitorís wait set until notified by another thread</TD></TR>
+<TR><TD VALIGN="TOP"><FONT FACE="Courier New">void wait(long timeout);</FONT> </TD><TD VALIGN="TOP">Enter a monitorís wait set until notified by another thread or <FONT FACE="Courier New">timeout</FONT> milliseconds elapses</TD></TR>
+<TR><TD VALIGN="TOP"><FONT FACE="Courier New">void wait(long timeout, int nanos);</FONT> </TD><TD VALIGN="TOP">Enter a monitorís wait set until notified by another thread or <FONT FACE="Courier New">timeout</FONT> milliseconds plus <FONT FACE="Courier New">nanos</FONT> nanoseconds elapses</TD></TR>
+<TR><TD VALIGN="TOP"><FONT FACE="Courier New">void notify();</FONT></TD><TD VALIGN="TOP">Wake up one thread waiting in the monitorís wait set. (If no threads are waiting, do nothing.)</TD></TR>
+<TR><TD VALIGN="TOP"><FONT FACE="Courier New">void notifyAll();</FONT></TD><TD VALIGN="TOP">Wake up all threads waiting in the monitorís wait set. (If no threads are waiting, do nothing.)</TD></TR>
+</TABLE>
+<H3><EM><P>On the CD-ROM</P>
+</EM></H3><P>The CD-ROM contains the source code examples from this chapter in a subdirectory of the <FONT FACE="Courier New">threads</FONT> directory.</P>
+<H3><EM><P>The Resources Page</P>
+</EM></H3><P>For more information about the material presented in this chapter, visit the resources<H3><EM> </EM></H3>page: <FONT FACE="Courier New"><A HREF="http://www.artima.com/insidejvm/threads.html" tppabs="http://www.artima.com/insidejvm/threads.html">http://www.artima.com/insidejvm/threads.html</A></FONT>.</P>
+<TABLE BORDER="0" WIDTH="100%">
+<TR><TD><A HREF="http://www.pbg.mcgraw-hill.com/betabooks/stores.html" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/stores.html" target="bottom"><IMG SRC="hotkey.gif" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/images/hotkey.gif" ALIGN="LEFT" BORDER="0" WIDTH="40" HEIGHT="40" ALT="Orders"></A>
+<IMG SRC="order_text.gif" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/images/order_text.gif" WIDTH="103" HEIGHT="41" ALT="Orders"></TD>
+<TD ALIGN="RIGHT"><A HREF="chap19.html" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/venners/chap19.html"><IMG SRC="backward.gif" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/images/backward.gif" BORDER="0" ALT="Backward" WIDTH="32" HEIGHT="32"></A>&nbsp;<A HREF="appa.html" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/venners/appa.html"><IMG SRC="forward.gif" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/images/forward.gif" BORDER="0" ALT="Forward" WIDTH="32" HEIGHT="32"></A></TD></TR>
+<TR><TD COLSPAN="2"><A HREF="mailto:computing@mcgraw-hill.com"><IMG SRC="hotkey.gif" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/images/hotkey.gif" ALIGN="LEFT" BORDER="0" WIDTH="40" HEIGHT="40" ALT="Comments"></A>
+<IMG SRC="comment_text.gif" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/images/comment_text.gif" WIDTH="73" HEIGHT="39" ALT="Comments"></TD></TR>
+
+</TABLE>
+<HR>
+<P ALIGN=CENTER>&nbsp;<A HREF="http://www.pbg.mcgraw-hill.com/computing/computing-home.html" tppabs="http://www.pbg.mcgraw-hill.com/computing/computing-home.html" TARGET="_top">COMPUTING
+MCGRAW-HILL</A> | <A HREF="http://www.pbg.mcgraw-hill.com/betabooks/betabooks-home.html" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/betabooks-home.html" TARGET="_top">Beta Books</A>
+| <A HREF="http://www.pbg.mcgraw-hill.com/computing/contact.html" tppabs="http://www.pbg.mcgraw-hill.com/computing/contact.html" TARGET="_top">Contact Us</A>
+| <A HREF="http://www.pbg.mcgraw-hill.com/betabooks/stores.html" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/stores.html" TARGET="_top">Order Information</A>
+| <A HREF="http://mcgraw-hill.inforonics.com/compsearch.shtml" tppabs="http://mcgraw-hill.inforonics.com/compsearch.shtml" TARGET="_top">Online Catalog</A></P>
+
+<P ALIGN=CENTER><FONT SIZE="-1"><A HREF="http://www.pbg.mcgraw-hill.com/computing/computing-home.html" tppabs="http://www.pbg.mcgraw-hill.com/computing/computing-home.html" TARGET="_top">Computing McGraw-Hill</A> is an imprint of the <A HREF="http://www.pbg.mcgraw-hill.com/pbg-home.html" tppabs="http://www.pbg.mcgraw-hill.com/pbg-home.html" TARGET="_top">McGraw-Hill Professional Book Group</A>.</FONT></P>
+
+<!-- begin footer -->
+<HR>
+<A HREF="http://www.mcgraw-hill.com/" tppabs="http://www.mcgraw-hill.com/" TARGET="_top"><IMG SRC="division-white.gif" tppabs="http://www.pbg.mcgraw-hill.com/images/division-white.gif" WIDTH="350" HEIGHT="44" ALT="A Division of the McGraw-Hill Companies" BORDER="0"></A><BR>
+<FONT SIZE="-2">Copyright &copy; 1997 <A HREF="http://www.mcgraw-hill.com/" tppabs="http://www.mcgraw-hill.com/" TARGET="_top">
+The McGraw-Hill Companies</A>. All rights reserved. Any use is subject to the 
+<A HREF="http://www.mcgraw-hill.com/corporate/news_info/copyrttm.htm" tppabs="http://www.mcgraw-hill.com/corporate/news_info/copyrttm.htm" TARGET="_top">
+Terms of Use</A>; the corporation also has a comprehensive <A HREF="http://www.mcgraw-hill.com/corporate/news_info/privacy.html" tppabs="http://www.mcgraw-hill.com/corporate/news_info/privacy.html" TARGET="_top">
+Privacy Policy</A> governing information we may collect from our customers.</FONT>
+<!-- end footer -->
+</BODY>
+</HTML>

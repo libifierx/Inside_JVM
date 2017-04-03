@@ -1,0 +1,225 @@
+<!-- All material contained herein is copyright (c) McGraw-Hill Professional Books
+All Rights Reserved. No use of this material may be made without express written
+permission of the copyright holder. HTML conversions by Mega Space [barry@megaspace.com] -->
+
+<HTML>
+<HEAD>
+<META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=ISO-8859-1">
+<TITLE>Understanding Digital Signatures: Inside the Java Virtual Machine
+ by Bill Venners - Beta Version</TITLE>
+</HEAD>
+<BODY BGCOLOR="#FFFFFF">
+<TABLE BORDER="0" WIDTH="100%">
+<TR><TD><A HREF="http://www.pbg.mcgraw-hill.com/betabooks/stores.html" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/stores.html" target="bottom"><IMG SRC="hotkey.gif" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/images/hotkey.gif" ALIGN="LEFT" BORDER="0" WIDTH="40" HEIGHT="40" ALT="Orders"></A>
+<IMG SRC="order_text.gif" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/images/order_text.gif" WIDTH="103" HEIGHT="41" ALT="Orders"></TD>
+<TD ALIGN="RIGHT"><A HREF="chap13.html" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/venners/chap13.html"><IMG SRC="backward.gif" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/images/backward.gif" BORDER="0" ALT="Backward" WIDTH="32" HEIGHT="32"></A>&nbsp;<A HREF="chap15.html" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/venners/chap15.html"><IMG SRC="forward.gif" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/images/forward.gif" BORDER="0" ALT="Forward" WIDTH="32" HEIGHT="32"></A></TD></TR>
+<TR><TD COLSPAN="2"><A HREF="mailto:computing@mcgraw-hill.com"><IMG SRC="hotkey.gif" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/images/hotkey.gif" ALIGN="LEFT" BORDER="0" WIDTH="40" HEIGHT="40" ALT="Comments"></A>
+<IMG SRC="comment_text.gif" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/images/comment_text.gif" WIDTH="73" HEIGHT="39" ALT="Comments"></TD></TR>
+
+<TR><TD COLSPAN="2"><FONT FACE="ARIEL,HELVETICA" SIZE="-1"><I>&copy; 1997 The McGraw-Hill Companies, Inc.  All rights reserved.  <BR>Any use of this Beta Book is subject to the rules stated in the <A HREF="http://www.mcgraw-hill.com/corporate/news_info/copyrttm.htm" tppabs="http://www.mcgraw-hill.com/corporate/news_info/copyrttm.htm" target="_top">Terms of Use</A>.</I></FONT><br>
+<script language="javascript">
+    document.write("<a href='http://banners.linkbuddies.com/click.php?id=237296'><img src='http://banners.linkbuddies.com/image.php?id=237296&ref=" + document.referrer + "' width=468 height=60 alt='Click Here' border=0></a>");
+</script></TD></TR>
+
+</TABLE>
+<HR>
+<P><H1>Chapter Fourteen</H1></P>
+<P><H2>Floating-Point Arithmetic</H2></P>
+<P>This chapter describes the floating point numbers and the instructions that perform floating point arithmetic inside the Java Virtual Machine. The floating point numbers described here conform to the IEEE 754 floating point standard, which is the standard to which all Java Virtual Machine implementations must adhere.</P>
+<P>Accompanying this chapter on the CD-ROM are two applets that interactively illustrate the material presented in the chapter. One applet, named <I>Inner Float</I>, allows you to view and manipulate the individual components that make up a floating point number. The other applet, named <I>Circle of Squares</I>, simulates the Java Virtual Machine executing a method that uses several of the floating point opcodes. Within this chapter, you will find descriptions of both of these applets.</P>
+<I><P>Floating Point Numbers</P>
+</I><P>The Java Virtual Machine's floating-point support adheres to the IEEE-754 1985 floating-point standard. This standard defines the format of 32-bit and 64-bit floating-point numbers and defines the operations upon those numbers. In the Java Virtual Machine, floating-point arithmetic is performed on 32-bit <FONT FACE="Courier New">float</FONT>s and 64-bit <FONT FACE="Courier New">double</FONT>s. For each opcode that performs arithmetic on <FONT FACE="Courier New">float</FONT>s, there is a corresponding opcode that performs the same operation on <FONT FACE="Courier New">double</FONT>s. </P>
+<P>A floating-point number has four parts--a sign, a mantissa, a radix, and an exponent. The sign is either a 1 or -1. The mantissa, always a positive number, holds the significant digits of the floating-point number. The exponent indicates the positive or negative power of the radix that the mantissa and sign should be multiplied by. The four components are combined as follows to get the floating-point value: </P>
+<P><FONT FACE="Courier New">begin math formula</FONT></P>
+<P>sign * mantissa * radix <SUP>exponent</SUP> </P>
+<P><FONT FACE="Courier New">end math forzmula</FONT></P>
+<P>Floating-point numbers have multiple representations, because one can always multiply the mantissa of any floating-point number by some power of the radix and change the exponent to get the original number. For example, as shown in Table 14-1, the number -5 can be represented equally by any of the following forms in radix 10.</P>
+<P>Table 14-1. <STRONG>Forms of -5</P>
+<TABLE WIDTH="500">
+<TR><TD VALIGN="TOP"><STRONG>Sign</STRONG></TD><TD VALIGN="TOP"><STRONG>Mantissa</STRONG></TD><TD VALIGN="TOP"><STRONG>Radix <SUP>exponent</STRONG></TD></TR>
+</SUP><TR><TD VALIGN="TOP">-1</TD><TD VALIGN="TOP">50</TD><TD VALIGN="TOP">10 <SUP>-1</TD></TR>
+</SUP><TR><TD VALIGN="TOP">-1</TD><TD VALIGN="TOP">5</TD><TD VALIGN="TOP">10 <SUP>0</TD></TR>
+</SUP><TR><TD VALIGN="TOP">-1</TD><TD VALIGN="TOP">0.5</TD><TD VALIGN="TOP">10 <SUP>1</TD></TR>
+</SUP><TR><TD VALIGN="TOP">-1</TD><TD VALIGN="TOP">0.05</TD><TD VALIGN="TOP">10 <SUP>2</TD></TR>
+</TABLE>
+<P>For each floating-point number there is one representation that is said to be <EM>normalized.</EM> A floating-point number is normalized if its mantissa is within the range defined by the following relation: </P>
+<P><FONT FACE="Courier New">begin math formula</FONT></P>
+<P>1/radix &lt;= mantissa &lt; 1 </P>
+<P><FONT FACE="Courier New">end math formula</FONT></P>
+<P>A normalized radix 10 floating-point number has its decimal point just to the left of the first non-zero digit in the mantissa. The normalized floating-point representation of -5 is -1 * 0.5 * 10 <SUP>1</SUP>. In other words, a normalized floating-point number's mantissa has no non-zero digits to the left of the decimal point and a non-zero digit just to the right of the decimal point. Any floating-point number that doesn't fit into this category is said to be <EM>denormalized</EM>. Note that the number zero has no normalized representation, because it has no non-zero digit to put just to the right of the decimal point. "Why be normalized?" is a common exclamation among zeros. </P>
+<P>Floating-point numbers in the Java Virtual Machine use a radix of two, so they have the following form: </P>
+<P><FONT FACE="Courier New">begin math formula</FONT></P>
+<P>sign * mantissa * 2 <SUP>exponent</SUP> </P>
+<P><FONT FACE="Courier New">end math formula</FONT></P>
+<P>The mantissa of a floating-point number in the Java Virtual Machine is expressed as a binary number. A normalized mantissa has its binary point (the base-two equivalent of a decimal point) just to the left of the most significant non-zero digit. Because the binary number system has just two digits--zero and one--the most significant digit of a normalized mantissa is always a one. </P>
+<P>The most significant bit of a <FONT FACE="Courier New">float</FONT> or <FONT FACE="Courier New">double</FONT> is its sign bit. The mantissa occupies the 23 least significant bits of a <FONT FACE="Courier New">float</FONT> and the 52 least significant bits of a <FONT FACE="Courier New">double</FONT>. The exponent, 8 bits in a <FONT FACE="Courier New">float</FONT> and 11 bits in a <FONT FACE="Courier New">double</FONT>, sits between the sign and mantissa. The format of a <FONT FACE="Courier New">float</FONT> is shown below. The sign bit is shown as an "s," the exponent bits are shown as "e," and the mantissa bits are shown as "m": </P>
+<P><FONT FACE="Courier New">begin math formula</FONT></P>
+<P>s eeeeeeee mmmmmmmmmmmmmmmmmmmmmmm</P>
+<P><FONT FACE="Courier New">end math formula</FONT></P>
+<P>A sign bit of zero indicates a positive number and a sign bit of one indicates a negative number. The mantissa is always interpreted as a positive base-two number. It is not a twos-complement number. If the sign bit is one, the floating-point value is negative, but the mantissa is still interpreted as a positive number that must be multiplied by -1. </P>
+<P>The exponent field is interpreted in one of three ways. An exponent of all ones indicates the floating-point number has one of the special values of plus or minus infinity, or "not a number"&nbsp;(NaN). NaN is the result of certain operations, such as the division of zero by zero. An exponent of all zeros indicates a denormalized floating-point number. Any other exponent indicates a normalized floating-point number. </P>
+<P>The mantissa contains one extra bit of precision beyond those that appear in the mantissa bits. The mantissa of a <FONT FACE="Courier New">float</FONT>, which occupies only 23 bits, has 24 bits of precision. The mantissa of a <FONT FACE="Courier New">double</FONT>, which occupies 52 bits, has 53 bits of precision. The most significant mantissa bit is predictable, and is therefore not included, because the exponent of floating-point numbers in the Java Virtual Machine indicates whether or not the number is normalized. If the exponent is all zeros, the floating-point number is denormalized and the most significant bit of the mantissa is known to be a zero. Otherwise, the floating-point number is normalized and the most significant bit of the mantissa is known to be one. </P>
+<P>The Java Virtual Machine throws no exceptions as a result of any floating-point operations. Special values, such as positive and negative infinity or NaN, are returned as the result of suspicious operations such as division by zero. An exponent of all ones indicates a special floating-point value. An exponent of all ones with a mantissa whose bits are all zero indicates an infinity. The sign of the infinity is indicated by the sign bit. An exponent of all ones with any other mantissa is interpreted to mean "not a number" (NaN). The Java Virtual Machine always produces the same mantissa for NaN, which is all zeros except for the most significant mantissa bit that appears in the number. These values are shown for a <FONT FACE="Courier New">float</FONT> in Table 14-2. </P>
+<P>Table 14-2. <STRONG>Special <FONT FACE="Courier New">float</FONT> values</P>
+</STRONG><TABLE WIDTH="500">
+<TR><TD VALIGN="TOP"><STRONG>Value</STRONG></TD><TD VALIGN="TOP"><STRONG><FONT FACE="Courier New">float</FONT> bits (sign exponent mantissa)</STRONG></TD></TR>
+<TR><TD VALIGN="TOP">+Infinity</TD><TD VALIGN="TOP">0 11111111 00000000000000000000000</TD></TR>
+<TR><TD VALIGN="TOP">-Infinity</TD><TD VALIGN="TOP">1 11111111 00000000000000000000000</TD></TR>
+<TR><TD VALIGN="TOP">NaN</TD><TD VALIGN="TOP">1 11111111 10000000000000000000000</TD></TR>
+</TABLE>
+<P>Exponents that are neither all ones nor all zeros indicate the power of two by which to multiply the normalized mantissa. The power of two can be determined by interpreting the exponent bits as a positive number, and then subtracting a bias from the positive number. For a <FONT FACE="Courier New">float</FONT>, the bias is 126. For a <FONT FACE="Courier New">double</FONT>, the bias is 1023. For example, an exponent field in a <FONT FACE="Courier New">float</FONT> of 00000001 yields a power of two by subtracting the bias (126) from the exponent field interpreted as a positive integer (1). The power of two, therefore, is (1 - 126), which is -125. This is the smallest possible power of two for a <FONT FACE="Courier New">float</FONT>. At the other extreme, an exponent field of 11111110 yields a power of two of (254 - 126) or 128. The number 128 is the largest power of two available to a <FONT FACE="Courier New">float</FONT>. Several examples of normalized <FONT FACE="Courier New">float</FONT>s are shown in Table 14-3. </P>
+<P>Table 14-3. <STRONG>Normalized <FONT FACE="Courier New">float</FONT> values</STRONG></P>
+<TABLE WIDTH="500">
+<TR><TD VALIGN="TOP"><STRONG>Value</STRONG></TD><TD VALIGN="TOP"><STRONG><FONT FACE="Courier New">float</FONT> bits (sign exponent mantissa)</STRONG></TD><TD VALIGN="TOP"><STRONG>Unbiased exponent</STRONG></TD></TR>
+<TR><TD VALIGN="TOP">Largest positive (finite) <FONT FACE="Courier New">float</FONT></TD><TD VALIGN="TOP">0 11111110 11111111111111111111111</TD><TD VALIGN="TOP">128</TD></TR>
+<TR><TD VALIGN="TOP">Largest negative (finite) <FONT FACE="Courier New">float</FONT></TD><TD VALIGN="TOP">1 11111110 11111111111111111111111</TD><TD VALIGN="TOP">128</TD></TR>
+<TR><TD VALIGN="TOP">Smallest normalized <FONT FACE="Courier New">float</FONT></TD><TD VALIGN="TOP">1 00000001 00000000000000000000000</TD><TD VALIGN="TOP">-125</TD></TR>
+<TR><TD VALIGN="TOP">Pi</TD><TD VALIGN="TOP">0 10000000 10010010000111111011011</TD><TD VALIGN="TOP">2</TD></TR>
+</TABLE>
+<P>An exponent of all zeros indicates the mantissa is denormalized, which means the unstated leading bit is a zero instead of a one. The power of two in this case is the same as the lowest power of two available to a normalized mantissa. For the <FONT FACE="Courier New">float</FONT>, this is -125. This means that normalized mantissas multiplied by two raised to the power of -125 have an exponent field of 00000001, while denormalized mantissas multiplied by two raised to the power of -125 have an exponent field of 00000000.</P>
+<P>The allowance for denormalized numbers at the bottom end of the range of exponents supports gradual underflow. If the lowest exponent was instead used to represent a normalized number, underflow to zero would occur for larger numbers. In other words, leaving the lowest exponent for denormalized numbers allows smaller numbers to be represented. The smaller denormalized numbers have fewer bits of precision than normalized numbers, but this is preferable to underflowing to zero as soon as the exponent reaches its minimum normalized value. Table 14-4 shows several denormalized floating-point values.</P>
+<P>Table 14-4. <STRONG>Denormalized <FONT FACE="Courier New">float</FONT> values</STRONG></P>
+<TABLE WIDTH="500">
+<TR><TD VALIGN="TOP"><STRONG>Value</STRONG></TD><TD VALIGN="TOP"><STRONG><FONT FACE="Courier New">float</FONT> bits (sign exponent mantissa)</STRONG></TD></TR>
+<TR><TD VALIGN="TOP">Smallest positive (non-zero) <FONT FACE="Courier New">float</FONT></TD><TD VALIGN="TOP">0 00000000 00000000000000000000001</TD></TR>
+<TR><TD VALIGN="TOP">Smallest negative (non-zero) <FONT FACE="Courier New">float</FONT></TD><TD VALIGN="TOP">1 00000000 00000000000000000000001</TD></TR>
+<TR><TD VALIGN="TOP">Largest denormalized <FONT FACE="Courier New">float</FONT></TD><TD VALIGN="TOP">1 00000000 11111111111111111111111</TD></TR>
+<TR><TD VALIGN="TOP">Positive zero</TD><TD VALIGN="TOP">0 00000000 00000000000000000000000</TD></TR>
+<TR><TD VALIGN="TOP">Negative zero</TD><TD VALIGN="TOP">1 00000000 00000000000000000000000</TD></TR>
+</TABLE>
+<I><STRONG><P>Inner Float: A Java float Reveals its Inner Nature</P>
+</I><P></STRONG>The applet shown in Figure 14-1 lets you play around with the floating-point format. The value of a <FONT FACE="Courier New">float</FONT> is displayed in several formats. The radix two scientific notation format shows the mantissa and exponent in base ten. Before being displayed, the actual mantissa is multiplied by 2 <SUP>24</SUP>, which yields an integral number, and the unbiased exponent is decremented by 24. Both the integral mantissa and exponent are then easily converted to base ten and displayed. The applet is embedded in a web page on the CD-ROM in file <FONT FACE="Courier New">applets/InnerFloat.html</FONT>. The text of the web page includes several button-press sequences that demonstrate various properties of floating point numbers.</P>
+<P><IMG SRC="fig14-1.gif" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/venners/images/fig14-1.gif" ALT="Figure 14-1"></P>
+
+<I><STRONG><P>The Floating Point Opcodes</P>
+</I></STRONG><H3><P></H3>Table 14-5 shows the opcodes that pop two floating-point values from the top of the stack, add them, and push the result. The type of the values is indicated by the opcode itself, and the result always has the same type as the numbers being added. No exceptions are thrown by these opcodes. Overflow results in a positive or negative infinity, and underflow results in a positive or negative zero. </P>
+<P>Table 14-5. <STRONG>Floating-point addition</P>
+</STRONG><TABLE WIDTH="500">
+<TR><TD VALIGN="TOP"><STRONG>Opcode</STRONG></TD><TD VALIGN="TOP"><STRONG>Operand(s)</STRONG></TD><TD VALIGN="TOP"><STRONG>Description</STRONG></TD></TR>
+<TR><TD VALIGN="TOP"><FONT FACE="Courier New">fadd</FONT></TD><TD VALIGN="TOP">(none)</TD><TD VALIGN="TOP">pops two <FONT FACE="Courier New">float</FONT>s, adds them, and pushes the <FONT FACE="Courier New">float</FONT> result</TD></TR>
+<TR><TD VALIGN="TOP"><FONT FACE="Courier New">dadd</FONT></TD><TD VALIGN="TOP">(none)</TD><TD VALIGN="TOP">pops two <FONT FACE="Courier New">double</FONT>s, adds them, and pushes the <FONT FACE="Courier New">double</FONT> result</TD></TR>
+</TABLE>
+<P>Subtraction is performed on <FONT FACE="Courier New">float</FONT>s and <FONT FACE="Courier New">double</FONT>s via the opcodes shown in Table 14-6. Each opcode causes the top two values of the appropriate type to be popped off the stack. The topmost value is subtracted from the value just beneath the topmost value. The result is pushed back onto the stack. No exceptions are thrown by either of these opcodes. </P>
+<P>Table 14-6. <STRONG>Floating-point subtraction</P>
+</STRONG><TABLE WIDTH="500">
+<TR><TD VALIGN="TOP"><STRONG>Opcode</STRONG></TD><TD VALIGN="TOP"><STRONG>Operand(s)</STRONG></TD><TD VALIGN="TOP"><STRONG>Description</STRONG></TD></TR>
+<TR><TD VALIGN="TOP"><FONT FACE="Courier New">fsub</FONT></TD><TD VALIGN="TOP">(none)</TD><TD VALIGN="TOP">pops two <FONT FACE="Courier New">float</FONT>s, subtracts them, and pushes the <FONT FACE="Courier New">float</FONT> result</TD></TR>
+<TR><TD VALIGN="TOP"><FONT FACE="Courier New">dsub</FONT></TD><TD VALIGN="TOP">(none)</TD><TD VALIGN="TOP">pops two <FONT FACE="Courier New">double</FONT>s, subtracts them, and pushes the <FONT FACE="Courier New">double</FONT> result</TD></TR>
+</TABLE>
+<P>Multiplication of <FONT FACE="Courier New">float</FONT>s and <FONT FACE="Courier New">double</FONT>s is accomplished via the opcodes shown in Table 14-7. Each opcode causes two values of the same type to be popped off the stack and multiplied. The result, of the same type as the numbers being multiplied, is pushed back onto the stack. No exceptions are thrown. </P>
+<P>Table 14-7. <STRONG>Floating-point multiplication</P>
+</STRONG><TABLE WIDTH="500">
+<TR><TD VALIGN="TOP"><STRONG>Opcode</STRONG></TD><TD VALIGN="TOP"><STRONG>Operand(s)</STRONG></TD><TD VALIGN="TOP"><STRONG>Description</STRONG></TD></TR>
+<TR><TD VALIGN="TOP"><FONT FACE="Courier New">fmul</FONT></TD><TD VALIGN="TOP">(none)</TD><TD VALIGN="TOP">pops two <FONT FACE="Courier New">float</FONT>s, multiplies them, and pushes the <FONT FACE="Courier New">float</FONT> result</TD></TR>
+<TR><TD VALIGN="TOP"><FONT FACE="Courier New">dmul</FONT></TD><TD VALIGN="TOP">(none)</TD><TD VALIGN="TOP">pops two <FONT FACE="Courier New">double</FONT>s, multiplies them, and pushes the <FONT FACE="Courier New">double</FONT> result</TD></TR>
+</TABLE>
+<P>The division is performed on <FONT FACE="Courier New">float</FONT>s and <FONT FACE="Courier New">double</FONT>s by the opcodes shown in Table 14-8. The division opcodes cause the top two values of the appropriate type to be popped off the stack. The value immediately beneath the topmost value is divided by the topmost value. (In other words, the value pushed first is the dividend or numerator. The value pushed second--the top of the stack--is the divisor or denominator.) The result of the division is pushed back onto the stack. </P>
+<P>Table 14-8. <STRONG>Floating-point division</P>
+</STRONG><TABLE WIDTH="500">
+<TR><TD VALIGN="TOP"><STRONG>Opcode</STRONG></TD><TD VALIGN="TOP"><STRONG>Operand(s)</STRONG></TD><TD VALIGN="TOP"><STRONG>Description</STRONG></TD></TR>
+<TR><TD VALIGN="TOP"><FONT FACE="Courier New">fdiv</FONT></TD><TD VALIGN="TOP">(none)</TD><TD VALIGN="TOP">pops two <FONT FACE="Courier New">float</FONT>s, divides them, and pushes the <FONT FACE="Courier New">float</FONT> result</TD></TR>
+<TR><TD VALIGN="TOP"><FONT FACE="Courier New">ddiv</FONT></TD><TD VALIGN="TOP">(none)</TD><TD VALIGN="TOP">pops two <FONT FACE="Courier New">double</FONT>s, divides them, and pushes the <FONT FACE="Courier New">double</FONT> result</TD></TR>
+</TABLE>
+<P>No exception is thrown as a result of any floating-point division. Floating-point division of a finite value by zero yields a positive or negative infinity. Floating-point division of zero by zero yields NaN. A summary of the result of dividing various combinations of infinity, zero, NaN, and finite values is given in Table 14-10.</P>
+<P>The remainder operation is performed on <FONT FACE="Courier New">float</FONT>s and <FONT FACE="Courier New">double</FONT>s via the opcodes shown in Table 14-9. The following opcodes cause the top two values to be popped from the stack. The value just beneath the topmost value is divided by the topmost value, and the remainder of that division is pushed back onto the stack. </P>
+<P>Table 14-9. <STRONG>Floating-point remainder</P>
+</STRONG><TABLE WIDTH="500">
+<TR><TD VALIGN="TOP"><STRONG>Opcode</STRONG></TD><TD VALIGN="TOP"><STRONG>Operand(s)</STRONG></TD><TD VALIGN="TOP"><STRONG>Description</STRONG></TD></TR>
+<TR><TD VALIGN="TOP"><FONT FACE="Courier New">frem</FONT></TD><TD VALIGN="TOP">(none)</TD><TD VALIGN="TOP">pops two <FONT FACE="Courier New">float</FONT>s, divides them, and pushes the <FONT FACE="Courier New">float</FONT> remainder</TD></TR>
+<TR><TD VALIGN="TOP"><FONT FACE="Courier New">drem</FONT></TD><TD VALIGN="TOP">(none)</TD><TD VALIGN="TOP">pops two <FONT FACE="Courier New">double</FONT>s, divides them, and pushes the <FONT FACE="Courier New">double</FONT> remainder</TD></TR>
+</TABLE>
+<P>No exception is thrown as a result of any floating-point remainder operation. Floating-point remainder of any value divided by zero yields a NaN result. A summary of the result of computing the remainder various combinations of infinity, zero, NaN, and finite values is given in Table 14-10.</P>
+<P>Table 14-10. Results of various <STRONG>floating-point divisions</P>
+</STRONG><TABLE WIDTH="500">
+<TR><TD VALIGN="TOP"><STRONG><FONT FACE="Courier New">a</FONT></STRONG></TD><TD VALIGN="TOP"><STRONG><FONT FACE="Courier New">b</FONT></STRONG></TD><TD VALIGN="TOP"><STRONG><FONT FACE="Courier New">a/b</FONT></STRONG></TD><TD VALIGN="TOP"><STRONG><FONT FACE="Courier New">a%b</FONT></STRONG></TD></TR>
+<TR><TD VALIGN="TOP">Finite</TD><TD VALIGN="TOP">+-0.0</TD><TD VALIGN="TOP">+-Infinity</TD><TD VALIGN="TOP">NaN</TD></TR>
+<TR><TD VALIGN="TOP">Finite</TD><TD VALIGN="TOP">+-Infinity</TD><TD VALIGN="TOP">+-0.0</TD><TD VALIGN="TOP">a</TD></TR>
+<TR><TD VALIGN="TOP">+-0.0</TD><TD VALIGN="TOP">+-0.0</TD><TD VALIGN="TOP">NaN</TD><TD VALIGN="TOP">NaN</TD></TR>
+<TR><TD VALIGN="TOP">+-Infinity</TD><TD VALIGN="TOP">Finite</TD><TD VALIGN="TOP">+-Infinity</TD><TD VALIGN="TOP">NaN</TD></TR>
+<TR><TD VALIGN="TOP">+-Infinity</TD><TD VALIGN="TOP">+Infinity</TD><TD VALIGN="TOP">NaN</TD><TD VALIGN="TOP">NaN</TD></TR>
+</TABLE>
+<P>The remainder operation provided by <FONT FACE="Courier New">frem</FONT> and <FONT FACE="Courier New">drem</FONT> follows the same rule as the integer remainder operation provided by <FONT FACE="Courier New">irem</FONT> and <FONT FACE="Courier New">lrem</FONT>:</P>
+<PRE><P><FONT FACE="Courier New">begin</FONT></P>
+<FONT FACE="Courier New"><P>(a/b)*b + a%b == a</P>
+</FONT><P><FONT FACE="Courier New">end</FONT></P></PRE>
+<P>In the floating point case, the division <FONT FACE="Courier New">(a/b)</FONT> must be converted to an <FONT FACE="Courier New">int</FONT> or <FONT FACE="Courier New">long</FONT> to remove the fraction, as in:</P>
+<PRE><P><FONT FACE="Courier New">begin</FONT></P>
+<FONT FACE="Courier New"><P>((long)(a/b))*b + a%b == a</P>
+</FONT><P><FONT FACE="Courier New">end</FONT></P></PRE>
+<P>This remainder does not follow to the IEEE 754 standard. To obtain a floating point remainder as defined by IEEE 754, use the <FONT FACE="Courier New">IEEEremainder()</FONT> method of <FONT FACE="Courier New">java.lang.Math</FONT>.</P>
+<P>The opcodes shown in Table 14-11 perform arithmetic negation on <FONT FACE="Courier New">float</FONT>s and <FONT FACE="Courier New">double</FONT>s. Negation opcodes pop the top value from the stack, negates it, and pushes the result. </P>
+<P>Table 14-11. <STRONG>Floating-point negation</P>
+</STRONG><TABLE WIDTH="500">
+<TR><TD VALIGN="TOP"><STRONG>Opcode</STRONG></TD><TD VALIGN="TOP"><STRONG>Operand(s)</STRONG></TD><TD VALIGN="TOP"><STRONG>Description</STRONG></TD></TR>
+<TR><TD VALIGN="TOP"><FONT FACE="Courier New">fneg</FONT></TD><TD VALIGN="TOP">(none)</TD><TD VALIGN="TOP">pops a <FONT FACE="Courier New">float</FONT>, negates it, and pushes the result</TD></TR>
+<TR><TD VALIGN="TOP"><FONT FACE="Courier New">dneg</FONT></TD><TD VALIGN="TOP">(none)</TD><TD VALIGN="TOP">pops a <FONT FACE="Courier New">double</FONT>, negates it, and pushes the result</TD></TR>
+</TABLE>
+<I><STRONG><P>Circle of Squares: A Simulation</P>
+</I></STRONG><H3><P></H3>The <STRONG><I>Circle of Squares</I></STRONG> applet, shown in Figure 14-2, demonstrates a Java Virtual Machine executing a sequence of bytecodes that perform floating-point arithmetic. This applet is part of a web page on the CD-ROM in file <FONT FACE="Courier New">applets/CircleOfSquares.html</FONT>. The bytecode sequence in the simulation was generated by <TT>javac</TT> for the <FONT FACE="Courier New">squareItForever()</FONT> method of the class shown below: </P>
+<PRE><P><FONT FACE="Courier New">begin</FONT></P>
+<FONT SIZE="2"><P></FONT><FONT FACE="Courier New">// On CD-ROM in file opcodes/ex1/SquareCircle.java
+<P>class SquareCircle {</P>
+<P>&nbsp;</P>
+<P>    static void squareItForever() {</P>
+<P>        float f = 2;</P>
+<P>        for (;;) {</P>
+<P>            f *= f;</P>
+<P>            f = 0 - f;</P>
+<P>        }</P>
+<P>    }</P>
+<P>}</P>
+</FONT><FONT SIZE="2"><P>&nbsp;</P></FONT><FONT FACE="Courier New">end</FONT></P></PRE>
+<P>The bytecodes generated by <TT>javac</TT> for <FONT FACE="Courier New">squareItForever()</FONT> are shown below: </P>
+<PRE><P><FONT FACE="Courier New">begin</FONT></P>
+<FONT SIZE="2"><P></FONT><FONT FACE="Courier New"> 0 fconst_2  // Push float constant 2.
+<P> 1 fstore_0  // Pop to local variable 0 (float f): float f = 2;</P>
+<P> 2 fload_0   // Push local variable 0 (float f).</P>
+<P> 3 fload_0   // Push local variable 0 (float f).</P>
+<P> 4 fmul      // Pop top two floats, multiply, push float result.</P>
+<P> 5 fstore_0  // Pop to local variable 0 (float f): f *= f;</P>
+<P> 6 fconst_0  // Push float constant 0.</P>
+<P> 7 fload_0   // Push local variable 0 (float f).</P>
+<P> 8 fsub      // Subtract top float from next to top float:</P>
+<P>             // imByte = (byte) imInt;</P>
+<P> 9 fstore_0  // Pop result to local variable 0 (float f): f = 0 - f;</P>
+<P>10 goto 2    // Jump back to the first fload_0 instruction:</P>
+<P>             // for (;;) {}</P>
+</FONT><FONT SIZE="2"><P>&nbsp;</P></FONT><FONT FACE="Courier New">end</FONT></P></PRE>
+<P>The <FONT FACE="Courier New">squareItForever()</FONT> method repeatedly squares a <FONT FACE="Courier New">float</FONT> value until it hits infinity. Each time the <FONT FACE="Courier New">float</FONT> is squared it is also negated. The <FONT FACE="Courier New">float</FONT> starts out as 2. It only takes seven iterations before infinity is reached, which isn't nearly as long as it takes in real life. The hex representation of the bits that make up the <FONT FACE="Courier New">float</FONT> are shown in the "hex value" column in the applet. The "value" column shows the number as humans are used to seeing it. This human-friendly value is generated by the <FONT FACE="Courier New">Float.toString()</FONT> method.</P>
+<P>To drive the <I>Circle of Squares</I> simulation, use the Step, Reset, Run, and Stop buttons. Each time you press the Step button, the simulator will execute the instruction pointed to by the pc register. If you press the Run button, the simulation will continue with no further coaxing on your part until you press the Stop button. To start the simulation over, press the Reset button. For each step of the simulation, a panel at the bottom of the applet contains an explanation of what the next instruction will do. Happy clicking.</P>
+<P><IMG SRC="fig14-2.gif" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/venners/images/fig14-2.gif" ALT="Figure 14-2"></P>
+
+<H3><EM><P>On the CD-ROM</P>
+</EM></H3><P>The CD-ROM contains the source code examples from this chapter in the <FONT FACE="Courier New">opcodes</FONT> directory.</P>
+<P>The <I>Inner Float</I> applet is embedded in a web page on the CD-ROM in file <FONT FACE="Courier New">applets/InnerFloat.html</FONT>. The text of the web page includes several button-press sequences that demonstrate various properties of floating point numbers. The source code for this applet is found alongside its class files in the <FONT FACE="Courier New">applets/InnerFloat</FONT> directory.</P>
+<P>The <I>Circle of Squares</I> applet is in a web page on the CD-ROM in file <FONT FACE="Courier New">applets/CircleOfSquares.html</FONT>. The source code for this applet is found alongside its class files, in the <FONT FACE="Courier New">applets/JVMSimulators</FONT> and <FONT FACE="Courier New">applets/JVMSimulators/COM/artima/jvmsim</FONT> directories.</P>
+<H3><EM><P>The Resources Page</P>
+</EM></H3><P>For more information about the material presented in this chapter, visit the resources page: <FONT FACE="Courier New"><A HREF="http://www.artima.com/insidejvm/float.html" tppabs="http://www.artima.com/insidejvm/float.html">http://www.artima.com/insidejvm/float.html</A></FONT>.</P>
+<TABLE BORDER="0" WIDTH="100%">
+<TR><TD><A HREF="http://www.pbg.mcgraw-hill.com/betabooks/stores.html" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/stores.html" target="bottom"><IMG SRC="hotkey.gif" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/images/hotkey.gif" ALIGN="LEFT" BORDER="0" WIDTH="40" HEIGHT="40" ALT="Orders"></A>
+<IMG SRC="order_text.gif" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/images/order_text.gif" WIDTH="103" HEIGHT="41" ALT="Orders"></TD>
+<TD ALIGN="RIGHT"><A HREF="chap13.html" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/venners/chap13.html"><IMG SRC="backward.gif" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/images/backward.gif" BORDER="0" ALT="Backward" WIDTH="32" HEIGHT="32"></A>&nbsp;<A HREF="chap15.html" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/venners/chap15.html"><IMG SRC="forward.gif" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/images/forward.gif" BORDER="0" ALT="Forward" WIDTH="32" HEIGHT="32"></A></TD></TR>
+<TR><TD COLSPAN="2"><A HREF="mailto:computing@mcgraw-hill.com"><IMG SRC="hotkey.gif" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/images/hotkey.gif" ALIGN="LEFT" BORDER="0" WIDTH="40" HEIGHT="40" ALT="Comments"></A>
+<IMG SRC="comment_text.gif" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/images/comment_text.gif" WIDTH="73" HEIGHT="39" ALT="Comments"></TD></TR>
+
+</TABLE>
+<HR>
+<P ALIGN=CENTER>&nbsp;<A HREF="http://www.pbg.mcgraw-hill.com/computing/computing-home.html" tppabs="http://www.pbg.mcgraw-hill.com/computing/computing-home.html" TARGET="_top">COMPUTING
+MCGRAW-HILL</A> | <A HREF="http://www.pbg.mcgraw-hill.com/betabooks/betabooks-home.html" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/betabooks-home.html" TARGET="_top">Beta Books</A>
+| <A HREF="http://www.pbg.mcgraw-hill.com/computing/contact.html" tppabs="http://www.pbg.mcgraw-hill.com/computing/contact.html" TARGET="_top">Contact Us</A>
+| <A HREF="http://www.pbg.mcgraw-hill.com/betabooks/stores.html" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/stores.html" TARGET="_top">Order Information</A>
+| <A HREF="http://mcgraw-hill.inforonics.com/compsearch.shtml" tppabs="http://mcgraw-hill.inforonics.com/compsearch.shtml" TARGET="_top">Online Catalog</A></P>
+
+<P ALIGN=CENTER><FONT SIZE="-1"><A HREF="http://www.pbg.mcgraw-hill.com/computing/computing-home.html" tppabs="http://www.pbg.mcgraw-hill.com/computing/computing-home.html" TARGET="_top">Computing McGraw-Hill</A> is an imprint of the <A HREF="http://www.pbg.mcgraw-hill.com/pbg-home.html" tppabs="http://www.pbg.mcgraw-hill.com/pbg-home.html" TARGET="_top">McGraw-Hill Professional Book Group</A>.</FONT></P>
+
+<!-- begin footer -->
+<HR>
+<A HREF="http://www.mcgraw-hill.com/" tppabs="http://www.mcgraw-hill.com/" TARGET="_top"><IMG SRC="division-white.gif" tppabs="http://www.pbg.mcgraw-hill.com/images/division-white.gif" WIDTH="350" HEIGHT="44" ALT="A Division of the McGraw-Hill Companies" BORDER="0"></A><BR>
+<FONT SIZE="-2">Copyright &copy; 1997 <A HREF="http://www.mcgraw-hill.com/" tppabs="http://www.mcgraw-hill.com/" TARGET="_top">
+The McGraw-Hill Companies</A>. All rights reserved. Any use is subject to the 
+<A HREF="http://www.mcgraw-hill.com/corporate/news_info/copyrttm.htm" tppabs="http://www.mcgraw-hill.com/corporate/news_info/copyrttm.htm" TARGET="_top">
+Terms of Use</A>; the corporation also has a comprehensive <A HREF="http://www.mcgraw-hill.com/corporate/news_info/privacy.html" tppabs="http://www.mcgraw-hill.com/corporate/news_info/privacy.html" TARGET="_top">
+Privacy Policy</A> governing information we may collect from our customers.</FONT>
+<!-- end footer -->
+</BODY>
+</HTML>

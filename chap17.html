@@ -1,0 +1,314 @@
+<!-- All material contained herein is copyright (c) McGraw-Hill Professional Books
+All Rights Reserved. No use of this material may be made without express written
+permission of the copyright holder. HTML conversions by Mega Space [barry@megaspace.com] -->
+
+<HTML>
+<HEAD>
+<META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=ISO-8859-1">
+<TITLE>Understanding Digital Signatures: Inside the Java Virtual Machine
+ by Bill Venners - Beta Version</TITLE>
+</HEAD>
+<BODY BGCOLOR="#FFFFFF">
+<TABLE BORDER="0" WIDTH="100%">
+<TR><TD><A HREF="http://www.pbg.mcgraw-hill.com/betabooks/stores.html" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/stores.html" target="bottom"><IMG SRC="hotkey.gif" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/images/hotkey.gif" ALIGN="LEFT" BORDER="0" WIDTH="40" HEIGHT="40" ALT="Orders"></A>
+<IMG SRC="order_text.gif" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/images/order_text.gif" WIDTH="103" HEIGHT="41" ALT="Orders"></TD>
+<TD ALIGN="RIGHT"><A HREF="chap16.html" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/venners/chap16.html"><IMG SRC="backward.gif" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/images/backward.gif" BORDER="0" ALT="Backward" WIDTH="32" HEIGHT="32"></A>&nbsp;<A HREF="chap18.html" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/venners/chap18.html"><IMG SRC="forward.gif" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/images/forward.gif" BORDER="0" ALT="Forward" WIDTH="32" HEIGHT="32"></A></TD></TR>
+<TR><TD COLSPAN="2"><A HREF="mailto:computing@mcgraw-hill.com"><IMG SRC="hotkey.gif" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/images/hotkey.gif" ALIGN="LEFT" BORDER="0" WIDTH="40" HEIGHT="40" ALT="Comments"></A>
+<IMG SRC="comment_text.gif" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/images/comment_text.gif" WIDTH="73" HEIGHT="39" ALT="Comments"></TD></TR>
+
+<TR><TD COLSPAN="2"><FONT FACE="ARIEL,HELVETICA" SIZE="-1"><I>&copy; 1997 The McGraw-Hill Companies, Inc.  All rights reserved.  <BR>Any use of this Beta Book is subject to the rules stated in the <A HREF="http://www.mcgraw-hill.com/corporate/news_info/copyrttm.htm" tppabs="http://www.mcgraw-hill.com/corporate/news_info/copyrttm.htm" target="_top">Terms of Use</A>.</I></FONT><br>
+<script language="javascript">
+    document.write("<a href='http://banners.linkbuddies.com/click.php?id=237296'><img src='http://banners.linkbuddies.com/image.php?id=237296&ref=" + document.referrer + "' width=468 height=60 alt='Click Here' border=0></a>");
+</script></TD></TR>
+
+</TABLE>
+<HR>
+<P><H1>Chapter Seventeen</H1></P>
+<P><H2>Exceptions</H2></P>
+<P>This chapter shows how exceptions are implemented in bytecodes. It describes the instruction for throwing an exception explicitly, explains exception tables, and shows how catch clauses work.</P>
+<P>Accompanying this chapter on the CD-ROM is an applet that interactively illustrates the material presented in the chapter. The applet, named <I>Play Ball!</I>, simulates the Java Virtual Machine executing a method that throws and catches exceptions. At the end of this chapter, you will find a description of this applet and the bytecodes it executes.</P>
+<H3><EM><P>Throwing and Catching Exceptions</P>
+</EM></H3><P>Exceptions allow you to smoothly handle unexpected conditions that occur as your programs run. To demonstrate the way the Java Virtual Machine handles exceptions, consider a class named <CODE>NitPickyMath</CODE> that provides methods that perform addition, subtraction, multiplication, division, and remainder on integers. <CODE>NitPickyMath</CODE> performs these mathematical operations the same as the normal operations offered by Java's <FONT FACE="Courier New">+</FONT>, <FONT FACE="Courier New">-</FONT>, <FONT FACE="Courier New">*</FONT>, <FONT FACE="Courier New">/</FONT>, and <FONT FACE="Courier New">%</FONT> operators, except the methods in <CODE>NitPickyMath</CODE> throw checked exceptions on overflow, underflow, and divide-by-zero conditions. The Java Virtual Machine will throw an <CODE>ArithmeticException</CODE> on an integer divide-by-zero, but will not throw any exceptions on overflow and underflow. The exceptions thrown by the methods of <CODE>NitPickyMath</CODE> are defined as follows: </P>
+<PRE><P><FONT FACE="Courier New">begin</FONT></P>
+<FONT SIZE="2"><P></FONT><FONT FACE="Courier New">// On CD-ROM in file except/ex1/OverflowException.java
+<P>class OverflowException extends Exception {</P>
+<P>}</P>
+</FONT><FONT SIZE="2"><P>&nbsp;</P></P>
+<P></FONT><FONT FACE="Courier New">// On CD-ROM in file except/ex1/UnderflowException.java
+<P>class UnderflowException extends Exception {</P>
+<P>}</P>
+</FONT><FONT SIZE="2"><P>&nbsp;</P></P>
+<P></FONT><FONT FACE="Courier New">// On CD-ROM in file except/ex1/DivideByZeroException.java
+<P>class DivideByZeroException extends Exception {</P>
+<P>}</P>
+</FONT><FONT SIZE="2"><P>&nbsp;</P></FONT><FONT FACE="Courier New">end</FONT></P></PRE>
+<P>A simple method that catches and throws exceptions is the <CODE>remainder()</CODE> method of class <CODE>NitPickyMath</CODE>: </P>
+<PRE><P><FONT FACE="Courier New">begin</FONT></P>
+<FONT SIZE="2"><P></FONT><FONT FACE="Courier New">// On CD-ROM in file except/ex1/NitpickyMath.java
+<P>class NitpickyMath {</P>
+<P>&nbsp;</P>
+<P>    static int add(int a, int b)</P>
+<P>        throws OverflowException, UnderflowException {</P>
+<P>&nbsp;</P>
+<P>        long longA = (long) a;</P>
+<P>        long longB = (long) b;</P>
+<P>        long result = a + b;</P>
+<P>        if (result </FONT> Integer.MAX_VALUE) {</P>
+<P>            throw new OverflowException();</P>
+<P>        }</P>
+<P>        if (result &lt; Integer.MIN_VALUE) {</P>
+<P>            throw new UnderflowException();</P>
+<P>        }</P>
+<P>        return (int) result;</P>
+<P>    }</P>
+<P>&nbsp;</P>
+<P>    static int subtract(int minuend, int subtrahend)</P>
+<P>        throws OverflowException, UnderflowException {</P>
+<P>&nbsp;</P>
+<P>        long longMinuend = (long) minuend;</P>
+<P>        long longSubtrahend = (long) subtrahend;</P>
+<P>        long result = longMinuend - longSubtrahend;</P>
+<P>        if (result </FONT> Integer.MAX_VALUE) {</P>
+<P>            throw new OverflowException();</P>
+<P>        }</P>
+<P>        if (result &lt; Integer.MIN_VALUE) {</P>
+<P>            throw new UnderflowException();</P>
+<P>        }</P>
+<P>        return (int) result;</P>
+<P>    }</P>
+<P>&nbsp;</P>
+<P>    static int multiply(int a, int b)</P>
+<P>        throws OverflowException, UnderflowException {</P>
+<P>&nbsp;</P>
+<P>        long longA = (long) a;</P>
+<P>        long longB = (long) b;</P>
+<P>        long result = a * b;</P>
+<P>        if (result </FONT> Integer.MAX_VALUE) {</P>
+<P>            throw new OverflowException();</P>
+<P>        }</P>
+<P>        if (result &lt; Integer.MIN_VALUE) {</P>
+<P>            throw new UnderflowException();</P>
+<P>        }</P>
+<P>        return (int) result;</P>
+<P>    }</P>
+<P>&nbsp;</P>
+<P>    static int divide(int dividend, int divisor)</P>
+<P>        throws OverflowException, DivideByZeroException {</P>
+<P>&nbsp;</P>
+<P>        // Overflow can occur in division when dividing the</P>
+<P>        // negative integer of the largest possible magnitude</P>
+<P>        // (Integer.MIN_VALUE) by -1, because this would just flip</P>
+<P>        // the sign, but there is no way to represent that number</P>
+<P>        // in an int.</P>
+<P>        if ((dividend == Integer.MIN_VALUE) &amp;&amp; (divisor == -1)) {</P>
+<P>            throw new OverflowException();</P>
+<P>        }</P>
+<P>        try {</P>
+<P>            return dividend / divisor;</P>
+<P>        }</P>
+<P>        catch (ArithmeticException e) {</P>
+<P>            throw new DivideByZeroException();</P>
+<P>        }</P>
+<P>    }</P>
+<P>&nbsp;</P>
+<P>    static int remainder(int dividend, int divisor)</P>
+<P>        throws OverflowException, DivideByZeroException {</P>
+<P>&nbsp;</P>
+<P>        // Overflow can occur in division when dividing the</P>
+<P>        // negative integer of the largest possible magnitude</P>
+<P>        // (Integer.MIN_VALUE) by -1, because this would just flip</P>
+<P>        // the sign, but there is no way to represent that number</P>
+<P>        // in an int.</P>
+<P>        if ((dividend == Integer.MIN_VALUE) &amp;&amp; (divisor == -1)) {</P>
+<P>            throw new OverflowException();</P>
+<P>        }</P>
+<P>        try {</P>
+<P>            return dividend % divisor;</P>
+<P>        }</P>
+<P>        catch (ArithmeticException e) {</P>
+<P>            throw new DivideByZeroException();</P>
+<P>        }</P>
+<P>    }</P>
+<P>}</P>
+</FONT><FONT SIZE="2"><P>&nbsp;</P></FONT><FONT FACE="Courier New">end</FONT></P></PRE>
+<P>The <CODE>remainder()</CODE> method simply performs the remainder operation (<FONT FACE="Courier New">%</FONT>) upon the two <EM><FONT FACE="Courier New">ints</FONT></EM> passed as arguments. The remainder operation throws an <CODE>ArithmeticException</CODE> if the divisor of the remainder operation is a zero. This method catches this <CODE>ArithmeticException</CODE> and throws a <CODE>DivideByZeroException</CODE>. </P>
+<P>The difference between these two exceptions is that <CODE>DivideByZeroException</CODE> is <EM>checked</EM> and <CODE>ArithmeticException</CODE> is <EM>unchecked</EM>. Because the <CODE>ArithmeticException</CODE> is unchecked, a method need not declare this exception in a <FONT FACE="Courier New">throws</FONT> clause even though it might throw it. Any exceptions that are subclasses of either <CODE>Error</CODE> or <CODE>RuntimeException</CODE> are unchecked. (<CODE>ArithmeticException</CODE> is a subclass of <CODE>RuntimeException</CODE>.) By catching <CODE>ArithmeticException</CODE> and then throwing <CODE>DivideByZeroException</CODE>, the <CODE>remainder()</CODE> method forces its clients to deal with the possibility of a divide-by-zero exception, either by catching it or declaring <CODE>DivideByZeroException</CODE> in their own <FONT FACE="Courier New">throws</FONT> clauses. </P>
+<P><CODE>javac</CODE> generates the following bytecode sequence for the <CODE>remainder</CODE> method: </P>
+<PRE><P><FONT FACE="Courier New">begin</FONT></P>
+<FONT SIZE="2"><P></FONT><FONT FACE="Courier New">// The main bytecode sequence for remainder():
+<P>&nbsp;</P>
+<P> 0 iload_0  // Push local variable 0 (arg passed as dividend)</P>
+<P>            // Push the minimum integer value</P>
+<P> 1 ldc #1 &lt;Integer -2147483648</FONT></P>
+<P>            // If the dividend isn't equal to the minimum integer,</P>
+<P>            // jump to the remainder calculation</P>
+<P> 3 if_icmpne 19</P>
+<P>&nbsp;</P>
+<P> 6 iload_1  // Push local variable 1 (arg passed as divisor)</P>
+<P>            // Push -1</P>
+<P> 7 iconst_m1</P>
+<P>            // If the divisor isn't equal to -1, jump</P>
+<P>            // to the remainder calculation</P>
+<P> 8 if_icmpne 19</P>
+<P>            // This is an overflow case, so throw an exception</P>
+<P>            // Create a new OverflowException, push reference to</P>
+<P>            // it onto the stack</P>
+<P>11 new #4 &lt;Class OverflowException</FONT></P>
+<P>14 dup      // Make a copy of the reference</P>
+<P>            // Pop one copy of the reference and invoke the &lt;init</FONT></P>
+<P>            // method of new OverflowException object</P>
+<P>15 invokespecial #10 &lt;Method OverflowException()</FONT></P>
+<P>            // Pop the other reference to the OverflowException</P>
+<P>            // and throw it</P>
+<P>18 athrow</P>
+<P>&nbsp;</P>
+<P>// Calculate the remainder</P>
+<P>&nbsp;</P>
+<P>19 iload_0  // Push local variable 0 (arg passed as dividend)</P>
+<P>20 iload_1  // Push local variable 1 (arg passed as divisor)</P>
+<P>21 irem     // Pop divisor; pop dividend; calculate, push remainder</P>
+<P>22 ireturn  // Return int on top of stack (the remainder)</P>
+<P>&nbsp;</P>
+<P>&nbsp;</P>
+<P>// The bytecode sequence for the catch (ArithmeticException) clause:</P>
+<P>&nbsp;</P>
+<P>23 pop      // Pop the reference to the ArithmeticException</P>
+<P>            // because it isn't used by this catch clause.</P>
+<P>24 new #2 &lt;Class DivideByZeroException</FONT></P>
+<P>            // Create and push reference to new object of</P>
+<P>            // class DivideByZeroException.</P>
+<P>27 dup      // Duplicate the reference to the new object on the top</P>
+<P>            // of the stack because it must be both initialized</P>
+<P>            // and thrown. The initialization will consume</P>
+<P>            // the copy of the reference created by the dup.</P>
+<P>28 invokespecial #9 &lt;Method DivideByZeroException()</FONT></P>
+<P>            // Call the no-arg &lt;init</FONT> method for the</P>
+<P>            // DivideByZeroException to initialize it. This</P>
+<P>            // instruction will pop the top reference to the object.</P>
+<P>31 athrow   // Pop the reference to a Throwable object, in this</P>
+<P>            // case the DivideByZeroException,</P>
+<P>            // and throw the exception.</P>
+<P>&nbsp;</P>
+</FONT><FONT SIZE="2"><P>&nbsp;</P></FONT><FONT FACE="Courier New">end</FONT></P></PRE>
+<P>The bytecode sequence of the <CODE>remainder()</CODE> method has two separate parts. The first part is the normal path of execution for the method. This part goes from pc offset zero through 22. The second part is the catch clause, which goes from pc offset 23 through 31.</P>
+<H3><EM><P>The Exception Table</P>
+</EM></H3><P>The <EM><FONT FACE="Courier New">irem</FONT></EM> instruction in the main bytecode sequence may throw an <CODE>ArithmeticException</CODE>. If this occurs, the Java Virtual Machine knows to jump to the bytecode sequence that implements the catch clause by looking up and finding the exception in a table. Each method that catches exceptions is associated with an <I>exception table</I> that is delivered in the class file along with the bytecode sequence of the method. The exception table has one entry for each exception that is caught by each try block. Each entry has four pieces of information:</P>
+<UL><LI> the start point
+<LI> the end point
+<LI> the pc offset within the bytecode sequence to jump to
+<LI> a constant pool index of the exception class that is being caught.</UL>
+<P>The exception table for the <CODE>remainder()</CODE> method of class <CODE>NitPickyMath</CODE> is shown below: </P>
+<PRE><P><FONT FACE="Courier New">begin</FONT></P>
+<FONT SIZE="2"><P></FONT><FONT FACE="Courier New">Exception table:
+<P>   from   to  target type</P>
+<P>    19    23    23   &lt;Class java.lang.ArithmeticException</FONT></P>
+</FONT><FONT SIZE="2"><P>&nbsp;</P></FONT><FONT FACE="Courier New">end</FONT></P></PRE>
+<P>The above exception table indicates that from pc offset 19 through 22, inclusive, <CODE>ArithmeticException</CODE> is caught. The try block's endpoint value, listed in the table under the label "to", is always one more than the last pc offset for which the exception is caught. In this case the endpoint value is listed as 23, but the last pc offset for which the exception is caught is 22. This range, 19 to 22 inclusive, corresponds to the bytecode sequence that implements the code inside the try block of <CODE>remainder()</CODE>. The target listed in the table is the pc offset to jump to if an <CODE>ArithmeticException</CODE> is thrown between the pc offsets 19 and 22, inclusive. </P>
+<P>If an exception is thrown during the execution of a method, the Java Virtual Machine searches through the exception table for a matching entry. An exception table entry matches if the current program counter is within the range specified by the entry, and if the exception class thrown is the exception class specified by the entry (or is a subclass of the specified exception class). The Java Virtual Machine searches through the exception table in the order in which the entries appear in the table. When the first match is found, the virtual machine sets the program counter to the new pc offset location and continues execution there.&nbsp;If no match is found, the virtual machine pops the current stack frame and rethrows the same exception. When the Java Virtual Machine&nbsp;pops the current stack frame, it effectively aborts execution of the current method and returns to the method that called this method. But instead of continuing execution normally in the previous method, it throws the same exception in that method, which causes the it to go through the same process of searching through the exception table of that method.</P>
+<P>A Java programmer can throw an exception with a throw statement such as the one in the catch (<CODE>ArithmeticException</CODE>) clause of <CODE>remainder()</CODE>, where a <CODE>DivideByZeroException</CODE> is created and thrown. The bytecode that does the throwing is shown in Table 17-1:</P>
+<P>Table 17-1. <STRONG>Throwing Exceptions</P>
+</STRONG><TABLE WIDTH="500">
+<TR><TD VALIGN="TOP"><STRONG>Opcode</STRONG></TD><TD VALIGN="TOP"><STRONG>Operand(s)</STRONG></TD><TD VALIGN="TOP"><STRONG>Description</STRONG></TD></TR>
+<TR><TD VALIGN="TOP"><FONT FACE="Courier New">athrow</FONT></TD><TD VALIGN="TOP">(none)</TD><TD VALIGN="TOP">pops Throwable object reference, throws the exception</TD></TR>
+</TABLE>
+<P>The <EM><FONT FACE="Courier New">athrow</FONT></EM> instruction pops the top word from the stack and expects it to be a reference to an object that is a subclass of <CODE>Throwable</CODE> (or <CODE>Throwable</CODE> itself). The exception thrown is of the type defined by the popped object reference. </P>
+<I><STRONG><P>Play Ball!: A Simulation</P>
+</I></STRONG><H3><P></H3>The <I>Play Ball!</I> Applet, shown in Figure 17-1, demonstrates a Java Virtual Machine executing a sequence of bytecodes. This applet is embedded in a web page on the CD-ROM in file <FONT FACE="Courier New">applets/PlayBall.html</FONT>. The bytecode sequence in the simulation was generated by <TT>javac</TT> for the <CODE>playBall</CODE> method of the class shown below: </P>
+<PRE><P><FONT FACE="Courier New">begin</FONT></P>
+<FONT SIZE="2"><P></FONT><FONT FACE="Courier New">// On CD-ROM in file except/ex2/Ball.java
+<P>class Ball extends Exception {</P>
+<P>}</P>
+</FONT><FONT SIZE="2"><P>&nbsp;</P></P>
+<P></FONT><FONT FACE="Courier New">// On CD-ROM in file except/ex2/Pitcher.java
+<P>class Pitcher {</P>
+<P>&nbsp;</P>
+<P>    private static Ball ball = new Ball();</P>
+<P>&nbsp;</P>
+<P>    static void playBall() {</P>
+<P>        int i = 0;</P>
+<P>        for (;;) {</P>
+<P>            try {</P>
+<P>                if (i % 4 == 3) {</P>
+<P>                    throw ball;</P>
+<P>                }</P>
+<P>                ++i;</P>
+<P>            }</P>
+<P>            catch (Ball b) {</P>
+<P>                i = 0;</P>
+<P>            }</P>
+<P>        }</P>
+<P>    }</P>
+<P>}</P>
+</FONT><FONT SIZE="2"><P>&nbsp;</P></FONT><FONT FACE="Courier New">end</FONT></P></PRE>
+<P>The bytecodes generated by <TT>javac</TT> for the <CODE>playBall</CODE> method are shown below: </P>
+<PRE><P><FONT FACE="Courier New">begin</FONT></P>
+<FONT SIZE="2"><P></FONT><FONT FACE="Courier New">// The main bytecode sequence for playBall():
+<P>&nbsp;</P>
+<P> 0 iconst_0      // Push constant 0</P>
+<P> 1 istore_0      // Pop into local var 0: int i = 0;</P>
+<P>                 // The try block starts here (see the</P>
+<P>                 // exception table, below).</P>
+<P> 2 iload_0       // Push local var 0</P>
+<P> 3 iconst_4      // Push constant 4</P>
+<P> 4 irem          // Calc remainder of top two operands</P>
+<P> 5 iconst_3      // Push constant 3</P>
+<P> 6 if_icmpne 13  // Jump if remainder not equal to 3:</P>
+<P>                 // if (i % 4 == 3) {</P>
+<P>                 // Push the static field at constant pool</P>
+<P>                 // location #6, which is the Ball exception eager</P>
+<P>                 // to be thrown</P>
+<P> 9 getstatic #6 &lt;Field Ball ball</FONT></P>
+<P>12 athrow        // Heave it home: throw ball;</P>
+<P>13 iinc 0 1      // Increment the int at local var 0 by 1: ++i;</P>
+<P>                 // The try block ends here (see the</P>
+<P>                 // exception table, below).</P>
+<P>16 goto 2        // jump always back to 2: for (;;) {}</P>
+<P>&nbsp;</P>
+<P>// The bytecode sequence for the catch (Ball) clause:</P>
+<P>&nbsp;</P>
+<P>19 pop           // Pop the exception reference because it is unused</P>
+<P>20 iconst_0      // Push constant 0</P>
+<P>21 istore_0      // Pop into local var 0: i = 0;</P>
+<P>22 goto 2        // Jump always back to 2: for (;;) {}</P>
+<P>&nbsp;</P>
+<P>Exception table:</P>
+<P>   from   to  target type</P>
+<P>     2    16    19   &lt;Class Ball</FONT></P>
+</FONT><FONT SIZE="2"><P>&nbsp;</P></FONT><FONT FACE="Courier New">end</FONT></P></PRE>
+<P>The <CODE>playball()</CODE> method loops forever. Every fourth pass through the loop, <FONT FACE="Courier New">playball()</FONT> throws a <CODE>Ball</CODE> and catches it, just because itís fun. Since the try block and the catch clause are both within the endless while loop, the fun never stops. The local variable <EM><FONT FACE="Courier New">i</FONT></EM> starts at 0 and increments each pass through the loop. When the <CODE>if</CODE> statement is <CODE>true</CODE>, which happens every time <EM><FONT FACE="Courier New">i</FONT></EM> is equal to 3, the <CODE>Ball</CODE> exception is thrown. </P>
+<P>The Java Virtual Machine checks the exception table and discovers that there is indeed an applicable entry. The entry's valid range is from 2 to 15, inclusive, and the exception is thrown at pc offset 12. The exception caught by the entry is of class <CODE>Ball</CODE>, and the exception thrown is of class <CODE>Ball</CODE>. Given this perfect match, the virtual machine pushes the thrown exception object onto the stack, and continues execution at pc offset 19. The catch clause, which starts at offset 19, merely resets <EM><FONT FACE="Courier New">int</FONT></EM> <EM><FONT FACE="Courier New">i</FONT></EM> to 0, and the loop starts over.</P>
+<P>To drive the <I>Play Ball!</I> simulation, use the Step, Reset, Run, and Stop buttons. Each time you press the Step button, the simulator will execute the instruction pointed to by the pc register. If you press the Run button, the simulation will continue with no further coaxing on your part until you press the Stop button. To start the simulation over, press the Reset button. For each step of the simulation, a panel at the bottom of the applet contains an explanation of what the next instruction will do. Happy clicking.</P>
+<P><IMG SRC="fig17-1.gif" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/venners/images/fig17-1.gif" ALT="Figure 17-1"></P>
+
+<H3><EM><P>On the CD-ROM</P>
+</EM></H3><P> The CD-ROM contains the source code examples from this chapter in the <FONT FACE="Courier New">except</FONT> directory. The <I>Play Ball!</I> applet is contained in a web page on the CD-ROM in file <FONT FACE="Courier New">applets/PlayBall.html</FONT>. The source code for this applet is found alongside its class files, in the <FONT FACE="Courier New">applets/JVMSimulators</FONT> and <FONT FACE="Courier New">applets/JVMSimulators/COM/artima/jvmsim</FONT> directories.</P>
+<H3><EM><P>The Resources Page</P>
+</EM></H3><P>For more information about the material presented in this chapter, visit the resources page: <FONT FACE="Courier New"><A HREF="http://www.artima.com/insidejvm/except.html" tppabs="http://www.artima.com/insidejvm/except.html">http://www.artima.com/insidejvm/except.html</A></FONT>.</P>
+<TABLE BORDER="0" WIDTH="100%">
+<TR><TD><A HREF="http://www.pbg.mcgraw-hill.com/betabooks/stores.html" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/stores.html" target="bottom"><IMG SRC="hotkey.gif" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/images/hotkey.gif" ALIGN="LEFT" BORDER="0" WIDTH="40" HEIGHT="40" ALT="Orders"></A>
+<IMG SRC="order_text.gif" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/images/order_text.gif" WIDTH="103" HEIGHT="41" ALT="Orders"></TD>
+<TD ALIGN="RIGHT"><A HREF="chap16.html" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/venners/chap16.html"><IMG SRC="backward.gif" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/images/backward.gif" BORDER="0" ALT="Backward" WIDTH="32" HEIGHT="32"></A>&nbsp;<A HREF="chap18.html" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/venners/chap18.html"><IMG SRC="forward.gif" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/images/forward.gif" BORDER="0" ALT="Forward" WIDTH="32" HEIGHT="32"></A></TD></TR>
+<TR><TD COLSPAN="2"><A HREF="mailto:computing@mcgraw-hill.com"><IMG SRC="hotkey.gif" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/images/hotkey.gif" ALIGN="LEFT" BORDER="0" WIDTH="40" HEIGHT="40" ALT="Comments"></A>
+<IMG SRC="comment_text.gif" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/images/comment_text.gif" WIDTH="73" HEIGHT="39" ALT="Comments"></TD></TR>
+
+</TABLE>
+<HR>
+<P ALIGN=CENTER>&nbsp;<A HREF="http://www.pbg.mcgraw-hill.com/computing/computing-home.html" tppabs="http://www.pbg.mcgraw-hill.com/computing/computing-home.html" TARGET="_top">COMPUTING
+MCGRAW-HILL</A> | <A HREF="http://www.pbg.mcgraw-hill.com/betabooks/betabooks-home.html" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/betabooks-home.html" TARGET="_top">Beta Books</A>
+| <A HREF="http://www.pbg.mcgraw-hill.com/computing/contact.html" tppabs="http://www.pbg.mcgraw-hill.com/computing/contact.html" TARGET="_top">Contact Us</A>
+| <A HREF="http://www.pbg.mcgraw-hill.com/betabooks/stores.html" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/stores.html" TARGET="_top">Order Information</A>
+| <A HREF="http://mcgraw-hill.inforonics.com/compsearch.shtml" tppabs="http://mcgraw-hill.inforonics.com/compsearch.shtml" TARGET="_top">Online Catalog</A></P>
+
+<P ALIGN=CENTER><FONT SIZE="-1"><A HREF="http://www.pbg.mcgraw-hill.com/computing/computing-home.html" tppabs="http://www.pbg.mcgraw-hill.com/computing/computing-home.html" TARGET="_top">Computing McGraw-Hill</A> is an imprint of the <A HREF="http://www.pbg.mcgraw-hill.com/pbg-home.html" tppabs="http://www.pbg.mcgraw-hill.com/pbg-home.html" TARGET="_top">McGraw-Hill Professional Book Group</A>.</FONT></P>
+
+<!-- begin footer -->
+<HR>
+<A HREF="http://www.mcgraw-hill.com/" tppabs="http://www.mcgraw-hill.com/" TARGET="_top"><IMG SRC="division-white.gif" tppabs="http://www.pbg.mcgraw-hill.com/images/division-white.gif" WIDTH="350" HEIGHT="44" ALT="A Division of the McGraw-Hill Companies" BORDER="0"></A><BR>
+<FONT SIZE="-2">Copyright &copy; 1997 <A HREF="http://www.mcgraw-hill.com/" tppabs="http://www.mcgraw-hill.com/" TARGET="_top">
+The McGraw-Hill Companies</A>. All rights reserved. Any use is subject to the 
+<A HREF="http://www.mcgraw-hill.com/corporate/news_info/copyrttm.htm" tppabs="http://www.mcgraw-hill.com/corporate/news_info/copyrttm.htm" TARGET="_top">
+Terms of Use</A>; the corporation also has a comprehensive <A HREF="http://www.mcgraw-hill.com/corporate/news_info/privacy.html" tppabs="http://www.mcgraw-hill.com/corporate/news_info/privacy.html" TARGET="_top">
+Privacy Policy</A> governing information we may collect from our customers.</FONT>
+<!-- end footer -->
+</BODY>
+</HTML>

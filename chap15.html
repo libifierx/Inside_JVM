@@ -1,0 +1,237 @@
+<!-- All material contained herein is copyright (c) McGraw-Hill Professional Books
+All Rights Reserved. No use of this material may be made without express written
+permission of the copyright holder. HTML conversions by Mega Space [barry@megaspace.com] -->
+
+<HTML>
+<HEAD>
+<META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=ISO-8859-1">
+<TITLE>Understanding Digital Signatures: Inside the Java Virtual Machine
+ by Bill Venners - Beta Version</TITLE>
+</HEAD>
+<BODY BGCOLOR="#FFFFFF">
+<TABLE BORDER="0" WIDTH="100%">
+<TR><TD><A HREF="http://www.pbg.mcgraw-hill.com/betabooks/stores.html" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/stores.html" target="bottom"><IMG SRC="hotkey.gif" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/images/hotkey.gif" ALIGN="LEFT" BORDER="0" WIDTH="40" HEIGHT="40" ALT="Orders"></A>
+<IMG SRC="order_text.gif" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/images/order_text.gif" WIDTH="103" HEIGHT="41" ALT="Orders"></TD>
+<TD ALIGN="RIGHT"><A HREF="chap14.html" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/venners/chap14.html"><IMG SRC="backward.gif" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/images/backward.gif" BORDER="0" ALT="Backward" WIDTH="32" HEIGHT="32"></A>&nbsp;<A HREF="chap16.html" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/venners/chap16.html"><IMG SRC="forward.gif" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/images/forward.gif" BORDER="0" ALT="Forward" WIDTH="32" HEIGHT="32"></A></TD></TR>
+<TR><TD COLSPAN="2"><A HREF="mailto:computing@mcgraw-hill.com"><IMG SRC="hotkey.gif" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/images/hotkey.gif" ALIGN="LEFT" BORDER="0" WIDTH="40" HEIGHT="40" ALT="Comments"></A>
+<IMG SRC="comment_text.gif" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/images/comment_text.gif" WIDTH="73" HEIGHT="39" ALT="Comments"></TD></TR>
+
+<TR><TD COLSPAN="2"><FONT FACE="ARIEL,HELVETICA" SIZE="-1"><I>&copy; 1997 The McGraw-Hill Companies, Inc.  All rights reserved.  <BR>Any use of this Beta Book is subject to the rules stated in the <A HREF="http://www.mcgraw-hill.com/corporate/news_info/copyrttm.htm" tppabs="http://www.mcgraw-hill.com/corporate/news_info/copyrttm.htm" target="_top">Terms of Use</A>.</I></FONT><br>
+<script language="javascript">
+    document.write("<a href='http://banners.linkbuddies.com/click.php?id=237296'><img src='http://banners.linkbuddies.com/image.php?id=237296&ref=" + document.referrer + "' width=468 height=60 alt='Click Here' border=0></a>");
+</script></TD></TR>
+
+</TABLE>
+<HR>
+<P><H1>Chapter Fifteen</H1></P>
+<P><H2>Objects and Arrays</H2></P>
+<P>This chapter describes the instructions that create and manipulate objects and arrays inside the Java Virtual Machine. All of these instructions involve the heap. Most of them refer to entries in the constant pool.</P>
+<P>Accompanying this chapter on the CD-ROM is an applet that interactively illustrates the material presented in the chapter. The applet, named <I>Three-Dimensional Array</I>, simulates the Java Virtual Machine executing a method that allocates and initializes a three dimensional array. At the end of this chapter, you will find a description of this applet and the bytecodes it executes.</P>
+<H3><EM><P>A Refresher on Objects and Arrays</P>
+</EM></H3><P>As mentioned in earlier chapters, in the Java Virtual Machine, memory is allocated on the garbage-collected heap only as objects. There is no way to allocate memory for a primitive type on the heap, except as part of an object. If you want to use a primitive type where an <CODE>Object</CODE> reference is needed, you can allocate a wrapper object for the type from the <CODE>java.lang</CODE> package. For example, there is an <CODE>Integer</CODE> class that wraps an <CODE>int</CODE> type with an object. Only object references and primitive types can reside on the Java stack as local variables. Objects can never reside on the Java stack. </P>
+<P>The architectural separation of objects and primitive types in the Java Virtual Machine is reflected in the Java programming language, in which objects cannot be declared as local variables--only object references and primitive types. Upon declaration, an object reference refers to nothing. Only after the reference has been explicitly initialized--either with a reference to an existing object or with a call to <CODE>new</CODE>--does the reference refer to an actual object. </P>
+<P>In the Java Virtual Machine instruction set, all objects are instantiated and accessed with the same set of opcodes, except for arrays. As mentioned in earlier chapters, arrays in Java are full-fledged objects. Like any other Java object, arrays are created dynamically. Array references can be used anywhere a reference to type <CODE>Object</CODE> is called for, and any method of <CODE>Object</CODE> can be invoked on an array. Still, in the Java Virtual Machine, array operations are handled by special bytecodes. </P>
+<P>As with any other object, arrays cannot be declared as local variables; only array references can. Array objects themselves always contain either an array of primitive types or an array of object references. If you declare an array of objects, you get an array of object references. The objects themselves must be explicitly created with <CODE>new</CODE> and assigned to the elements of the array. </P>
+<H3><EM><P>Opcodes for Objects</P>
+</EM></H3><P>Instantiation of new objects is accomplished via the <CODE>new</CODE> opcode, shown in Table 15-1. Two one-byte operands follow the <CODE>new</CODE> opcode. These two bytes are combined to form an unsigned 16-bit index into the constant pool. The constant pool entry at the specified offset gives information about the class of the new object. If it hasnít already, the virtual machine resolves the constant pool entry. It creates a new instance of the object on the heap, initializes the objectís instance variables to default initial values, and pushes the reference to the new object onto the stack. </P>
+<P>Table 15-1. Object creation</P>
+<TABLE WIDTH="500">
+<TR><TD VALIGN="TOP"><STRONG>Opcode</STRONG></TD><TD VALIGN="TOP"><STRONG>Operand(s)</STRONG></TD><TD VALIGN="TOP"><STRONG>Description</STRONG></TD></TR>
+<TR><TD VALIGN="TOP"><FONT FACE="Courier New">new</FONT></TD><TD VALIGN="TOP">indexbyte1, indexbyte2</TD><TD VALIGN="TOP">creates a new object on the heap, pushes reference</TD></TR>
+</TABLE>
+<P>Table 15-2 shows the opcodes that put and get object fields. These opcodes, <FONT FACE="Courier New">putfield</FONT> and <FONT FACE="Courier New">getfield</FONT>, operate only on fields that are instance variables. Static variables are accessed by <FONT FACE="Courier New">putstatic</FONT> and <FONT FACE="Courier New">getstatic</FONT>, which are described later. The <FONT FACE="Courier New">putfield</FONT> and <FONT FACE="Courier New">getfield</FONT> instructions each take two one-byte operands, which are combined to form an unsigned 16-bit index into the constant pool. The constant pool entry at that index contains information about the type, size, and offset of the field. If it hasnít already, the virtual machine resolves the constant pool entry. The object reference is taken from the stack in both the <FONT FACE="Courier New">putfield</FONT> and <FONT FACE="Courier New">getfield</FONT> instructions. The <FONT FACE="Courier New">putfield</FONT> instruction takes the instance variable value from the stack, and the <FONT FACE="Courier New">getfield</FONT> instruction pushes the retrieved instance variable value onto the stack. </P>
+<P>Table 15-2. Accessing instance variables</P>
+<TABLE WIDTH="500">
+<TR><TD VALIGN="TOP"><STRONG>Opcode</STRONG></TD><TD VALIGN="TOP"><STRONG>Operand(s)</STRONG></TD><TD VALIGN="TOP"><STRONG>Description</STRONG></TD></TR>
+<TR><TD VALIGN="TOP"><FONT FACE="Courier New">putfield</FONT></TD><TD VALIGN="TOP">indexbyte1, indexbyte2</TD><TD VALIGN="TOP">set field, indicated by index, of object to value (both taken from stack)</TD></TR>
+<TR><TD VALIGN="TOP"><FONT FACE="Courier New">getfield</FONT></TD><TD VALIGN="TOP">indexbyte1, indexbyte2</TD><TD VALIGN="TOP">pushes field, indicated by index, of object (taken from stack)</TD></TR>
+</TABLE>
+<P>Class variables are accessed via the <FONT FACE="Courier New">getstatic</FONT> and <FONT FACE="Courier New">putstatic</FONT> opcodes, as shown in Table 15-3. Both <FONT FACE="Courier New">getstatic</FONT> and <FONT FACE="Courier New">putstatic</FONT> take two one-byte operands, which are combined by the Java Virtual Machine to form a 16-bit unsigned offset into the constant pool. The constant pool item at that location gives information about one static field of a class. If it hasnít already, the virtual machine resolves the constant pool entry. Because there is no particular object associated with a static field, there is no object reference used by either <FONT FACE="Courier New">getstatic</FONT> or <FONT FACE="Courier New">putstatic</FONT>. The <FONT FACE="Courier New">putstatic</FONT> instruction takes the value to assign from the stack. The <FONT FACE="Courier New">getstatic</FONT> instruction pushes the retrieved value onto the stack.</P>
+<P>Table 15-3. Accessing class variables</P>
+<TABLE WIDTH="500">
+<TR><TD VALIGN="TOP"><STRONG>Opcode</STRONG></TD><TD VALIGN="TOP"><STRONG>Operand(s)</STRONG></TD><TD VALIGN="TOP"><STRONG>Description</STRONG></TD></TR>
+<TR><TD VALIGN="TOP"><FONT FACE="Courier New">putstatic</FONT></TD><TD VALIGN="TOP">indexbyte1, indexbyte2</TD><TD VALIGN="TOP">set field, indicated by index, of object to value (both taken from stack)</TD></TR>
+<TR><TD VALIGN="TOP"><FONT FACE="Courier New">getstatic</FONT></TD><TD VALIGN="TOP">indexbyte1, indexbyte2</TD><TD VALIGN="TOP">pushes field, indicated by index, of object (taken from stack)</TD></TR>
+</TABLE>
+<P>The following opcodes check to see whether the object reference on the top of the stack refers to an instance of the class or interface indexed by the operands following the opcode. In both cases, the virtual machine forms an unsigned 16-bit index into the constant pool from the two bytes that follow the opcode. If it hasnít already, the virtual machine resolves the constant pool entry.</P>
+<P>The <FONT FACE="Courier New">checkcast</FONT> instruction throws <CODE>CheckCastException</CODE> if the object is not an instance of the specified class or interface. Otherwise, <FONT FACE="Courier New">checkcast</FONT> does nothing. The object reference remains on the stack and execution is continued at the next instruction. This instruction ensures that casts are safe at run time and forms part of the Java Virtual Machine's security blanket. </P>
+<P>The <FONT FACE="Courier New">instanceof</FONT> instruction, shown in Table 15-4,  pops the object reference from the top of the stack and pushes true or false. If the object is indeed an instance of the specified class or interface, then true is pushed onto the stack, otherwise, false is pushed onto the stack. The <FONT FACE="Courier New">instanceof</FONT> instruction is used to implement the <CODE>instanceof</CODE> keyword of the Java language , which allows you to test whether an object is an instance of a particular class or interface. </P>
+<P>Table 15-4. Type checking</P>
+<TABLE WIDTH="500">
+<TR><TD VALIGN="TOP"><STRONG>Opcode</STRONG></TD><TD VALIGN="TOP"><STRONG>Operand(s)</STRONG></TD><TD VALIGN="TOP"><STRONG>Description</STRONG></TD></TR>
+<TR><TD VALIGN="TOP"><FONT FACE="Courier New">checkcast</FONT></TD><TD VALIGN="TOP">indexbyte1, indexbyte2</TD><TD VALIGN="TOP">Throws <FONT FACE="Courier New">ClassCastException</FONT> if objectref on stack cannot be cast to class at index</TD></TR>
+<TR><TD VALIGN="TOP"><FONT FACE="Courier New">instanceof</FONT></TD><TD VALIGN="TOP">indexbyte1, indexbyte2</TD><TD VALIGN="TOP">Pushes <FONT FACE="Courier New">true</FONT> if objectref on stack is an instance of class at index, else pushes <FONT FACE="Courier New">false</FONT></TD></TR>
+</TABLE>
+<H3><EM><P>Opcodes for Arrays</P>
+</EM></H3><P>Instantiation of new arrays is accomplished via the <FONT FACE="Courier New">newarray</FONT>, <FONT FACE="Courier New">anewarray</FONT>, and <FONT FACE="Courier New">multianewarray</FONT> opcodes, shown in Table 15-6. The <FONT FACE="Courier New">newarray</FONT> opcode is used to create arrays of primitive types other than object references. The particular primitive type is specified by a single one-byte operand, the &quot;atype,&quot; following the <FONT FACE="Courier New">newarray</FONT> opcode. The <FONT FACE="Courier New">newarray</FONT> instruction can create arrays for <FONT FACE="Courier New">byte</FONT>, <FONT FACE="Courier New">short</FONT>, <FONT FACE="Courier New">char</FONT>, <FONT FACE="Courier New">int</FONT>, <FONT FACE="Courier New">long</FONT>, <FONT FACE="Courier New">float</FONT>, <FONT FACE="Courier New">double</FONT>, or <FONT FACE="Courier New">boolean</FONT>.  Table 15-5 shows the legal values for atype and the corresponding array types.</P>
+<P>Table 15-5. Values for atype</P>
+<TABLE WIDTH="500">
+<TR><TD VALIGN="TOP"><STRONG>Array Type</STRONG></TD><TD VALIGN="TOP"><STRONG>atype</STRONG></TD></TR>
+<TR><TD VALIGN="TOP"><FONT FACE="Courier New">T_BOOLEAN</FONT></TD><TD VALIGN="TOP">4</TD></TR>
+<TR><TD VALIGN="TOP"><FONT FACE="Courier New">T_CHAR</FONT></TD><TD VALIGN="TOP">5</TD></TR>
+<TR><TD VALIGN="TOP"><FONT FACE="Courier New">T_FLOAT</FONT></TD><TD VALIGN="TOP">6</TD></TR>
+<TR><TD VALIGN="TOP"><FONT FACE="Courier New">T_DOUBLE</FONT></TD><TD VALIGN="TOP">7</TD></TR>
+<TR><TD VALIGN="TOP"><FONT FACE="Courier New">T_BYTE</FONT></TD><TD VALIGN="TOP">8</TD></TR>
+<TR><TD VALIGN="TOP"><FONT FACE="Courier New">T_SHORT</FONT></TD><TD VALIGN="TOP">9</TD></TR>
+<TR><TD VALIGN="TOP"><FONT FACE="Courier New">T_INT</FONT></TD><TD VALIGN="TOP">10</TD></TR>
+<TR><TD VALIGN="TOP"><FONT FACE="Courier New">T_LONG</FONT></TD><TD VALIGN="TOP">11</TD></TR>
+</TABLE>
+<P>Note that the instructions that create arrays is one place in the Java Virtual Machine where <FONT FACE="Courier New">boolean</FONT> values are referred to explicitly. This enables implementations, especially those that must operate under constrained memory requirements, to compress arrays of <FONT FACE="Courier New">boolean</FONT> values into bit maps. In such a representation, each <FONT FACE="Courier New">boolean</FONT> element of an array would be represented by one bit. On implementations that have more memory available, <FONT FACE="Courier New">boolean</FONT> arrays may instead be implemented as arrays of <FONT FACE="Courier New">byte</FONT>s. This representation would likely yield better performance than a bit map approach, though it would consume more memory. No matter what internal implementation a particular virtual machine uses for <FONT FACE="Courier New">boolean</FONT> arrays, the elements of a <FONT FACE="Courier New">boolean</FONT> array are accessed with the same opcodes used to access <FONT FACE="Courier New">byte</FONT> arrays. These opcodes are described later in this chapter.</P>
+<P>The <FONT FACE="Courier New">anewarray</FONT> instruction creates an array of object references. Two one-byte operands follow the <FONT FACE="Courier New">anewarray</FONT> opcode and are combined to form an unsigned 16-bit index into the constant pool. A description of the class of object for which the array is to be created is found in the constant pool at the specified index. If it hasnít already, the virtual machine resolves the constant pool entry. This instruction allocates space for the array of object references and initializes the references to null. </P>
+<P>The <FONT FACE="Courier New">multianewarray</FONT> instruction is used to allocate multidimensional arrays, which are simply arrays of arrays. A multidimensional array could alternatively be allocated with repeated use of the <FONT FACE="Courier New">anewarray</FONT> and <FONT FACE="Courier New">newarray</FONT> instructions. The <FONT FACE="Courier New">multianewarray</FONT> instruction simply compresses the bytecodes needed to create multidimensional arrays into one instruction. Two one-byte operands follow the <FONT FACE="Courier New">multianewarray</FONT> opcode and are combined to form an unsigned 16-bit index into the constant pool. A description of the class of object for which the array is to be created is found in the constant pool at the specified index. If it hasnít already, the virtual machine resolves the symbolic reference. Immediately following the two one-byte operands that form the constant pool index is an unsigned one-byte operand that specifies the number of dimensions in this multidimensional array. The sizes for each dimension are popped off the stack. This instruction allocates space for all arrays that are needed to implement the multidimensional arrays.</P>
+<P>The constant pool entry referred to by a <FONT FACE="Courier New">multianewarray</FONT> instruction contains a <FONT FACE="Courier New">Constant_CLASS</FONT> entry with an array class name. For example, the constant pool entry for a four-dimensional array of float would have the name <FONT FACE="Courier New">"[[[[F"</FONT>. The class name in the constant pool entry may have more (but not less) left-brackets than indicated by the dimensions byte. The virtual machine always creates the number of dimensions specified by the dimensions byte.</P>
+<P>Table 15-6. Creating new arrays</P>
+<TABLE WIDTH="500">
+<TR><TD VALIGN="TOP"><STRONG>Opcode</STRONG></TD><TD VALIGN="TOP"><STRONG>Operand(s)</STRONG></TD><TD VALIGN="TOP"><STRONG>Description</STRONG></TD></TR>
+<TR><TD VALIGN="TOP"><FONT FACE="Courier New">newarray</FONT></TD><TD VALIGN="TOP">atype</TD><TD VALIGN="TOP">pops length, allocates new array of primitive types of type indicated by atype, pushes objectref of new array</TD></TR>
+<TR><TD VALIGN="TOP"><FONT FACE="Courier New">anewarray</FONT></TD><TD VALIGN="TOP">indexbyte1, indexbyte2</TD><TD VALIGN="TOP">pops length, allocates a new array of objects of class indicated by indexbyte1 and indexbyte2, pushes objectref of new array</TD></TR>
+<TR><TD VALIGN="TOP"><FONT FACE="Courier New">multianewarray</FONT></TD><TD VALIGN="TOP">indexbyte1, indexbyte2, dimensions</TD><TD VALIGN="TOP">pops dimensions number of array lengths, allocates a new multidimensional array of class indicated by indexbyte1 and indexbyte2, pushes objectref of new array</TD></TR>
+</TABLE>
+<P>Table 15-7 shows the <FONT FACE="Courier New">arraylength</FONT> instruction, which pops an array reference off the top of the stack and pushes the length of that array. </P>
+<P>Table 15-7. Getting an array length</P>
+<TABLE WIDTH="500">
+<TR><TD VALIGN="TOP"><STRONG>Opcode</STRONG></TD><TD VALIGN="TOP"><STRONG>Operand(s)</STRONG></TD><TD VALIGN="TOP"><STRONG>Description</STRONG></TD></TR>
+<TR><TD VALIGN="TOP"><FONT FACE="Courier New">arraylength</FONT></TD><TD VALIGN="TOP">(none)</TD><TD VALIGN="TOP">pops objectref of an array, pushes length of that array</TD></TR>
+</TABLE>
+<P>The opcodes shown in Table 15-8 retrieve an element from an array. The array index and array reference are popped from the stack, and the value at the specified index of the specified array is pushed back onto the stack. The <FONT FACE="Courier New">baload</FONT> opcode converts the <FONT FACE="Courier New">byte</FONT> or <FONT FACE="Courier New">boolean</FONT> value to <FONT FACE="Courier New">int</FONT> by sign extending, then pushes the <FONT FACE="Courier New">int</FONT>. Likewise, the <FONT FACE="Courier New">saload</FONT> opcode converts the short value to <FONT FACE="Courier New">int</FONT> by sign extending, then pushes the <FONT FACE="Courier New">int</FONT>. The <FONT FACE="Courier New">caload</FONT> instruction converts the <FONT FACE="Courier New">char</FONT> to an <FONT FACE="Courier New">int</FONT> by zero-extending, then pushes the <FONT FACE="Courier New">int</FONT>.</P>
+<P>Table 15-8. Retrieving an array element</P>
+<TABLE WIDTH="500">
+<TR><TD VALIGN="TOP"><STRONG>Opcode</STRONG></TD><TD VALIGN="TOP"><STRONG>Operand(s)</STRONG></TD><TD VALIGN="TOP"><STRONG>Description</STRONG></TD></TR>
+<TR><TD VALIGN="TOP"><FONT FACE="Courier New">baload</FONT></TD><TD VALIGN="TOP">(none)</TD><TD VALIGN="TOP">pops index and arrayref of an array of <FONT FACE="Courier New">byte</FONT>s or <FONT FACE="Courier New">boolean</FONT>s, pushes arrayref[index]</TD></TR>
+<TR><TD VALIGN="TOP"><FONT FACE="Courier New">caload</FONT></TD><TD VALIGN="TOP">(none)</TD><TD VALIGN="TOP">pops index and arrayref of an array of <FONT FACE="Courier New">char</FONT>s, pushes arrayref[index]</TD></TR>
+<TR><TD VALIGN="TOP"><FONT FACE="Courier New">saload</FONT></TD><TD VALIGN="TOP">(none)</TD><TD VALIGN="TOP">pops index and arrayref of an array of <FONT FACE="Courier New">short</FONT>s, pushes arrayref[index]</TD></TR>
+<TR><TD VALIGN="TOP"><FONT FACE="Courier New">iaload</FONT></TD><TD VALIGN="TOP">(none)</TD><TD VALIGN="TOP">pops index and arrayref of an array of <FONT FACE="Courier New">int</FONT>s, pushes arrayref[index]</TD></TR>
+<TR><TD VALIGN="TOP"><FONT FACE="Courier New">laload</FONT></TD><TD VALIGN="TOP">(none)</TD><TD VALIGN="TOP">pops index and arrayref of an array of <FONT FACE="Courier New">long</FONT>s, pushes arrayref[index]</TD></TR>
+<TR><TD VALIGN="TOP"><FONT FACE="Courier New">faload</FONT></TD><TD VALIGN="TOP">(none)</TD><TD VALIGN="TOP">pops index and arrayref of an array of <FONT FACE="Courier New">float</FONT>s, pushes arrayref[index]</TD></TR>
+<TR><TD VALIGN="TOP"><FONT FACE="Courier New">daload</FONT></TD><TD VALIGN="TOP">(none)</TD><TD VALIGN="TOP">pops index and arrayref of an array of <FONT FACE="Courier New">double</FONT>s, pushes arrayref[index]</TD></TR>
+<TR><TD VALIGN="TOP"><FONT FACE="Courier New">aaload</FONT></TD><TD VALIGN="TOP">(none)</TD><TD VALIGN="TOP">pops index and arrayref of an array of objectrefs, pushes arrayref[index]</TD></TR>
+</TABLE>
+<P>Table 15-9 shows the opcodes that store a value into an array element. The value, index, and array reference are popped from the top of the stack. The <FONT FACE="Courier New">bastore</FONT> instruction just stores the lower eight bits of the popped <FONT FACE="Courier New">int</FONT> value. The <FONT FACE="Courier New">sastore</FONT> and <FONT FACE="Courier New">castore</FONT> instructions just store the lower 16 bits of the popped <FONT FACE="Courier New">int</FONT> value.</P>
+<P>Table 15-9. Storing to an array element</P>
+<TABLE WIDTH="500">
+<TR><TD VALIGN="TOP"><STRONG>Opcode</STRONG></TD><TD VALIGN="TOP"><STRONG>Operand(s)</STRONG></TD><TD VALIGN="TOP"><STRONG>Description</STRONG></TD></TR>
+<TR><TD VALIGN="TOP"><FONT FACE="Courier New">bastore</FONT></TD><TD VALIGN="TOP">(none)</TD><TD VALIGN="TOP">pops value, index, and arrayref of an array of <FONT FACE="Courier New">byte</FONT>s or <FONT FACE="Courier New">boolean</FONT>s, assigns arrayref[index] = value</TD></TR>
+<TR><TD VALIGN="TOP"><FONT FACE="Courier New">castore</FONT></TD><TD VALIGN="TOP">(none)</TD><TD VALIGN="TOP">pops value, index, and arrayref of an array of <FONT FACE="Courier New">char</FONT>s, assigns arrayref[index] = value</TD></TR>
+<TR><TD VALIGN="TOP"><FONT FACE="Courier New">sastore</FONT></TD><TD VALIGN="TOP">(none)</TD><TD VALIGN="TOP">pops value, index, and arrayref of an array of <FONT FACE="Courier New">short</FONT>s, assigns arrayref[index] = value</TD></TR>
+<TR><TD VALIGN="TOP"><FONT FACE="Courier New">iastore</FONT></TD><TD VALIGN="TOP">(none)</TD><TD VALIGN="TOP">pops value, index, and arrayref of an array of <FONT FACE="Courier New">int</FONT>s, assigns arrayref[index] = value</TD></TR>
+<TR><TD VALIGN="TOP"><FONT FACE="Courier New">lastore</FONT></TD><TD VALIGN="TOP">(none)</TD><TD VALIGN="TOP">pops value, index, and arrayref of an array of <FONT FACE="Courier New">long</FONT>s, assigns arrayref[index] = value</TD></TR>
+<TR><TD VALIGN="TOP"><FONT FACE="Courier New">fastore</FONT></TD><TD VALIGN="TOP">(none)</TD><TD VALIGN="TOP">pops value, index, and arrayref of an array of <FONT FACE="Courier New">float</FONT>s, assigns arrayref[index] = value</TD></TR>
+<TR><TD VALIGN="TOP"><FONT FACE="Courier New">dastore</FONT></TD><TD VALIGN="TOP">(none)</TD><TD VALIGN="TOP">pops value, index, and arrayref of an array of <FONT FACE="Courier New">double</FONT>s, assigns arrayref[index] = value</TD></TR>
+<TR><TD VALIGN="TOP"><FONT FACE="Courier New">aastore</FONT></TD><TD VALIGN="TOP">(none)</TD><TD VALIGN="TOP">pops value, index, and arrayref of an array of objectrefs, assigns arrayref[index] = value</TD></TR>
+</TABLE>
+<H3><EM><P>Three-Dimensional Array: A Simulation</P>
+</EM></H3><P>The <I>Three-Dimensional Array</I> applet, shown in Figure 15-1, demonstrates a Java Virtual Machine executing a sequence of bytecodes. This applet is embedded in a web page on the CD-ROM in file <FONT FACE="Courier New">applets/ThreeDArray.html</FONT>.</P>
+<P> The bytecode sequence in the simulation was generated by <CODE>javac</CODE> for the <CODE>initAnArray()</CODE> method of the class shown below: </P>
+<PRE><P><FONT FACE="Courier New">begin</FONT></P>
+<FONT SIZE="2"><P></FONT><FONT FACE="Courier New">// On CD-ROM in file opcodes/ex1/ThreeDTree.java
+<P>class ThreeDTree {</P>
+<P>&nbsp;</P>
+<P>    static void initAnArray() {</P>
+<P>&nbsp;</P>
+<P>        int[][][] threeD = new int[5][4][3];</P>
+<P>&nbsp;</P>
+<P>        for (int i = 0; i &lt; 5; ++i) {</P>
+<P>            for (int j = 0; j &lt; 4; ++j) {</P>
+<P>                for (int k = 0; k &lt; 3; ++k) {</P>
+<P>                    threeD[i][j][k] = i + j + k;</P>
+<P>                }</P>
+<P>            }</P>
+<P>        }</P>
+<P>    }</P>
+<P>}</P>
+</FONT><FONT SIZE="2"><P>&nbsp;</P></FONT><FONT FACE="Courier New">end</FONT></P></PRE>
+<P>The bytecodes generated by <CODE>javac</CODE> for <CODE>initAnArray()</CODE> are shown below: </P>
+<PRE><P><FONT FACE="Courier New">begin</FONT></P>
+<FONT SIZE="2"><P></FONT><FONT FACE="Courier New"> 0 iconst_5      // Push constant int 5.
+<P> 1 iconst_4      // Push constant int 4.</P>
+<P> 2 iconst_3      // Push constant int 3.</P>
+<P> 3 multianewarray #2 dim #3 &lt;Class [[[I</FONT></P>
+<P>                 // Create a new multi-dimensional array using</P>
+<P>                 // constant pool entry #2 as the class (which</P>
+<P>                 // is [[[I, an 3D array of ints) with a</P>
+<P>                 // dimension of 3.</P>
+<P> 7 astore_0      // Pop object ref into local variable 0:</P>
+<P>                 // int threeD[][][] = new int[5][4][3];</P>
+<P> 8 iconst_0      // Push constant int 0.</P>
+<P> 9 istore_1      // Pop int into local variable 1: int i = 0;</P>
+<P>10 goto 54       // Go to section of code that tests outer loop.</P>
+<P>13 iconst_0      // Push constant int 0.</P>
+<P>14 istore_2      // Pop int into local variable 2: int j = 0;</P>
+<P>15 goto 46       // Go to section of code that tests middle loop.</P>
+<P>18 iconst_0      // Push constant int 0.</P>
+<P>19 istore_3      // Pop int into local variable 3: int k = 0;</P>
+<P>20 goto 38       // Go to section of code that tests inner loop.</P>
+<P>23 aload_0       // Push object ref from local variable 0.</P>
+<P>24 iload_1       // Push int from local variable 1 (i).</P>
+<P>25 aaload        // Pop index and arrayref, push object ref</P>
+<P>                 // at arrayref[index] (gets threeD[i]).</P>
+<P>26 iload_2       // Push int from local variable 2 (j).</P>
+<P>27 aaload        // Pop index and arrayref, push object ref</P>
+<P>                 // at arrayref[index] (gets threeD[i][j]).</P>
+<P>28 iload_3       // Push int from local variable 3 (k).</P>
+<P>                 // Now calculate the int that will be assigned</P>
+<P>                 // to threeD[i][j][k]</P>
+<P>29 iload_1       // Push int from local variable 1 (i).</P>
+<P>30 iload_2       // Push int from local variable 2 (j).</P>
+<P>31 iadd          // Pop two ints, add them, push int result (i + j).</P>
+<P>32 iload_3       // Push int from local variable 3 (k).</P>
+<P>33 iadd          // Pop two ints, add them, push int</P>
+<P>                 // result (i + j + k).</P>
+<P>34 iastore       // Pop value, index, and arrayref; assign</P>
+<P>                 // arrayref[index] = value:</P>
+<P>                 // threeD[i][j][k] = i + j + k;</P>
+<P>35 iinc 3 1      // Increment by 1 the int in local variable 3: ++k;</P>
+<P>38 iload_3       // Push int from local variable 3 (k).</P>
+<P>39 iconst_3      // Push constant int 3.</P>
+<P>40 if_icmplt 23  // Pop right and left ints, jump if left &lt; right:</P>
+<P>                 // for (...; k &lt; 3;...)</P>
+<P>43 iinc 2 1      // Increment by 1 the int in local variable 2: ++j;</P>
+<P>46 iload_2       // Push int from local variable 2 (j).</P>
+<P>47 iconst_4      // Push constant int 4.</P>
+<P>48 if_icmplt 18  // Pop right and left ints, jump if left &lt; right:</P>
+<P>                 // for (...; j &lt; 4;...)</P>
+<P>51 iinc 1 1      // Increment by 1 the int in local variable 1: ++i;</P>
+<P>54 iload_1       // Push int from local variable 1 (i).</P>
+<P>55 iconst_5      // Push constant int 5.</P>
+<P>56 if_icmplt 13  // Pop right and left ints, jump if left &lt; right:</P>
+<P>                 // for (...; i &lt; 5;...)</P>
+<P>59 return</P>
+</FONT><FONT SIZE="2"><P>&nbsp;</P></FONT><FONT FACE="Courier New">end</FONT></P></PRE>
+<P>The <CODE>initAnArray()</CODE> method merely allocates and initializes a three-dimensional array. This simulation demonstrates how the Java Virtual Machine handles multidimensional arrays. In response to the <FONT FACE="Courier New">multianewarray</FONT> instruction, which in this example requests the allocation of a three-dimensional array, the Java Virtual Machine creates a tree of one-dimensional arrays. The reference returned by the <FONT FACE="Courier New">multianewarray</FONT> instruction refers to the base one-dimensional array in the tree. In the <CODE>initAnArray()</CODE> method, the base array has five components--<CODE>threeD[0]</CODE> through <CODE>threeD[4]</CODE>. Each component of the base array is itself a reference to a one-dimensional array of four components, accessed by <CODE>threeD[0][0]</CODE> through <CODE>threeD[4][3]</CODE>. The components of these five arrays are also references to arrays, each of which has three components. These components are <FONT FACE="Courier New">int</FONT>s, the elements of this multidimensional array, and they are accessed by <CODE>threeD[0][0][0]</CODE> through <CODE>threeD[4][3][2]</CODE>. </P>
+<P>In response to the <FONT FACE="Courier New">multianewarray</FONT> instruction in the <CODE>initAnArray()</CODE> method, the Java Virtual Machine creates one five-dimensional array of arrays, five four-dimensional arrays of arrays, and twenty three-dimensional arrays of <CODE>ints</CODE>. The Java Virtual Machine allocates these 26 arrays on the heap, initializes their components such that they form a tree, and returns the reference to the base array. </P>
+<P>To assign an <CODE>int</CODE> value to an element of the three-dimensional array, the Java Virtual Machine uses <FONT FACE="Courier New">aaload</FONT> to get a component of the base array. Then the Java Virtual Machine uses <FONT FACE="Courier New">aaload</FONT> again on this component--which is itself an array of arrays--to get a component of the branch array. This component is a reference to a leaf array of <CODE>ints</CODE>. Finally the Java Virtual Machine&nbsp;uses <FONT FACE="Courier New">iastore</FONT> to assign an <CODE>int</CODE> value to the element of the leaf array. The Java Virtual Machine uses multiple one-dimensional array accesses to accomplish operations on multidimensional arrays. </P>
+<P>To drive the <I>Three-Dimensional Array</I> simulation, use the Step, Reset, Run, and Stop buttons. Each time you press the Step button, the simulator will execute the instruction pointed to by the pc register. If you press the Run button, the simulation will continue with no further coaxing on your part until you press the Stop button. To start the simulation over, press the Reset button. For each step of the simulation, a panel at the bottom of the applet contains an explanation of what the next instruction will do. Happy clicking.</P>
+<P><IMG SRC="fig15-1.gif" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/venners/images/fig15-1.gif" ALT="Figure 15-1"></P>
+
+<H3><EM><P>On the CD-ROM</P>
+</EM></H3><P> The CD-ROM contains the source code examples from this chapter in the <FONT FACE="Courier New">opcodes</FONT> directory. The <I>Three-Dimensional Array</I> applet is part of a web page on the CD-ROM in file <FONT FACE="Courier New">applets/ThreeDArray.html</FONT>. The source code for this applet is found alongside its class files, in the <FONT FACE="Courier New">applets/JVMSimulators</FONT> and <FONT FACE="Courier New">applets/JVMSimulators/COM/artima/jvmsim</FONT> directories.</P>
+<H3><EM><P>The Resources Page</P>
+</EM></H3><P>For more information about the material presented in this chapter, visit the resources page: <FONT FACE="Courier New"><A HREF="http://www.artima.com/insidejvm/objects.html" tppabs="http://www.artima.com/insidejvm/objects.html">http://www.artima.com/insidejvm/objects.html</A></FONT>.</P>
+<TABLE BORDER="0" WIDTH="100%">
+<TR><TD><A HREF="http://www.pbg.mcgraw-hill.com/betabooks/stores.html" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/stores.html" target="bottom"><IMG SRC="hotkey.gif" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/images/hotkey.gif" ALIGN="LEFT" BORDER="0" WIDTH="40" HEIGHT="40" ALT="Orders"></A>
+<IMG SRC="order_text.gif" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/images/order_text.gif" WIDTH="103" HEIGHT="41" ALT="Orders"></TD>
+<TD ALIGN="RIGHT"><A HREF="chap14.html" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/venners/chap14.html"><IMG SRC="backward.gif" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/images/backward.gif" BORDER="0" ALT="Backward" WIDTH="32" HEIGHT="32"></A>&nbsp;<A HREF="chap16.html" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/venners/chap16.html"><IMG SRC="forward.gif" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/images/forward.gif" BORDER="0" ALT="Forward" WIDTH="32" HEIGHT="32"></A></TD></TR>
+<TR><TD COLSPAN="2"><A HREF="mailto:computing@mcgraw-hill.com"><IMG SRC="hotkey.gif" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/images/hotkey.gif" ALIGN="LEFT" BORDER="0" WIDTH="40" HEIGHT="40" ALT="Comments"></A>
+<IMG SRC="comment_text.gif" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/images/comment_text.gif" WIDTH="73" HEIGHT="39" ALT="Comments"></TD></TR>
+
+</TABLE>
+<HR>
+<P ALIGN=CENTER>&nbsp;<A HREF="http://www.pbg.mcgraw-hill.com/computing/computing-home.html" tppabs="http://www.pbg.mcgraw-hill.com/computing/computing-home.html" TARGET="_top">COMPUTING
+MCGRAW-HILL</A> | <A HREF="http://www.pbg.mcgraw-hill.com/betabooks/betabooks-home.html" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/betabooks-home.html" TARGET="_top">Beta Books</A>
+| <A HREF="http://www.pbg.mcgraw-hill.com/computing/contact.html" tppabs="http://www.pbg.mcgraw-hill.com/computing/contact.html" TARGET="_top">Contact Us</A>
+| <A HREF="http://www.pbg.mcgraw-hill.com/betabooks/stores.html" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/stores.html" TARGET="_top">Order Information</A>
+| <A HREF="http://mcgraw-hill.inforonics.com/compsearch.shtml" tppabs="http://mcgraw-hill.inforonics.com/compsearch.shtml" TARGET="_top">Online Catalog</A></P>
+
+<P ALIGN=CENTER><FONT SIZE="-1"><A HREF="http://www.pbg.mcgraw-hill.com/computing/computing-home.html" tppabs="http://www.pbg.mcgraw-hill.com/computing/computing-home.html" TARGET="_top">Computing McGraw-Hill</A> is an imprint of the <A HREF="http://www.pbg.mcgraw-hill.com/pbg-home.html" tppabs="http://www.pbg.mcgraw-hill.com/pbg-home.html" TARGET="_top">McGraw-Hill Professional Book Group</A>.</FONT></P>
+
+<!-- begin footer -->
+<HR>
+<A HREF="http://www.mcgraw-hill.com/" tppabs="http://www.mcgraw-hill.com/" TARGET="_top"><IMG SRC="division-white.gif" tppabs="http://www.pbg.mcgraw-hill.com/images/division-white.gif" WIDTH="350" HEIGHT="44" ALT="A Division of the McGraw-Hill Companies" BORDER="0"></A><BR>
+<FONT SIZE="-2">Copyright &copy; 1997 <A HREF="http://www.mcgraw-hill.com/" tppabs="http://www.mcgraw-hill.com/" TARGET="_top">
+The McGraw-Hill Companies</A>. All rights reserved. Any use is subject to the 
+<A HREF="http://www.mcgraw-hill.com/corporate/news_info/copyrttm.htm" tppabs="http://www.mcgraw-hill.com/corporate/news_info/copyrttm.htm" TARGET="_top">
+Terms of Use</A>; the corporation also has a comprehensive <A HREF="http://www.mcgraw-hill.com/corporate/news_info/privacy.html" tppabs="http://www.mcgraw-hill.com/corporate/news_info/privacy.html" TARGET="_top">
+Privacy Policy</A> governing information we may collect from our customers.</FONT>
+<!-- end footer -->
+</BODY>
+</HTML>

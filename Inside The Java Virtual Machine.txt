@@ -1,0 +1,38 @@
+Inside The Java Virtual Machine
+by Bill Venners 
+
+ 
+Look inside this book  
+List Price:   $49.99  
+Price:   $49.99 & This item ships for FREE with Super Saver Shipping. See details.   
+Availability: This title usually ships within 2 to 3 weeks. Please note that special order titles occasionally go out of print, or publishers run out of stock. These hard-to-find titles are not discounted and are subject to an additional charge of $1.99 per book due to the extra cost of ordering them. We will notify you within 2-3 weeks if we have trouble obtaining this title
+
+
+3 used & new from $150.00 
+Product Details 
+
+Paperback: 624 pages ; Dimensions (in inches): 1.89 x 9.18 x 7.37 
+Publisher: McGraw-Hill Osborne Media; 2nd Book and CD-ROM edition (January 6, 2000) 
+ISBN: 0071350934 | All Editions 
+
+Average Customer Review: 4.5 Based on 19 reviews. Write a review. 
+
+Amazon.com Sales Rank: 83,695 
+(Publishers and authors: improve your sales) 
+Editorial Reviews
+
+Amazon.com
+For the advanced Java developer, Inside the Java 2 Virtual Machine offers a detailed guide to the inner workings of today's Java Virtual Machines (JVMs), plus a complete reference to all bytecodes (the "machine code" for the language). For those who want to understand how Java really works, this book definitely delivers the goods, with excellent technical detail and demos of JVMs in action on the companion CD-ROM.
+This title provides a remarkably detailed tour of the internals of the Java platform, with plenty of technical information on the way virtual machines do business under the hood, from the way language statements are turned into bytecodes to in-depth coverage of loading and invoking classes, security, and garbage collection. The author demonstrates superior knowledge of Sun's Java Virtual Machine specification and explains the principles of its design and implementation, including a full explanation of how actual bytecodes are run on a VM. (Surprisingly, variables in Java are always processed on the stack, since there are no general CPU registers available, a very different architecture than most CPUs.) Each chapter includes applets that showcase Java in action (for example, adding two numbers or demonstrating garbage collection).
+
+The later part of this text covers over 200 Java bytecodes (mnemonic instructions for the JVM) by groups, and the book closes with a full listing of these opcodes (with over 150 pages of material). In all, Inside the Java 2 Virtual Machine serves as both a tutorial and reference to the architecture and inner operation of JVMs for any technically astute reader who wants to understand how Java really works. --Richard Dragan
+
+Topics covered: Java Virtual Machine (JVM) class architecture, the Java class loader, tips for platform independence, Java security, verifying class files, code-signing, network mobility, Jini basics, the organization of Java .class files, Java object lifetimes, the linking model, garbage collection basics and algorithms, stack operations, type conversions, integer and floating-point arithmetic, objects and arrays, control flow, exceptions and finally clauses, method invocation, thread synchronization, Java opcode and quickcode reference, and JVM simulation demos. 
+
+
+(Laurence Vanhelsuwe, JavaWorld, March 1998 
+Before I delve into the structure and content of this book, I would like to mention the aspect of Venners's book that impressed me most of all: the sheer attention to detail and consistent accuracy of his writing. I've reviewed quite a few Java books in the last 12 months, and found that the majority are written by authors who use established terminology in a highly unprofessional, sloppy way. Bill Venners's book lies at the opposite, positive end of the scale: I could almost feel the... read more --This text refers to the Paperback edition. 
+
+
+Book Description
+Update of the best book on the Java Virtual Machine the only one praised by JavaWorld as "excellent" and "much stronger" than any competition. Thorough revision with all-new material covering the just-released version that rockets Java into the big league. First-time coverage on using Native Methods with the JNI specification, complete with a hands-on tutorial. CD-ROM packed with source code, interactive illustrations, latest Java Development Kit, and a resources Web site.

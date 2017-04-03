@@ -1,0 +1,191 @@
+<!-- All material contained herein is copyright (c) McGraw-Hill Professional Books
+All Rights Reserved. No use of this material may be made without express written
+permission of the copyright holder. HTML conversions by Mega Space [barry@megaspace.com] -->
+
+<HTML>
+<HEAD>
+<META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=ISO-8859-1">
+<TITLE>Understanding Digital Signatures: Inside the Java Virtual Machine
+ by Bill Venners - Beta Version</TITLE>
+</HEAD>
+<BODY BGCOLOR="#FFFFFF">
+<TABLE BORDER="0" WIDTH="100%">
+<TR><TD><A HREF="http://www.pbg.mcgraw-hill.com/betabooks/stores.html" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/stores.html" target="bottom"><IMG SRC="hotkey.gif" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/images/hotkey.gif" ALIGN="LEFT" BORDER="0" WIDTH="40" HEIGHT="40" ALT="Orders"></A>
+<IMG SRC="order_text.gif" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/images/order_text.gif" WIDTH="103" HEIGHT="41" ALT="Orders"></TD>
+<TD ALIGN="RIGHT"><A HREF="chap15.html" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/venners/chap15.html"><IMG SRC="backward.gif" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/images/backward.gif" BORDER="0" ALT="Backward" WIDTH="32" HEIGHT="32"></A>&nbsp;<A HREF="chap17.html" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/venners/chap17.html"><IMG SRC="forward.gif" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/images/forward.gif" BORDER="0" ALT="Forward" WIDTH="32" HEIGHT="32"></A></TD></TR>
+<TR><TD COLSPAN="2"><A HREF="mailto:computing@mcgraw-hill.com"><IMG SRC="hotkey.gif" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/images/hotkey.gif" ALIGN="LEFT" BORDER="0" WIDTH="40" HEIGHT="40" ALT="Comments"></A>
+<IMG SRC="comment_text.gif" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/images/comment_text.gif" WIDTH="73" HEIGHT="39" ALT="Comments"></TD></TR>
+
+<TR><TD COLSPAN="2"><FONT FACE="ARIEL,HELVETICA" SIZE="-1"><I>&copy; 1997 The McGraw-Hill Companies, Inc.  All rights reserved.  <BR>Any use of this Beta Book is subject to the rules stated in the <A HREF="http://www.mcgraw-hill.com/corporate/news_info/copyrttm.htm" tppabs="http://www.mcgraw-hill.com/corporate/news_info/copyrttm.htm" target="_top">Terms of Use</A>.</I></FONT><br>
+<script language="javascript">
+    document.write("<a href='http://banners.linkbuddies.com/click.php?id=237296'><img src='http://banners.linkbuddies.com/image.php?id=237296&ref=" + document.referrer + "' width=468 height=60 alt='Click Here' border=0></a>");
+</script></TD></TR>
+
+</TABLE>
+<HR>
+<P><H1>Chapter Sixteen</H1></P>
+<P><H2>Control Flow</H2></P>
+<P>This chapter describes the instructions that cause the Java Virtual Machine to conditionally or unconditionally branch to a different location within the same method. This includes the instructions that implement the <CODE>if</CODE>, <CODE>if-else</CODE>, <CODE>while</CODE>, <CODE>do-while</CODE>, <CODE>for</CODE>, and <FONT FACE="Courier New">switch</FONT> statements of Java source code.</P>
+<P>Accompanying this chapter on the CD-ROM is an applet that interactively illustrates the material presented in the chapter. The applet, named <I>Saying Tomato</I>, simulates the Java Virtual Machine executing a method that includes bytecodes that perform table jumps (the compiled version of a <FONT FACE="Courier New">switch</FONT> statement in Java source code). At the end of this chapter, you will find a description of this applet and the bytecodes it executes.</P>
+<I><P>Conditional Branching</P>
+</I><P>In Java source code, you specify basic control-flow within a method with <FONT FACE="Courier New">if</FONT>, <FONT FACE="Courier New">if-else</FONT>, <FONT FACE="Courier New">while</FONT>, <FONT FACE="Courier New">do-while</FONT>, <FONT FACE="Courier New">for</FONT>, and <FONT FACE="Courier New">switch</FONT> statements. With the exception of switch, Java compilers draw from the same set of opcodes when translating all of these source code constructs to bytecodes. For example, the simplest control-flow construct Java offers is the <CODE>if</CODE> statement. When a Java program is compiled, the <CODE>if</CODE> statement may be translated to any one of a variety of opcodes, depending upon the nature of the <FONT FACE="Courier New">if</FONT>ís expression. Each opcode either pops one or two values from the top of the stack and does a comparison. The opcodes that pop only one value compare that value with zero. The opcodes that pop two values compare one with the other. If the comparison succeeds (success is defined differently by each individual opcode), the Java Virtual Machine  branches--or jumps--to the offset given as an operand to the comparison opcode.</P>
+<P>For each of the conditional branch opcodes, the Java Virtual Machine follows the same procedure to determine the next instruction to execute. The virtual machine first performs the comparison specified by the opcode. If the comparison fails, the virtual machine continues execution with the instruction that immediately follows the conditional branch instruction. If the comparison succeeds, the virtual machine forms a signed 16-bit offset from two operand bytes that trail the opcode. It adds the offset to the contents of the current pc register (the address of the conditional branch opcode) to get the target address. The target address must point to an opcode of an instruction in the same method. Execution continues as the target address.</P>
+<P>One family of <CODE>if</CODE> opcodes, shown in Table 16-1, performs integer comparisons against zero. When the Java Virtual Machine encounters one of these opcodes, it pops one <CODE>int</CODE> off the stack and compares it with zero. </P>
+<P>Table 16-1. Conditional branch: integer comparison with zero</P>
+<TABLE WIDTH="500">
+<TR><TD VALIGN="TOP"><STRONG>Opcode</STRONG></TD><TD VALIGN="TOP"><STRONG>Operand(s)</STRONG></TD><TD VALIGN="TOP"><STRONG>Description</STRONG></TD></TR>
+<TR><TD VALIGN="TOP"><FONT FACE="Courier New">ifeq</FONT></TD><TD VALIGN="TOP">branchbyte1, branchbyte2</TD><TD VALIGN="TOP">pop <FONT FACE="Courier New">int</FONT> value, if value == 0, branch to offset</TD></TR>
+<TR><TD VALIGN="TOP"><FONT FACE="Courier New">ifne</FONT></TD><TD VALIGN="TOP">branchbyte1, branchbyte2</TD><TD VALIGN="TOP">pop <FONT FACE="Courier New">int</FONT> value, if value != 0, branch to offset</TD></TR>
+<TR><TD VALIGN="TOP"><FONT FACE="Courier New">iflt</FONT></TD><TD VALIGN="TOP">branchbyte1, branchbyte2</TD><TD VALIGN="TOP">pop <FONT FACE="Courier New">int</FONT> value, if value &lt; 0, branch to offset</TD></TR>
+<TR><TD VALIGN="TOP"><FONT FACE="Courier New">ifle</FONT></TD><TD VALIGN="TOP">branchbyte1, branchbyte2</TD><TD VALIGN="TOP">pop <FONT FACE="Courier New">int</FONT> value, if value &lt;= 0, branch to offset</TD></TR>
+<TR><TD VALIGN="TOP"><FONT FACE="Courier New">ifgt</FONT></TD><TD VALIGN="TOP">branchbyte1, branchbyte2</TD><TD VALIGN="TOP">pop <FONT FACE="Courier New">int</FONT> value, if value </FONT> 0, branch to offset</TD></TR>
+<TR><TD VALIGN="TOP"><FONT FACE="Courier New">ifge</FONT></TD><TD VALIGN="TOP">branchbyte1, branchbyte2</TD><TD VALIGN="TOP">pop <FONT FACE="Courier New">int</FONT> value, if value </FONT>= 0, branch to offset</TD></TR>
+</TABLE>
+<P>Another family of <CODE>if</CODE> opcodes, shown in Table 16-2, pops two integers off the top of the stack and compares them against one another. The virtual machine branches if the comparison succeeds. Just before these opcodes are executed, value2 is on the top of the stack; value1 is just beneath value2. </P>
+<P>Table 16-2. <STRONG>Conditional branch: comparison of two integers</P>
+</STRONG><TABLE WIDTH="500">
+<TR><TD VALIGN="TOP"><STRONG>Opcode</STRONG></TD><TD VALIGN="TOP"><STRONG>Operand(s)</STRONG></TD><TD VALIGN="TOP"><STRONG>Description</STRONG></TD></TR>
+<TR><TD VALIGN="TOP"><FONT FACE="Courier New">if_icmpeq</FONT></TD><TD VALIGN="TOP">branchbyte1, branchbyte2</TD><TD VALIGN="TOP">pop <FONT FACE="Courier New">int</FONT> value2 and value1, if value1 == value2, branch to offset</TD></TR>
+<TR><TD VALIGN="TOP"><FONT FACE="Courier New">if_icmpne</FONT></TD><TD VALIGN="TOP">branchbyte1, branchbyte2</TD><TD VALIGN="TOP">pop <FONT FACE="Courier New">int</FONT> value2 and value1, if value1 != value2, branch to offset</TD></TR>
+<TR><TD VALIGN="TOP"><FONT FACE="Courier New">if_icmplt</FONT></TD><TD VALIGN="TOP">branchbyte1, branchbyte2</TD><TD VALIGN="TOP">pop <FONT FACE="Courier New">int</FONT> value2 and value1, if value1 &lt; value2, branch to offset</TD></TR>
+<TR><TD VALIGN="TOP"><FONT FACE="Courier New">if_icmple</FONT></TD><TD VALIGN="TOP">branchbyte1, branchbyte2</TD><TD VALIGN="TOP">pop <FONT FACE="Courier New">int</FONT> value2 and value1, if value1 &lt;= value2, branch to offset</TD></TR>
+<TR><TD VALIGN="TOP"><FONT FACE="Courier New">if_icmpgt</FONT></TD><TD VALIGN="TOP">branchbyte1, branchbyte2</TD><TD VALIGN="TOP">pop <FONT FACE="Courier New">int</FONT> value2 and value1, if value1 </FONT> value2, branch to offset</TD></TR>
+<TR><TD VALIGN="TOP"><FONT FACE="Courier New">if_icmpge</FONT></TD><TD VALIGN="TOP">branchbyte1, branchbyte2</TD><TD VALIGN="TOP">pop <FONT FACE="Courier New">int</FONT> value2 and value1, if value1 </FONT>= value2, branch to offset</TD></TR>
+</TABLE>
+<P>The opcodes shown above in Table 16-2 operate on <CODE>ints</CODE>. These opcodes also are used for comparisons of types <CODE>short</CODE>, <CODE>byte</CODE>, and <CODE>char</CODE>; the Java Virtual Machine always manipulates types smaller than <CODE>int</CODE> by first converting them to <CODE>ints</CODE> and then manipulating the <CODE>ints</CODE>. </P>
+<P>A third family of opcodes, shown in Table 16-3, takes care of comparisons of the other primitive types: <CODE>long</CODE>, <CODE>float</CODE>, and <CODE>double</CODE>. These opcodes don't cause a branch by themselves. Instead, they push the <CODE>int</CODE> value that represents the result of the comparison--0 for equal to, 1 for greater than, and -1 for less than--and then use one of the <CODE>int</CODE> compare opcodes introduced above to force the actual branch.</P>
+<P>Table 16-3. <STRONG>Comparison of <FONT FACE="Courier New">long</FONT>s, <FONT FACE="Courier New">float</FONT>s, and <FONT FACE="Courier New">double</FONT>s</P>
+</STRONG><TABLE WIDTH="500">
+<TR><TD VALIGN="TOP"><STRONG>Opcode</STRONG></TD><TD VALIGN="TOP"><STRONG>Operand(s)</STRONG></TD><TD VALIGN="TOP"><STRONG>Description</STRONG></TD></TR>
+<TR><TD VALIGN="TOP"><FONT FACE="Courier New">lcmp</FONT></TD><TD VALIGN="TOP">(none)</TD><TD VALIGN="TOP">pop <FONT FACE="Courier New">long</FONT> value2 and value1, compare, push <FONT FACE="Courier New">int</FONT> result</TD></TR>
+<TR><TD VALIGN="TOP"><FONT FACE="Courier New">fcmpg</FONT></TD><TD VALIGN="TOP">(none)</TD><TD VALIGN="TOP">pop <FONT FACE="Courier New">float</FONT> value2 and value1, compare, push <FONT FACE="Courier New">int</FONT> result</TD></TR>
+<TR><TD VALIGN="TOP"><FONT FACE="Courier New">fcmpl</FONT></TD><TD VALIGN="TOP">(none)</TD><TD VALIGN="TOP">pop <FONT FACE="Courier New">float</FONT> value2 and value1, compare, push <FONT FACE="Courier New">int</FONT> result</TD></TR>
+<TR><TD VALIGN="TOP"><FONT FACE="Courier New">dcmpg</FONT></TD><TD VALIGN="TOP">(none)</TD><TD VALIGN="TOP">pop <FONT FACE="Courier New">double</FONT> value2 and value1, compare, push <FONT FACE="Courier New">int</FONT> result</TD></TR>
+<TR><TD VALIGN="TOP"><FONT FACE="Courier New">dcmpl</FONT></TD><TD VALIGN="TOP">(none)</TD><TD VALIGN="TOP">pop <FONT FACE="Courier New">double</FONT> value2 and value1, compare, push <FONT FACE="Courier New">int</FONT> result</TD></TR>
+</TABLE>
+<P>The two opcodes for <CODE>float</CODE> comparisons (<EM><FONT FACE="Courier New">fcmpg</FONT></EM> and <EM><FONT FACE="Courier New">fcmpl</FONT></EM>) differ only in how they handle NaN&nbsp;("not a number"). In the Java Virtual Machine, comparisons of floating-point numbers always fail if one of the values being compared is NaN. If neither value being compared is NaN, both <EM><FONT FACE="Courier New">fcmpg</FONT></EM> and <EM><FONT FACE="Courier New">fcmpl</FONT></EM> instructions push a 0 if the values are equal, a 1 if value1 is greater than value2, and a -1 if value1 is less than value2. But if one or both of the values is NaN, the <EM><FONT FACE="Courier New">fcmpg</FONT></EM> instruction pushes a 1, whereas the <EM><FONT FACE="Courier New">fcmpl</FONT></EM> instruction pushes a -1. Because both of these operands are available, any comparison between two <CODE>float</CODE> values can push the same result onto the stack independent of whether the comparison failed because of a NaN. This is also true for the two opcodes that compare <CODE>double</CODE> values: <EM><FONT FACE="Courier New">dcmpg</FONT></EM> and <EM><FONT FACE="Courier New">dcmpl</FONT></EM>. </P>
+<P>A fourth family of <CODE>if</CODE> opcodes, shown in Table 16-4, pops one object reference off the top of the stack and compares it with <FONT FACE="Courier New">null</FONT>. If the comparison succeeds, the Java Virtual Machine branches. </P>
+<P>Table 16-4. <STRONG>Conditional branch: object reference comparison with <FONT FACE="Courier New">null</FONT></P>
+</STRONG><TABLE WIDTH="500">
+<TR><TD VALIGN="TOP"><STRONG>Opcode</STRONG></TD><TD VALIGN="TOP"><STRONG>Operand(s)</STRONG></TD><TD VALIGN="TOP"><STRONG>Description</STRONG></TD></TR>
+<TR><TD VALIGN="TOP"><FONT FACE="Courier New">ifnull</FONT></TD><TD VALIGN="TOP">branchbyte1, branchbyte2</TD><TD VALIGN="TOP">pop reference value, if value == null, branches to offset</TD></TR>
+<TR><TD VALIGN="TOP"><FONT FACE="Courier New">ifnonnull</FONT></TD><TD VALIGN="TOP">branchbyte1, branchbyte2</TD><TD VALIGN="TOP">pop reference value, if value != null, branches to offset</TD></TR>
+</TABLE>
+<P>The last family of <CODE>if</CODE> opcodes, which is shown in Table 16-5, pops two object references off the stack and compares them with each other. In this case, there are only two comparisons that make sense: "equals" and "not equals." If the references are equal, then they refer to the exact same object on the heap. If not, they refer to two different objects. As with all the other <CODE>if</CODE> opcodes, if the comparison succeeds, the Java Virtual Machine branches.</P>
+<P>Table 16-5. <STRONG>Conditional branch: comparison of two object references</P>
+</STRONG><TABLE WIDTH="500">
+<TR><TD VALIGN="TOP"><STRONG>Opcode</STRONG></TD><TD VALIGN="TOP"><STRONG>Operand(s)</STRONG></TD><TD VALIGN="TOP"><STRONG>Description</STRONG></TD></TR>
+<TR><TD VALIGN="TOP"><FONT FACE="Courier New">if_acmpeq</FONT></TD><TD VALIGN="TOP">branchbyte1, branchbyte2</TD><TD VALIGN="TOP">pop reference value2 and value1, if value1 == value2, branch to offset</TD></TR>
+<TR><TD VALIGN="TOP"><FONT FACE="Courier New">if_acmpne</FONT></TD><TD VALIGN="TOP">branchbyte1, branchbyte2</TD><TD VALIGN="TOP">pop reference value2 and value1, if value1 != value2, branch to offset</TD></TR>
+</TABLE>
+<I><STRONG><P>Unconditional Branching</P>
+</I></STRONG><P>Thatís all of the opcodes that cause the Java Virtual Machine to branch conditionally. One other family of opcodes, however, causes the virtual machine to branch unconditionally. Not surprisingly, these opcodes, shown in Table 16-6, are called "<EM><FONT FACE="Courier New">goto</FONT></EM>." To execute a <FONT FACE="Courier New">goto</FONT> instruction, the virtual machine forms a signed 16-bit offset from two operand bytes that follow the <FONT FACE="Courier New">goto</FONT> opcode.  (To execute a <FONT FACE="Courier New">goto_w</FONT> instruction, the virtual machine forms a signed 32-bit offset from four operand bytes that follow the <FONT FACE="Courier New">goto_w</FONT> opcode.) The virtual machine adds this offset to the current contents of the pc register. The resulting address must contain an opcode of an instruction in the current method. The virtual machine continues execution at this instruction.</P>
+<P>Table 16-6. <STRONG>Unconditional branch</P>
+</STRONG><TABLE WIDTH="500">
+<TR><TD VALIGN="TOP"><STRONG>Opcode</STRONG></TD><TD VALIGN="TOP"><STRONG>Operand(s)</STRONG></TD><TD VALIGN="TOP"><STRONG>Description</STRONG></TD></TR>
+<TR><TD VALIGN="TOP"><FONT FACE="Courier New">goto</FONT></TD><TD VALIGN="TOP">branchbyte1, branchbyte2</TD><TD VALIGN="TOP">branch to offset</TD></TR>
+<TR><TD VALIGN="TOP"><FONT FACE="Courier New">goto</FONT>_w</TD><TD VALIGN="TOP">branchbyte1, branchbyte2, branchbyte3, branchbyte4</TD><TD VALIGN="TOP">branch to offset</TD></TR>
+</TABLE>
+<P>The opcodes shown in Tables 16-1 through 16-6 are sufficient to express in bytecodes the any control flow specified in Java source code with an <CODE>if</CODE>, <CODE>if-else</CODE>, <CODE>while</CODE>, <CODE>do-while</CODE>, or <CODE>for</CODE> statement. The above opcodes also could be used to express a <CODE>switch</CODE> statement, but the Java Virtual Machine's instruction set includes two opcodes specially designed for the <CODE>switch</CODE> statement: <EM><FONT FACE="Courier New">tableswitch</FONT></EM> and <EM><FONT FACE="Courier New">lookupswitch</FONT></EM>. </P>
+<I><STRONG><P>Conditional Branching with Tables</P>
+</I></STRONG><H3><P></H3>The <CODE>tableswitch</CODE> and <CODE>lookupswitch</CODE> instructions, shown in Table 16-7, both include one default branch offset and a variable-length set of <CODE>case</CODE> value/branch offset pairs. Both instructions pop the key (the value of the expression in the parentheses immediately following the <CODE>switch</CODE> keyword) from the stack. The key is compared with all the case values. If a match is found, the branch offset associated with the case value is taken. If no match is found, the default branch offset is taken. </P>
+<P>The difference between <CODE>tableswitch</CODE> and <CODE>lookupswitch</CODE> is in how they indicate the case values. The <CODE>lookupswitch</CODE> instruction is more general-purpose than <CODE>tableswitch</CODE>, but <CODE>tableswitch</CODE> is usually more efficient. Both instructions are followed by zero to three bytes of padding--enough so that the byte immediately following the padding starts at an address that is a multiple of four bytes from the beginning of the method. (These two instructions, by the way, are the only ones in the entire Java Virtual Machine instruction set that involve alignment on a greater than one-byte boundary.) For both instructions, the next four bytes after the padding is the default branch offset. </P>
+<P>After the zero- to three-byte padding and the four-byte default branch offset, the <CODE>lookupswitch</CODE> opcode is followed by a four-byte value, <EM>npairs</EM>, which indicates the number of case value/branch offset pairs that will follow. The case value is an <CODE>int</CODE>, which highlights the fact that switch statements in Java require a key expression that is an <CODE>int</CODE>, <CODE>short</CODE>, <CODE>char</CODE>, or <CODE>byte</CODE>. If you attempt to use a <CODE>long</CODE>, <CODE>float</CODE>, or <CODE>double</CODE> as a switch key, your program won't compile. The branch offset associated with each case value is another four-byte offset. The value/branch offset pairs must appear in increasing numerical order of case value.</P>
+<P>In the <CODE>tableswitch</CODE> instruction, the zero- to three-byte padding and the four-byte default branch offset are followed by low and high <CODE>int</CODE> values. The low and high values indicate the endpoints of a range of case values included in this <CODE>tableswitch</CODE> instruction. Following the low and high values are high - low + 1 branch offsets--one branch offset for high, one for low, and one for each integer case value in between high and low. The branch offset for low immediately follows the high value. </P>
+<P>Thus, when the Java Virtual Machine encounters a <CODE>lookupswitch</CODE> instruction, it must check the key against each case value until it finds a match, encounters a case value greater than the key (the values/branch offset pairs are sorted in increasing numerical order of case value), or runs out of case values. If it doesnít find a match, it uses the default branch offset. On the other hand, when the Java Virtual Machine encounters a <CODE>tableswitch</CODE> instruction, it can simply check to see if the key is within the range defined by low and high. If not, it takes the default branch offset. If so, it just subtracts low from key to get an offset into the list of branch offsets. This way, it can determine the appropriate branch offset without having to check each case value. </P>
+<P>Table 16-7. <STRONG>Table jumping</P>
+</STRONG><TABLE WIDTH="500">
+<TR><TD VALIGN="TOP"><STRONG>Opcode</STRONG></TD><TD VALIGN="TOP"><STRONG>Operand(s)</STRONG></TD><TD VALIGN="TOP"><STRONG>Description</STRONG></TD></TR>
+<TR><TD VALIGN="TOP"><FONT FACE="Courier New">lookupswitch</FONT></TD><TD VALIGN="TOP">&lt;0-3 byte pad</FONT>defaultbyte1, defaultbyte2, defaultbyte3, defaultbyte4, npairs1, npairs2, <FONT FACE="Courier New"></FONT>pairs3, npairs4, case value/branch offset pairs...</TD><TD VALIGN="TOP">pop key, match key with case values, if match found jump to associated branch offset, else jump to default branch offset</TD></TR>
+<TR><TD VALIGN="TOP"><FONT FACE="Courier New">tableswitch</FONT></TD><TD VALIGN="TOP">&lt;0-3 byte pad</FONT>defaultbyte1, defaultbyte2, defaultbyte3, defaultbyte4, lowbyte1, lowbyte2, lowbyte3, lowbyte4, highbyte1, highbyte2, highbyte3, highbyte4, branch offsets...</TD><TD VALIGN="TOP">pop key, if not in low/high range jump to default branch offset, else get the (key - low) branch offset and jump</TD></TR>
+</TABLE>
+<P>Other than the opcodes described above, the only Java Virtual Machine instructions that affect control flow are those that deal with throwing and catching exceptions, finally clauses, and invoking and returning from methods. These opcodes are discussed in later chapters.</P>
+<I><STRONG><P>Saying Tomato: A Simulation</P>
+</I></STRONG><H3><P></H3>The <STRONG><I>Saying Tomato</I></STRONG> applet, shown in Figure 16-1, demonstrates a Java Virtual Machine executing a sequence of bytecodes. The applet is part of a web page on the CD-ROM in file <FONT FACE="Courier New">applets/SayingTomato.html</FONT>. The bytecode sequence in the simulation was generated by the <CODE>javac</CODE> compiler for the <CODE>argue()</CODE> method of the class shown below:</P>
+<PRE><P><FONT FACE="Courier New">begin</FONT></P>
+<FONT SIZE="2"><P></FONT><FONT FACE="Courier New">// On CD-ROM in file opcodes/ex1/Struggle.java
+<P>class Struggle {</P>
+<P>&nbsp;</P>
+<P>    public final static int TOMAYTO = 0;</P>
+<P>    public final static int TOMAHTO = 1;</P>
+<P>&nbsp;</P>
+<P>    static void argue() {</P>
+<P>&nbsp;</P>
+<P>        int say = TOMAYTO;</P>
+<P>&nbsp;</P>
+<P>        for (;;) {</P>
+<P>&nbsp;</P>
+<P>            switch (say) {</P>
+<P>&nbsp;</P>
+<P>            case TOMAYTO:</P>
+<P>&nbsp;</P>
+<P>                say = TOMAHTO;</P>
+<P>                break;</P>
+<P>&nbsp;</P>
+<P>            case TOMAHTO:</P>
+<P>&nbsp;</P>
+<P>                say = TOMAYTO;</P>
+<P>                break;</P>
+<P>            }</P>
+<P>        }</P>
+<P>    }</P>
+<P>}</P>
+</FONT><FONT SIZE="2"><P>&nbsp;</P></FONT><FONT FACE="Courier New">end</FONT></P></PRE>
+<P>The bytecodes generated by <CODE>javac</CODE> for the <CODE>argue()</CODE> method are shown below: </P>
+<PRE><P><FONT FACE="Courier New">begin</FONT></P>
+<FONT SIZE="2"><P></FONT><FONT FACE="Courier New"> 0 iconst_0      // Push constant 0 (TOMAYTO)
+<P> 1 istore_0      // Pop into local var 0: int say = TOMAYTO;</P>
+<P> 2 iload_0       // Push key for switch from local var 0</P>
+<P>                 // Perform switch statement: switch (say) {...</P>
+<P>                 // Low case value is 0, high case value is 1</P>
+<P>                 // Default branch offset will goto 2</P>
+<P> 3 tableswitch 0 to 1: default=2</P>
+<P>          0: 24  // case 0 (TOMAYTO): goto 24</P>
+<P>          1: 29  // case 1 (TOMAHTO): goto 29</P>
+<P>                 // Note that the next instruction starts at address</P>
+<P>                 // 24, which means the tableswitch took up 21 bytes</P>
+<P>24 iconst_1      // Push constant 1 (TOMAHTO)</P>
+<P>25 istore_0      // Pop into local var 0: say = TOMAHTO</P>
+<P>26 goto 2        // Branch unconditionally to 2, top of while loop</P>
+<P>29 iconst_0      // Push constant 1 (TOMAYTO)</P>
+<P>30 istore_0      // Pop into local var 0: say = TOMAYTO</P>
+<P>31 goto 2        // Branch unconditionally to 2, top of while loop</P>
+</FONT><FONT SIZE="2"><P>&nbsp;</P></FONT><FONT FACE="Courier New">end</FONT></P></PRE>
+<P>The <CODE>argue()</CODE> method merely switches the value of <CODE>say</CODE> back and forth between <CODE>TOMAYTO</CODE> and <CODE>TOMAHTO</CODE>. Because the values of <CODE>TOMAYTO</CODE> and <CODE>TOMAHTO</CODE> were consecutive (<CODE>TOMAYTO</CODE> was a 0 and <CODE>TOMAHTO</CODE> was a 1), the <CODE>javac</CODE> compiler used a <CODE>tableswitch</CODE>. The <CODE>tableswitch</CODE> is a more efficient instruction than a <CODE>lookupswitch</CODE>, and the equivalent <CODE>lookupswitch</CODE> instruction would occupy 28 bytes--4 bytes more than <CODE>tableswitch</CODE>. </P>
+<P>It turns out that even if <CODE>TOMAYTO</CODE> were a 0 and <CODE>TOMAHTO</CODE> were a 2, the <CODE>javac</CODE> compiler still would have used a <CODE>tableswitch</CODE>, because even with the extra default branch offset in there for a 1, the <CODE>tableswitch</CODE> instruction would occupy only 28 bytes--the same number of bytes as the equivalent <CODE>lookupswitch</CODE>. Both instructions occupy the same number of bytes, but <CODE>tableswitch</CODE> is more efficient, so it is used. As soon as you make <CODE>TOMAHTO</CODE> a 3, however, <CODE>javac</CODE> starts using a <CODE>lookupswitch</CODE>. This is because a <CODE>tableswitch</CODE> would now need two default branch offsets in its list (for 1 and 2), which would push its size up to 32 bytes. Thus, a <CODE>lookupswitch</CODE> now would require fewer bytes than a <CODE>tableswitch</CODE>--so <CODE>javac</CODE> chooses the <CODE>lookupswitch</CODE>.</P>
+<P>The branch offsets for the case values cause the Java Virtual Machine to hop down to code that will change the value of the <CODE>say</CODE> local variable. The value of <CODE>say</CODE> will alternate between <CODE>TOMAYTO</CODE> and <CODE>TOMAHTO</CODE> indefinitely, until the user aborts the program, thereby calling the whole thing off. </P>
+<P>To drive the <I>Saying Tomato</I> simulation, use the Step, Reset, Run, and Stop buttons. Each time you press the Step button, the simulator will execute the instruction pointed to by the pc register. If you press the Run button, the simulation will continue with no further coaxing on your part until you press the Stop button. To start the simulation over, press the Reset button. For each step of the simulation, a panel at the bottom of the applet contains an explanation of what the next instruction will do. Happy clicking.</P>
+<P><IMG SRC="fig16-1.gif" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/venners/images/fig16-1.gif" ALT="Figure 16-1"></P>
+
+<H3><EM><P>On the CD-ROM</P>
+</EM></H3><P> The CD-ROM contains the source code examples from this chapter in the <FONT FACE="Courier New">opcodes</FONT> directory. The <I>Saying Tomato</I> applet is contained in a web page on the CD-ROM in file <FONT FACE="Courier New">applets/SayingTomato.html</FONT>. The source code for this applet is found alongside its class files, in the <FONT FACE="Courier New">applets/JVMSimulators</FONT> and <FONT FACE="Courier New">applets/JVMSimulators/COM/artima/jvmsim</FONT> directories.</P>
+<H3><EM><P>The Resources Page</P>
+</EM></H3><P>For more information about the material presented in this chapter, visit the resources page: <FONT FACE="Courier New"><A HREF="http://www.artima.com/insidejvm/flow.html" tppabs="http://www.artima.com/insidejvm/flow.html">http://www.artima.com/insidejvm/flow.html</A></FONT>.</P>
+<TABLE BORDER="0" WIDTH="100%">
+<TR><TD><A HREF="http://www.pbg.mcgraw-hill.com/betabooks/stores.html" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/stores.html" target="bottom"><IMG SRC="hotkey.gif" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/images/hotkey.gif" ALIGN="LEFT" BORDER="0" WIDTH="40" HEIGHT="40" ALT="Orders"></A>
+<IMG SRC="order_text.gif" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/images/order_text.gif" WIDTH="103" HEIGHT="41" ALT="Orders"></TD>
+<TD ALIGN="RIGHT"><A HREF="chap15.html" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/venners/chap15.html"><IMG SRC="backward.gif" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/images/backward.gif" BORDER="0" ALT="Backward" WIDTH="32" HEIGHT="32"></A>&nbsp;<A HREF="chap17.html" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/venners/chap17.html"><IMG SRC="forward.gif" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/images/forward.gif" BORDER="0" ALT="Forward" WIDTH="32" HEIGHT="32"></A></TD></TR>
+<TR><TD COLSPAN="2"><A HREF="mailto:computing@mcgraw-hill.com"><IMG SRC="hotkey.gif" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/images/hotkey.gif" ALIGN="LEFT" BORDER="0" WIDTH="40" HEIGHT="40" ALT="Comments"></A>
+<IMG SRC="comment_text.gif" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/images/comment_text.gif" WIDTH="73" HEIGHT="39" ALT="Comments"></TD></TR>
+
+</TABLE>
+<HR>
+<P ALIGN=CENTER>&nbsp;<A HREF="http://www.pbg.mcgraw-hill.com/computing/computing-home.html" tppabs="http://www.pbg.mcgraw-hill.com/computing/computing-home.html" TARGET="_top">COMPUTING
+MCGRAW-HILL</A> | <A HREF="http://www.pbg.mcgraw-hill.com/betabooks/betabooks-home.html" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/betabooks-home.html" TARGET="_top">Beta Books</A>
+| <A HREF="http://www.pbg.mcgraw-hill.com/computing/contact.html" tppabs="http://www.pbg.mcgraw-hill.com/computing/contact.html" TARGET="_top">Contact Us</A>
+| <A HREF="http://www.pbg.mcgraw-hill.com/betabooks/stores.html" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/stores.html" TARGET="_top">Order Information</A>
+| <A HREF="http://mcgraw-hill.inforonics.com/compsearch.shtml" tppabs="http://mcgraw-hill.inforonics.com/compsearch.shtml" TARGET="_top">Online Catalog</A></P>
+
+<P ALIGN=CENTER><FONT SIZE="-1"><A HREF="http://www.pbg.mcgraw-hill.com/computing/computing-home.html" tppabs="http://www.pbg.mcgraw-hill.com/computing/computing-home.html" TARGET="_top">Computing McGraw-Hill</A> is an imprint of the <A HREF="http://www.pbg.mcgraw-hill.com/pbg-home.html" tppabs="http://www.pbg.mcgraw-hill.com/pbg-home.html" TARGET="_top">McGraw-Hill Professional Book Group</A>.</FONT></P>
+
+<!-- begin footer -->
+<HR>
+<A HREF="http://www.mcgraw-hill.com/" tppabs="http://www.mcgraw-hill.com/" TARGET="_top"><IMG SRC="division-white.gif" tppabs="http://www.pbg.mcgraw-hill.com/images/division-white.gif" WIDTH="350" HEIGHT="44" ALT="A Division of the McGraw-Hill Companies" BORDER="0"></A><BR>
+<FONT SIZE="-2">Copyright &copy; 1997 <A HREF="http://www.mcgraw-hill.com/" tppabs="http://www.mcgraw-hill.com/" TARGET="_top">
+The McGraw-Hill Companies</A>. All rights reserved. Any use is subject to the 
+<A HREF="http://www.mcgraw-hill.com/corporate/news_info/copyrttm.htm" tppabs="http://www.mcgraw-hill.com/corporate/news_info/copyrttm.htm" TARGET="_top">
+Terms of Use</A>; the corporation also has a comprehensive <A HREF="http://www.mcgraw-hill.com/corporate/news_info/privacy.html" tppabs="http://www.mcgraw-hill.com/corporate/news_info/privacy.html" TARGET="_top">
+Privacy Policy</A> governing information we may collect from our customers.</FONT>
+<!-- end footer -->
+</BODY>
+</HTML>

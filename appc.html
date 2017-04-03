@@ -1,0 +1,293 @@
+<!-- All material contained herein is copyright (c) McGraw-Hill Professional Books
+All Rights Reserved. No use of this material may be made without express written
+permission of the copyright holder. HTML conversions by Mega Space [barry@megaspace.com] -->
+
+<HTML>
+<HEAD>
+<META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=ISO-8859-1">
+<TITLE>Understanding Digital Signatures: Inside the Java Virtual Machine
+ by Bill Venners - Beta Version</TITLE>
+</HEAD>
+<BODY BGCOLOR="#FFFFFF">
+<TABLE BORDER="0" WIDTH="100%">
+<TR><TD><A HREF="http://www.pbg.mcgraw-hill.com/betabooks/stores.html" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/stores.html" target="bottom"><IMG SRC="hotkey.gif" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/images/hotkey.gif" ALIGN="LEFT" BORDER="0" WIDTH="40" HEIGHT="40" ALT="Orders"></A>
+<IMG SRC="order_text.gif" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/images/order_text.gif" WIDTH="103" HEIGHT="41" ALT="Orders"></TD>
+<TD ALIGN="RIGHT"><A HREF="appb.html" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/venners/appb.html"><IMG SRC="backward.gif" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/images/backward.gif" BORDER="0" ALT="Backward" WIDTH="32" HEIGHT="32"></A></TD></TR>
+<TR><TD COLSPAN="2"><A HREF="mailto:computing@mcgraw-hill.com"><IMG SRC="hotkey.gif" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/images/hotkey.gif" ALIGN="LEFT" BORDER="0" WIDTH="40" HEIGHT="40" ALT="Comments"></A>
+<IMG SRC="comment_text.gif" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/images/comment_text.gif" WIDTH="73" HEIGHT="39" ALT="Comments"></TD></TR>
+
+<TR><TD COLSPAN="2"><FONT FACE="ARIEL,HELVETICA" SIZE="-1"><I>&copy; 1997 The McGraw-Hill Companies, Inc.  All rights reserved.  <BR>Any use of this Beta Book is subject to the rules stated in the <A HREF="http://www.mcgraw-hill.com/corporate/news_info/copyrttm.htm" tppabs="http://www.mcgraw-hill.com/corporate/news_info/copyrttm.htm" target="_top">Terms of Use</A>.</I></FONT><br>
+<script language="javascript">
+    document.write("<a href='http://banners.linkbuddies.com/click.php?id=237296'><img src='http://banners.linkbuddies.com/image.php?id=237296&ref=" + document.referrer + "' width=468 height=60 alt='Click Here' border=0></a>");
+</script></TD></TR>
+
+</TABLE>
+<HR>
+<P><H1>Appendix C</H1></P>
+<P><H2>Opcode Mnemonics by Opcode</H2></P>
+<H3><EM><P>Standard Opcodes</P>
+</EM></H3><P><TABLE WIDTH="500"></P>
+<TR><TD VALIGN="TOP">0</TD><TD VALIGN="TOP">0x00</TD><TD VALIGN="TOP"><FONT FACE="Courier New">nop</FONT></TD></TR>
+<TR><TD VALIGN="TOP">1</TD><TD VALIGN="TOP">0x01</TD><TD VALIGN="TOP"><FONT FACE="Courier New">aconst_null</FONT></TD></TR>
+<TR><TD VALIGN="TOP">2</TD><TD VALIGN="TOP">0x02</TD><TD VALIGN="TOP"><FONT FACE="Courier New">iconst_m1</FONT></TD></TR>
+<TR><TD VALIGN="TOP">3</TD><TD VALIGN="TOP">0x03</TD><TD VALIGN="TOP"><FONT FACE="Courier New">iconst_0</FONT></TD></TR>
+<TR><TD VALIGN="TOP">4</TD><TD VALIGN="TOP">0x04</TD><TD VALIGN="TOP"><FONT FACE="Courier New">iconst_1</FONT></TD></TR>
+<TR><TD VALIGN="TOP">5</TD><TD VALIGN="TOP">0x05</TD><TD VALIGN="TOP"><FONT FACE="Courier New">iconst_2</FONT></TD></TR>
+<TR><TD VALIGN="TOP">6</TD><TD VALIGN="TOP">0x06</TD><TD VALIGN="TOP"><FONT FACE="Courier New">iconst_3</FONT></TD></TR>
+<TR><TD VALIGN="TOP">7</TD><TD VALIGN="TOP">0x07</TD><TD VALIGN="TOP"><FONT FACE="Courier New">iconst_4</FONT></TD></TR>
+<TR><TD VALIGN="TOP">8</TD><TD VALIGN="TOP">0x08</TD><TD VALIGN="TOP"><FONT FACE="Courier New">iconst_5</FONT></TD></TR>
+<TR><TD VALIGN="TOP">9</TD><TD VALIGN="TOP">0x09</TD><TD VALIGN="TOP"><FONT FACE="Courier New">lconst_0</FONT></TD></TR>
+<TR><TD VALIGN="TOP">10</TD><TD VALIGN="TOP">0x0a</TD><TD VALIGN="TOP"><FONT FACE="Courier New">lconst_1</FONT></TD></TR>
+<TR><TD VALIGN="TOP">11</TD><TD VALIGN="TOP">0x0b</TD><TD VALIGN="TOP"><FONT FACE="Courier New">fconst_0</FONT></TD></TR>
+<TR><TD VALIGN="TOP">12</TD><TD VALIGN="TOP">0x0c</TD><TD VALIGN="TOP"><FONT FACE="Courier New">fconst_1</FONT></TD></TR>
+<TR><TD VALIGN="TOP">13</TD><TD VALIGN="TOP">0x0d</TD><TD VALIGN="TOP"><FONT FACE="Courier New">fconst_2</FONT></TD></TR>
+<TR><TD VALIGN="TOP">14</TD><TD VALIGN="TOP">0x0e</TD><TD VALIGN="TOP"><FONT FACE="Courier New">dconst_0</FONT></TD></TR>
+<TR><TD VALIGN="TOP">15</TD><TD VALIGN="TOP">0x0f</TD><TD VALIGN="TOP"><FONT FACE="Courier New">dconst_1</FONT></TD></TR>
+<TR><TD VALIGN="TOP">16</TD><TD VALIGN="TOP">0x10</TD><TD VALIGN="TOP"><FONT FACE="Courier New">bipush</FONT></TD></TR>
+<TR><TD VALIGN="TOP">17</TD><TD VALIGN="TOP">0x11</TD><TD VALIGN="TOP"><FONT FACE="Courier New">sipush</FONT></TD></TR>
+<TR><TD VALIGN="TOP">18</TD><TD VALIGN="TOP">0x12</TD><TD VALIGN="TOP"><FONT FACE="Courier New">ldc</FONT></TD></TR>
+<TR><TD VALIGN="TOP">19</TD><TD VALIGN="TOP">0x13</TD><TD VALIGN="TOP"><FONT FACE="Courier New">ldc_w</FONT></TD></TR>
+<TR><TD VALIGN="TOP">20</TD><TD VALIGN="TOP">0x14</TD><TD VALIGN="TOP"><FONT FACE="Courier New">ldc2_w</FONT></TD></TR>
+<TR><TD VALIGN="TOP">21</TD><TD VALIGN="TOP">0x15</TD><TD VALIGN="TOP"><FONT FACE="Courier New">iload</FONT></TD></TR>
+<TR><TD VALIGN="TOP">22</TD><TD VALIGN="TOP">0x16</TD><TD VALIGN="TOP"><FONT FACE="Courier New">lload</FONT></TD></TR>
+<TR><TD VALIGN="TOP">23</TD><TD VALIGN="TOP">0x17</TD><TD VALIGN="TOP"><FONT FACE="Courier New">fload</FONT></TD></TR>
+<TR><TD VALIGN="TOP">24</TD><TD VALIGN="TOP">0x18</TD><TD VALIGN="TOP"><FONT FACE="Courier New">dload</FONT></TD></TR>
+<TR><TD VALIGN="TOP">25</TD><TD VALIGN="TOP">0x19</TD><TD VALIGN="TOP"><FONT FACE="Courier New">aload</FONT></TD></TR>
+<TR><TD VALIGN="TOP">26</TD><TD VALIGN="TOP">0x1a</TD><TD VALIGN="TOP"><FONT FACE="Courier New">iload_0</FONT></TD></TR>
+<TR><TD VALIGN="TOP">27</TD><TD VALIGN="TOP">0x1b</TD><TD VALIGN="TOP"><FONT FACE="Courier New">iload_1</FONT></TD></TR>
+<TR><TD VALIGN="TOP">28</TD><TD VALIGN="TOP">0x1c</TD><TD VALIGN="TOP"><FONT FACE="Courier New">iload_2</FONT></TD></TR>
+<TR><TD VALIGN="TOP">29</TD><TD VALIGN="TOP">0x1d</TD><TD VALIGN="TOP"><FONT FACE="Courier New">iload_3</FONT></TD></TR>
+<TR><TD VALIGN="TOP">30</TD><TD VALIGN="TOP">0x1e</TD><TD VALIGN="TOP"><FONT FACE="Courier New">lload_0</FONT></TD></TR>
+<TR><TD VALIGN="TOP">31</TD><TD VALIGN="TOP">0x1f</TD><TD VALIGN="TOP"><FONT FACE="Courier New">lload_1</FONT></TD></TR>
+<TR><TD VALIGN="TOP">32</TD><TD VALIGN="TOP">0x20</TD><TD VALIGN="TOP"><FONT FACE="Courier New">lload_2</FONT></TD></TR>
+<TR><TD VALIGN="TOP">33</TD><TD VALIGN="TOP">0x21</TD><TD VALIGN="TOP"><FONT FACE="Courier New">lload_3</FONT></TD></TR>
+<TR><TD VALIGN="TOP">34</TD><TD VALIGN="TOP">0x22</TD><TD VALIGN="TOP"><FONT FACE="Courier New">fload_0</FONT></TD></TR>
+<TR><TD VALIGN="TOP">35</TD><TD VALIGN="TOP">0x23</TD><TD VALIGN="TOP"><FONT FACE="Courier New">fload_1</FONT></TD></TR>
+<TR><TD VALIGN="TOP">36</TD><TD VALIGN="TOP">0x24</TD><TD VALIGN="TOP"><FONT FACE="Courier New">fload_2</FONT></TD></TR>
+<TR><TD VALIGN="TOP">37</TD><TD VALIGN="TOP">0x25</TD><TD VALIGN="TOP"><FONT FACE="Courier New">fload_3</FONT></TD></TR>
+<TR><TD VALIGN="TOP">38</TD><TD VALIGN="TOP">0x26</TD><TD VALIGN="TOP"><FONT FACE="Courier New">dload_0</FONT></TD></TR>
+<TR><TD VALIGN="TOP">39</TD><TD VALIGN="TOP">0x27</TD><TD VALIGN="TOP"><FONT FACE="Courier New">dload_1</FONT></TD></TR>
+<TR><TD VALIGN="TOP">40</TD><TD VALIGN="TOP">0x28</TD><TD VALIGN="TOP"><FONT FACE="Courier New">dload_2</FONT></TD></TR>
+<TR><TD VALIGN="TOP">41</TD><TD VALIGN="TOP">0x29</TD><TD VALIGN="TOP"><FONT FACE="Courier New">dload_3</FONT></TD></TR>
+<TR><TD VALIGN="TOP">42</TD><TD VALIGN="TOP">0x2a</TD><TD VALIGN="TOP"><FONT FACE="Courier New">aload_0</FONT></TD></TR>
+<TR><TD VALIGN="TOP">43</TD><TD VALIGN="TOP">0x2b</TD><TD VALIGN="TOP"><FONT FACE="Courier New">aload_1</FONT></TD></TR>
+<TR><TD VALIGN="TOP">44</TD><TD VALIGN="TOP">0x2c</TD><TD VALIGN="TOP"><FONT FACE="Courier New">aload_2</FONT></TD></TR>
+<TR><TD VALIGN="TOP">45</TD><TD VALIGN="TOP">0x2d</TD><TD VALIGN="TOP"><FONT FACE="Courier New">aload_3</FONT></TD></TR>
+<TR><TD VALIGN="TOP">46</TD><TD VALIGN="TOP">0x2e</TD><TD VALIGN="TOP"><FONT FACE="Courier New">iaload</FONT></TD></TR>
+<TR><TD VALIGN="TOP">47</TD><TD VALIGN="TOP">0x2f</TD><TD VALIGN="TOP"><FONT FACE="Courier New">laload</FONT></TD></TR>
+<TR><TD VALIGN="TOP">48</TD><TD VALIGN="TOP">0x30</TD><TD VALIGN="TOP"><FONT FACE="Courier New">faload</FONT></TD></TR>
+<TR><TD VALIGN="TOP">49</TD><TD VALIGN="TOP">0x31</TD><TD VALIGN="TOP"><FONT FACE="Courier New">daload</FONT></TD></TR>
+<TR><TD VALIGN="TOP">50</TD><TD VALIGN="TOP">0x32</TD><TD VALIGN="TOP"><FONT FACE="Courier New">aaload</FONT></TD></TR>
+<TR><TD VALIGN="TOP">51</TD><TD VALIGN="TOP">0x33</TD><TD VALIGN="TOP"><FONT FACE="Courier New">baload</FONT></TD></TR>
+<TR><TD VALIGN="TOP">52</TD><TD VALIGN="TOP">0x34</TD><TD VALIGN="TOP"><FONT FACE="Courier New">caload</FONT></TD></TR>
+<TR><TD VALIGN="TOP">53</TD><TD VALIGN="TOP">0x35</TD><TD VALIGN="TOP"><FONT FACE="Courier New">saload</FONT></TD></TR>
+<TR><TD VALIGN="TOP">54</TD><TD VALIGN="TOP">0x36</TD><TD VALIGN="TOP"><FONT FACE="Courier New">istore</FONT></TD></TR>
+<TR><TD VALIGN="TOP">55</TD><TD VALIGN="TOP">0x37</TD><TD VALIGN="TOP"><FONT FACE="Courier New">lstore</FONT></TD></TR>
+<TR><TD VALIGN="TOP">56</TD><TD VALIGN="TOP">0x38</TD><TD VALIGN="TOP"><FONT FACE="Courier New">fstore</FONT></TD></TR>
+<TR><TD VALIGN="TOP">57</TD><TD VALIGN="TOP">0x39</TD><TD VALIGN="TOP"><FONT FACE="Courier New">dstore</FONT></TD></TR>
+<TR><TD VALIGN="TOP">58</TD><TD VALIGN="TOP">0x3a</TD><TD VALIGN="TOP"><FONT FACE="Courier New">astore</FONT></TD></TR>
+<TR><TD VALIGN="TOP">59</TD><TD VALIGN="TOP">0x3b</TD><TD VALIGN="TOP"><FONT FACE="Courier New">istore_0</FONT></TD></TR>
+<TR><TD VALIGN="TOP">60</TD><TD VALIGN="TOP">0x3c</TD><TD VALIGN="TOP"><FONT FACE="Courier New">istore_1</FONT></TD></TR>
+<TR><TD VALIGN="TOP">61</TD><TD VALIGN="TOP">0x3d</TD><TD VALIGN="TOP"><FONT FACE="Courier New">istore_2</FONT></TD></TR>
+<TR><TD VALIGN="TOP">62</TD><TD VALIGN="TOP">0x3e</TD><TD VALIGN="TOP"><FONT FACE="Courier New">istore_3</FONT></TD></TR>
+<TR><TD VALIGN="TOP">63</TD><TD VALIGN="TOP">0x3f</TD><TD VALIGN="TOP"><FONT FACE="Courier New">lstore_0</FONT></TD></TR>
+<TR><TD VALIGN="TOP">64</TD><TD VALIGN="TOP">0x40</TD><TD VALIGN="TOP"><FONT FACE="Courier New">lstore_1</FONT></TD></TR>
+<TR><TD VALIGN="TOP">65</TD><TD VALIGN="TOP">0x41</TD><TD VALIGN="TOP"><FONT FACE="Courier New">lstore_2</FONT></TD></TR>
+<TR><TD VALIGN="TOP">66</TD><TD VALIGN="TOP">0x42</TD><TD VALIGN="TOP"><FONT FACE="Courier New">lstore_3</FONT></TD></TR>
+<TR><TD VALIGN="TOP">67</TD><TD VALIGN="TOP">0x43</TD><TD VALIGN="TOP"><FONT FACE="Courier New">fstore_0</FONT></TD></TR>
+<TR><TD VALIGN="TOP">68</TD><TD VALIGN="TOP">0x44</TD><TD VALIGN="TOP"><FONT FACE="Courier New">fstore_1</FONT></TD></TR>
+<TR><TD VALIGN="TOP">69</TD><TD VALIGN="TOP">0x45</TD><TD VALIGN="TOP"><FONT FACE="Courier New">fstore_2</FONT></TD></TR>
+<TR><TD VALIGN="TOP">70</TD><TD VALIGN="TOP">0x46</TD><TD VALIGN="TOP"><FONT FACE="Courier New">fstore_3</FONT></TD></TR>
+<TR><TD VALIGN="TOP">71</TD><TD VALIGN="TOP">0x47</TD><TD VALIGN="TOP"><FONT FACE="Courier New">dstore_0</FONT></TD></TR>
+<TR><TD VALIGN="TOP">72</TD><TD VALIGN="TOP">0x48</TD><TD VALIGN="TOP"><FONT FACE="Courier New">dstore_1</FONT></TD></TR>
+<TR><TD VALIGN="TOP">73</TD><TD VALIGN="TOP">0x49</TD><TD VALIGN="TOP"><FONT FACE="Courier New">dstore_2</FONT></TD></TR>
+<TR><TD VALIGN="TOP">74</TD><TD VALIGN="TOP">0x4a</TD><TD VALIGN="TOP"><FONT FACE="Courier New">dstore_3</FONT></TD></TR>
+<TR><TD VALIGN="TOP">75</TD><TD VALIGN="TOP">0x4b</TD><TD VALIGN="TOP"><FONT FACE="Courier New">astore_0</FONT></TD></TR>
+<TR><TD VALIGN="TOP">76</TD><TD VALIGN="TOP">0x4c</TD><TD VALIGN="TOP"><FONT FACE="Courier New">astore_1</FONT></TD></TR>
+<TR><TD VALIGN="TOP">77</TD><TD VALIGN="TOP">0x4d</TD><TD VALIGN="TOP"><FONT FACE="Courier New">astore_2</FONT></TD></TR>
+<TR><TD VALIGN="TOP">78</TD><TD VALIGN="TOP">0x4e</TD><TD VALIGN="TOP"><FONT FACE="Courier New">astore_3</FONT></TD></TR>
+<TR><TD VALIGN="TOP">79</TD><TD VALIGN="TOP">0x4f</TD><TD VALIGN="TOP"><FONT FACE="Courier New">iastore</FONT></TD></TR>
+<TR><TD VALIGN="TOP">80</TD><TD VALIGN="TOP">0x50</TD><TD VALIGN="TOP"><FONT FACE="Courier New">lastore</FONT></TD></TR>
+<TR><TD VALIGN="TOP">81</TD><TD VALIGN="TOP">0x51</TD><TD VALIGN="TOP"><FONT FACE="Courier New">fastore</FONT></TD></TR>
+<TR><TD VALIGN="TOP">82</TD><TD VALIGN="TOP">0x52</TD><TD VALIGN="TOP"><FONT FACE="Courier New">dastore</FONT></TD></TR>
+<TR><TD VALIGN="TOP">83</TD><TD VALIGN="TOP">0x53</TD><TD VALIGN="TOP"><FONT FACE="Courier New">aastore</FONT></TD></TR>
+<TR><TD VALIGN="TOP">84</TD><TD VALIGN="TOP">0x54</TD><TD VALIGN="TOP"><FONT FACE="Courier New">bastore</FONT></TD></TR>
+<TR><TD VALIGN="TOP">85</TD><TD VALIGN="TOP">0x55</TD><TD VALIGN="TOP"><FONT FACE="Courier New">castore</FONT></TD></TR>
+<TR><TD VALIGN="TOP">86</TD><TD VALIGN="TOP">0x56</TD><TD VALIGN="TOP"><FONT FACE="Courier New">sastore</FONT></TD></TR>
+<TR><TD VALIGN="TOP">87</TD><TD VALIGN="TOP">0x57</TD><TD VALIGN="TOP"><FONT FACE="Courier New">pop</FONT></TD></TR>
+<TR><TD VALIGN="TOP">88</TD><TD VALIGN="TOP">0x58</TD><TD VALIGN="TOP"><FONT FACE="Courier New">pop2</FONT></TD></TR>
+<TR><TD VALIGN="TOP">89</TD><TD VALIGN="TOP">0x59</TD><TD VALIGN="TOP"><FONT FACE="Courier New">dup</FONT></TD></TR>
+<TR><TD VALIGN="TOP">90</TD><TD VALIGN="TOP">0x5a</TD><TD VALIGN="TOP"><FONT FACE="Courier New">dup_x1</FONT></TD></TR>
+<TR><TD VALIGN="TOP">91</TD><TD VALIGN="TOP">0x5b</TD><TD VALIGN="TOP"><FONT FACE="Courier New">dup_x2</FONT></TD></TR>
+<TR><TD VALIGN="TOP">92</TD><TD VALIGN="TOP">0x5c</TD><TD VALIGN="TOP"><FONT FACE="Courier New">dup2</FONT></TD></TR>
+<TR><TD VALIGN="TOP">93</TD><TD VALIGN="TOP">0x5d</TD><TD VALIGN="TOP"><FONT FACE="Courier New">dup2_x1</FONT></TD></TR>
+<TR><TD VALIGN="TOP">94</TD><TD VALIGN="TOP">0x5e</TD><TD VALIGN="TOP"><FONT FACE="Courier New">dup2_x2</FONT></TD></TR>
+<TR><TD VALIGN="TOP">95</TD><TD VALIGN="TOP">0x5f</TD><TD VALIGN="TOP"><FONT FACE="Courier New">swap</FONT></TD></TR>
+<TR><TD VALIGN="TOP">96</TD><TD VALIGN="TOP">0x60</TD><TD VALIGN="TOP"><FONT FACE="Courier New">iadd</FONT></TD></TR>
+<TR><TD VALIGN="TOP">97</TD><TD VALIGN="TOP">0x61</TD><TD VALIGN="TOP"><FONT FACE="Courier New">ladd</FONT></TD></TR>
+<TR><TD VALIGN="TOP">98</TD><TD VALIGN="TOP">0x62</TD><TD VALIGN="TOP"><FONT FACE="Courier New">fadd</FONT></TD></TR>
+<TR><TD VALIGN="TOP">99</TD><TD VALIGN="TOP">0x63</TD><TD VALIGN="TOP"><FONT FACE="Courier New">dadd</FONT></TD></TR>
+<TR><TD VALIGN="TOP">100</TD><TD VALIGN="TOP">0x64</TD><TD VALIGN="TOP"><FONT FACE="Courier New">isub</FONT></TD></TR>
+<TR><TD VALIGN="TOP">101</TD><TD VALIGN="TOP">0x65</TD><TD VALIGN="TOP"><FONT FACE="Courier New">lsub</FONT></TD></TR>
+<TR><TD VALIGN="TOP">102</TD><TD VALIGN="TOP">0x66</TD><TD VALIGN="TOP"><FONT FACE="Courier New">fsub</FONT></TD></TR>
+<TR><TD VALIGN="TOP">103</TD><TD VALIGN="TOP">0x67</TD><TD VALIGN="TOP"><FONT FACE="Courier New">dsub</FONT></TD></TR>
+<TR><TD VALIGN="TOP">104</TD><TD VALIGN="TOP">0x68</TD><TD VALIGN="TOP"><FONT FACE="Courier New">imul</FONT></TD></TR>
+<TR><TD VALIGN="TOP">105</TD><TD VALIGN="TOP">0x69</TD><TD VALIGN="TOP"><FONT FACE="Courier New">lmul</FONT></TD></TR>
+<TR><TD VALIGN="TOP">106</TD><TD VALIGN="TOP">0x6a</TD><TD VALIGN="TOP"><FONT FACE="Courier New">fmul</FONT></TD></TR>
+<TR><TD VALIGN="TOP">107</TD><TD VALIGN="TOP">0x6b</TD><TD VALIGN="TOP"><FONT FACE="Courier New">dmul</FONT></TD></TR>
+<TR><TD VALIGN="TOP">108</TD><TD VALIGN="TOP">0x6c</TD><TD VALIGN="TOP"><FONT FACE="Courier New">idiv</FONT></TD></TR>
+<TR><TD VALIGN="TOP">109</TD><TD VALIGN="TOP">0x6d</TD><TD VALIGN="TOP"><FONT FACE="Courier New">ldiv</FONT></TD></TR>
+<TR><TD VALIGN="TOP">110</TD><TD VALIGN="TOP">0x6e</TD><TD VALIGN="TOP"><FONT FACE="Courier New">fdiv</FONT></TD></TR>
+<TR><TD VALIGN="TOP">111</TD><TD VALIGN="TOP">0x6f</TD><TD VALIGN="TOP"><FONT FACE="Courier New">ddiv</FONT></TD></TR>
+<TR><TD VALIGN="TOP">112</TD><TD VALIGN="TOP">0x70</TD><TD VALIGN="TOP"><FONT FACE="Courier New">irem</FONT></TD></TR>
+<TR><TD VALIGN="TOP">113</TD><TD VALIGN="TOP">0x71</TD><TD VALIGN="TOP"><FONT FACE="Courier New">lrem</FONT></TD></TR>
+<TR><TD VALIGN="TOP">114</TD><TD VALIGN="TOP">0x72</TD><TD VALIGN="TOP"><FONT FACE="Courier New">frem</FONT></TD></TR>
+<TR><TD VALIGN="TOP">115</TD><TD VALIGN="TOP">0x73</TD><TD VALIGN="TOP"><FONT FACE="Courier New">drem</FONT></TD></TR>
+<TR><TD VALIGN="TOP">116</TD><TD VALIGN="TOP">0x74</TD><TD VALIGN="TOP"><FONT FACE="Courier New">ineg</FONT></TD></TR>
+<TR><TD VALIGN="TOP">117</TD><TD VALIGN="TOP">0x75</TD><TD VALIGN="TOP"><FONT FACE="Courier New">lneg</FONT></TD></TR>
+<TR><TD VALIGN="TOP">118</TD><TD VALIGN="TOP">0x76</TD><TD VALIGN="TOP"><FONT FACE="Courier New">fneg</FONT></TD></TR>
+<TR><TD VALIGN="TOP">119</TD><TD VALIGN="TOP">0x77</TD><TD VALIGN="TOP"><FONT FACE="Courier New">dneg</FONT></TD></TR>
+<TR><TD VALIGN="TOP">120</TD><TD VALIGN="TOP">0x78</TD><TD VALIGN="TOP"><FONT FACE="Courier New">ishl</FONT></TD></TR>
+<TR><TD VALIGN="TOP">121</TD><TD VALIGN="TOP">0x79</TD><TD VALIGN="TOP"><FONT FACE="Courier New">lshl</FONT></TD></TR>
+<TR><TD VALIGN="TOP">122</TD><TD VALIGN="TOP">0x7a</TD><TD VALIGN="TOP"><FONT FACE="Courier New">ishr</FONT></TD></TR>
+<TR><TD VALIGN="TOP">123</TD><TD VALIGN="TOP">0x7b</TD><TD VALIGN="TOP"><FONT FACE="Courier New">lshr</FONT></TD></TR>
+<TR><TD VALIGN="TOP">124</TD><TD VALIGN="TOP">0x7c</TD><TD VALIGN="TOP"><FONT FACE="Courier New">iushr</FONT></TD></TR>
+<TR><TD VALIGN="TOP">125</TD><TD VALIGN="TOP">0x7d</TD><TD VALIGN="TOP"><FONT FACE="Courier New">lushr</FONT></TD></TR>
+<TR><TD VALIGN="TOP">126</TD><TD VALIGN="TOP">0x7e</TD><TD VALIGN="TOP"><FONT FACE="Courier New">iand</FONT></TD></TR>
+<TR><TD VALIGN="TOP">127</TD><TD VALIGN="TOP">0x7f</TD><TD VALIGN="TOP"><FONT FACE="Courier New">land</FONT></TD></TR>
+<TR><TD VALIGN="TOP">128</TD><TD VALIGN="TOP">0x80</TD><TD VALIGN="TOP"><FONT FACE="Courier New">ior</FONT></TD></TR>
+<TR><TD VALIGN="TOP">129</TD><TD VALIGN="TOP">0x81</TD><TD VALIGN="TOP"><FONT FACE="Courier New">lor</FONT></TD></TR>
+<TR><TD VALIGN="TOP">130</TD><TD VALIGN="TOP">0x82</TD><TD VALIGN="TOP"><FONT FACE="Courier New">ixor</FONT></TD></TR>
+<TR><TD VALIGN="TOP">131</TD><TD VALIGN="TOP">0x83</TD><TD VALIGN="TOP"><FONT FACE="Courier New">lxor</FONT></TD></TR>
+<TR><TD VALIGN="TOP">132</TD><TD VALIGN="TOP">0x84</TD><TD VALIGN="TOP"><FONT FACE="Courier New">iinc</FONT></TD></TR>
+<TR><TD VALIGN="TOP">133</TD><TD VALIGN="TOP">0x85</TD><TD VALIGN="TOP"><FONT FACE="Courier New">i2l</FONT></TD></TR>
+<TR><TD VALIGN="TOP">134</TD><TD VALIGN="TOP">0x86</TD><TD VALIGN="TOP"><FONT FACE="Courier New">i2f</FONT></TD></TR>
+<TR><TD VALIGN="TOP">135</TD><TD VALIGN="TOP">0x87</TD><TD VALIGN="TOP"><FONT FACE="Courier New">i2d</FONT></TD></TR>
+<TR><TD VALIGN="TOP">136</TD><TD VALIGN="TOP">0x88</TD><TD VALIGN="TOP"><FONT FACE="Courier New">l2i</FONT></TD></TR>
+<TR><TD VALIGN="TOP">137</TD><TD VALIGN="TOP">0x89</TD><TD VALIGN="TOP"><FONT FACE="Courier New">l2f</FONT></TD></TR>
+<TR><TD VALIGN="TOP">138</TD><TD VALIGN="TOP">0x8a</TD><TD VALIGN="TOP"><FONT FACE="Courier New">l2d</FONT></TD></TR>
+<TR><TD VALIGN="TOP">139</TD><TD VALIGN="TOP">0x8b</TD><TD VALIGN="TOP"><FONT FACE="Courier New">f2i</FONT></TD></TR>
+<TR><TD VALIGN="TOP">140</TD><TD VALIGN="TOP">0x8c</TD><TD VALIGN="TOP"><FONT FACE="Courier New">f2l</FONT></TD></TR>
+<TR><TD VALIGN="TOP">141</TD><TD VALIGN="TOP">0x8d</TD><TD VALIGN="TOP"><FONT FACE="Courier New">f2d</FONT></TD></TR>
+<TR><TD VALIGN="TOP">142</TD><TD VALIGN="TOP">0x8e</TD><TD VALIGN="TOP"><FONT FACE="Courier New">d2i</FONT></TD></TR>
+<TR><TD VALIGN="TOP">143</TD><TD VALIGN="TOP">0x8f</TD><TD VALIGN="TOP"><FONT FACE="Courier New">d2l</FONT></TD></TR>
+<TR><TD VALIGN="TOP">144</TD><TD VALIGN="TOP">0x90</TD><TD VALIGN="TOP"><FONT FACE="Courier New">d2f</FONT></TD></TR>
+<TR><TD VALIGN="TOP">145</TD><TD VALIGN="TOP">0x91</TD><TD VALIGN="TOP"><FONT FACE="Courier New">i2b</FONT></TD></TR>
+<TR><TD VALIGN="TOP">146</TD><TD VALIGN="TOP">0x92</TD><TD VALIGN="TOP"><FONT FACE="Courier New">i2c</FONT></TD></TR>
+<TR><TD VALIGN="TOP">147</TD><TD VALIGN="TOP">0x93</TD><TD VALIGN="TOP"><FONT FACE="Courier New">i2s</FONT></TD></TR>
+<TR><TD VALIGN="TOP">148</TD><TD VALIGN="TOP">0x94</TD><TD VALIGN="TOP"><FONT FACE="Courier New">lcmp</FONT></TD></TR>
+<TR><TD VALIGN="TOP">149</TD><TD VALIGN="TOP">0x95</TD><TD VALIGN="TOP"><FONT FACE="Courier New">fcmpl</FONT></TD></TR>
+<TR><TD VALIGN="TOP">150</TD><TD VALIGN="TOP">0x96</TD><TD VALIGN="TOP"><FONT FACE="Courier New">fcmpg</FONT></TD></TR>
+<TR><TD VALIGN="TOP">151</TD><TD VALIGN="TOP">0x97</TD><TD VALIGN="TOP"><FONT FACE="Courier New">dcmpl</FONT></TD></TR>
+<TR><TD VALIGN="TOP">152</TD><TD VALIGN="TOP">0x98</TD><TD VALIGN="TOP"><FONT FACE="Courier New">dcmpg</FONT></TD></TR>
+<TR><TD VALIGN="TOP">153</TD><TD VALIGN="TOP">0x99</TD><TD VALIGN="TOP"><FONT FACE="Courier New">ifeq</FONT></TD></TR>
+<TR><TD VALIGN="TOP">154</TD><TD VALIGN="TOP">0x9a</TD><TD VALIGN="TOP"><FONT FACE="Courier New">ifne</FONT></TD></TR>
+<TR><TD VALIGN="TOP">155</TD><TD VALIGN="TOP">0x9b</TD><TD VALIGN="TOP"><FONT FACE="Courier New">iflt</FONT></TD></TR>
+<TR><TD VALIGN="TOP">156</TD><TD VALIGN="TOP">0x9c</TD><TD VALIGN="TOP"><FONT FACE="Courier New">ifge</FONT></TD></TR>
+<TR><TD VALIGN="TOP">157</TD><TD VALIGN="TOP">0x9d</TD><TD VALIGN="TOP"><FONT FACE="Courier New">ifgt</FONT></TD></TR>
+<TR><TD VALIGN="TOP">158</TD><TD VALIGN="TOP">0x9e</TD><TD VALIGN="TOP"><FONT FACE="Courier New">ifle</FONT></TD></TR>
+<TR><TD VALIGN="TOP">159</TD><TD VALIGN="TOP">0x9f</TD><TD VALIGN="TOP"><FONT FACE="Courier New">if_icmpeq</FONT></TD></TR>
+<TR><TD VALIGN="TOP">160</TD><TD VALIGN="TOP">0xa0</TD><TD VALIGN="TOP"><FONT FACE="Courier New">if_icmpne</FONT></TD></TR>
+<TR><TD VALIGN="TOP">161</TD><TD VALIGN="TOP">0xa1</TD><TD VALIGN="TOP"><FONT FACE="Courier New">if_icmplt</FONT></TD></TR>
+<TR><TD VALIGN="TOP">162</TD><TD VALIGN="TOP">0xa2</TD><TD VALIGN="TOP"><FONT FACE="Courier New">if_icmpge</FONT></TD></TR>
+<TR><TD VALIGN="TOP">163</TD><TD VALIGN="TOP">0xa3</TD><TD VALIGN="TOP"><FONT FACE="Courier New">if_icmpgt</FONT></TD></TR>
+<TR><TD VALIGN="TOP">164</TD><TD VALIGN="TOP">0xa4</TD><TD VALIGN="TOP"><FONT FACE="Courier New">if_icmple</FONT></TD></TR>
+<TR><TD VALIGN="TOP">165</TD><TD VALIGN="TOP">0xa5</TD><TD VALIGN="TOP"><FONT FACE="Courier New">if_acmpeq</FONT></TD></TR>
+<TR><TD VALIGN="TOP">166</TD><TD VALIGN="TOP">0xa6</TD><TD VALIGN="TOP"><FONT FACE="Courier New">if_acmpne</FONT></TD></TR>
+<TR><TD VALIGN="TOP">167</TD><TD VALIGN="TOP">0xa7</TD><TD VALIGN="TOP"><FONT FACE="Courier New">goto</FONT></TD></TR>
+<TR><TD VALIGN="TOP">168</TD><TD VALIGN="TOP">0xa8</TD><TD VALIGN="TOP"><FONT FACE="Courier New">jsr</FONT></TD></TR>
+<TR><TD VALIGN="TOP">169</TD><TD VALIGN="TOP">0xa9</TD><TD VALIGN="TOP"><FONT FACE="Courier New">ret</FONT></TD></TR>
+<TR><TD VALIGN="TOP">170</TD><TD VALIGN="TOP">0xaa</TD><TD VALIGN="TOP"><FONT FACE="Courier New">tableswitch</FONT></TD></TR>
+<TR><TD VALIGN="TOP">171</TD><TD VALIGN="TOP">0xab</TD><TD VALIGN="TOP"><FONT FACE="Courier New">lookupswitch</FONT></TD></TR>
+<TR><TD VALIGN="TOP">172</TD><TD VALIGN="TOP">0xac</TD><TD VALIGN="TOP"><FONT FACE="Courier New">ireturn</FONT></TD></TR>
+<TR><TD VALIGN="TOP">173</TD><TD VALIGN="TOP">0xad</TD><TD VALIGN="TOP"><FONT FACE="Courier New">lreturn</FONT></TD></TR>
+<TR><TD VALIGN="TOP">174</TD><TD VALIGN="TOP">0xae</TD><TD VALIGN="TOP"><FONT FACE="Courier New">freturn</FONT></TD></TR>
+<TR><TD VALIGN="TOP">175</TD><TD VALIGN="TOP">0xaf</TD><TD VALIGN="TOP"><FONT FACE="Courier New">dreturn</FONT></TD></TR>
+<TR><TD VALIGN="TOP">176</TD><TD VALIGN="TOP">0xb0</TD><TD VALIGN="TOP"><FONT FACE="Courier New">areturn</FONT></TD></TR>
+<TR><TD VALIGN="TOP">177</TD><TD VALIGN="TOP">0xb1</TD><TD VALIGN="TOP"><FONT FACE="Courier New">return</FONT></TD></TR>
+<TR><TD VALIGN="TOP">178</TD><TD VALIGN="TOP">0xb2</TD><TD VALIGN="TOP"><FONT FACE="Courier New">getstatic</FONT></TD></TR>
+<TR><TD VALIGN="TOP">179</TD><TD VALIGN="TOP">0xb3</TD><TD VALIGN="TOP"><FONT FACE="Courier New">putstatic</FONT></TD></TR>
+<TR><TD VALIGN="TOP">180</TD><TD VALIGN="TOP">0xb4</TD><TD VALIGN="TOP"><FONT FACE="Courier New">getfield</FONT></TD></TR>
+<TR><TD VALIGN="TOP">181</TD><TD VALIGN="TOP">0xb5</TD><TD VALIGN="TOP"><FONT FACE="Courier New">putfield</FONT></TD></TR>
+<TR><TD VALIGN="TOP">182</TD><TD VALIGN="TOP">0xb6</TD><TD VALIGN="TOP"><FONT FACE="Courier New">invokevirtual</FONT></TD></TR>
+<TR><TD VALIGN="TOP">183</TD><TD VALIGN="TOP">0xb7</TD><TD VALIGN="TOP"><FONT FACE="Courier New">invokespecial</FONT></TD></TR>
+<TR><TD VALIGN="TOP">184</TD><TD VALIGN="TOP">0xb8</TD><TD VALIGN="TOP"><FONT FACE="Courier New">invokestatic</FONT></TD></TR>
+<TR><TD VALIGN="TOP">185</TD><TD VALIGN="TOP">0xb9</TD><TD VALIGN="TOP"><FONT FACE="Courier New">invokeinterface</FONT></TD></TR>
+<TR><TD VALIGN="TOP">187</TD><TD VALIGN="TOP">0xbb</TD><TD VALIGN="TOP"><FONT FACE="Courier New">new</FONT></TD></TR>
+<TR><TD VALIGN="TOP">188</TD><TD VALIGN="TOP">0xbc</TD><TD VALIGN="TOP"><FONT FACE="Courier New">newarray</FONT></TD></TR>
+<TR><TD VALIGN="TOP">189</TD><TD VALIGN="TOP">0xbd</TD><TD VALIGN="TOP"><FONT FACE="Courier New">anewarray</FONT></TD></TR>
+<TR><TD VALIGN="TOP">190</TD><TD VALIGN="TOP">0xbe</TD><TD VALIGN="TOP"><FONT FACE="Courier New">arraylength</FONT></TD></TR>
+<TR><TD VALIGN="TOP">191</TD><TD VALIGN="TOP">0xbf</TD><TD VALIGN="TOP"><FONT FACE="Courier New">athrow</FONT></TD></TR>
+<TR><TD VALIGN="TOP">192</TD><TD VALIGN="TOP">0xc0</TD><TD VALIGN="TOP"><FONT FACE="Courier New">checkcast</FONT></TD></TR>
+<TR><TD VALIGN="TOP">193</TD><TD VALIGN="TOP">0xc1</TD><TD VALIGN="TOP"><FONT FACE="Courier New">instanceof</FONT></TD></TR>
+<TR><TD VALIGN="TOP">194</TD><TD VALIGN="TOP">0xc2</TD><TD VALIGN="TOP"><FONT FACE="Courier New">monitorenter</FONT></TD></TR>
+<TR><TD VALIGN="TOP">195</TD><TD VALIGN="TOP">0xc3</TD><TD VALIGN="TOP"><FONT FACE="Courier New">monitorexit</FONT></TD></TR>
+<TR><TD VALIGN="TOP">196</TD><TD VALIGN="TOP">0xc4</TD><TD VALIGN="TOP"><FONT FACE="Courier New">wide</FONT></TD></TR>
+<TR><TD VALIGN="TOP">197</TD><TD VALIGN="TOP">0xc5</TD><TD VALIGN="TOP"><FONT FACE="Courier New">multianewarray</FONT></TD></TR>
+<TR><TD VALIGN="TOP">198</TD><TD VALIGN="TOP">0xc6</TD><TD VALIGN="TOP"><FONT FACE="Courier New">ifnull</FONT></TD></TR>
+<TR><TD VALIGN="TOP">199</TD><TD VALIGN="TOP">0xc7</TD><TD VALIGN="TOP"><FONT FACE="Courier New">ifnonnull</FONT></TD></TR>
+<TR><TD VALIGN="TOP">200</TD><TD VALIGN="TOP">0xc8</TD><TD VALIGN="TOP"><FONT FACE="Courier New">goto_w</FONT></TD></TR>
+<TR><TD VALIGN="TOP">201</TD><TD VALIGN="TOP">0xc9</TD><TD VALIGN="TOP"><FONT FACE="Courier New">jsr_w</FONT></TD></TR>
+</TABLE>
+<H3><EM><P>Quick Opcodes</P>
+</EM></H3><TABLE WIDTH="500">
+<TR><TD VALIGN="TOP">203</TD><TD VALIGN="TOP">0xcb</TD><TD VALIGN="TOP"><FONT FACE="Courier New">ldc_quick</FONT></TD></TR>
+<TR><TD VALIGN="TOP">204</TD><TD VALIGN="TOP">0xcc</TD><TD VALIGN="TOP"><FONT FACE="Courier New">ldc_w_quick</FONT></TD></TR>
+<TR><TD VALIGN="TOP">205</TD><TD VALIGN="TOP">0xcd</TD><TD VALIGN="TOP"><FONT FACE="Courier New">ldc2_w_quick</FONT></TD></TR>
+<TR><TD VALIGN="TOP">206</TD><TD VALIGN="TOP">0xce</TD><TD VALIGN="TOP"><FONT FACE="Courier New">getfield_quick</FONT></TD></TR>
+<TR><TD VALIGN="TOP">207</TD><TD VALIGN="TOP">0xcf</TD><TD VALIGN="TOP"><FONT FACE="Courier New">putfield_quick</FONT></TD></TR>
+<TR><TD VALIGN="TOP">208</TD><TD VALIGN="TOP">0xd0</TD><TD VALIGN="TOP"><FONT FACE="Courier New">getfield2_quick</FONT></TD></TR>
+<TR><TD VALIGN="TOP">209</TD><TD VALIGN="TOP">0xd1</TD><TD VALIGN="TOP"><FONT FACE="Courier New">putfield2_quick</FONT></TD></TR>
+<TR><TD VALIGN="TOP">210</TD><TD VALIGN="TOP">0xd2</TD><TD VALIGN="TOP"><FONT FACE="Courier New">getstatic_quick</FONT></TD></TR>
+<TR><TD VALIGN="TOP">211</TD><TD VALIGN="TOP">0xd3</TD><TD VALIGN="TOP"><FONT FACE="Courier New">putstatic_quick</FONT></TD></TR>
+<TR><TD VALIGN="TOP">212</TD><TD VALIGN="TOP">0xd4</TD><TD VALIGN="TOP"><FONT FACE="Courier New">getstatic2_quick</FONT></TD></TR>
+<TR><TD VALIGN="TOP">213</TD><TD VALIGN="TOP">0xd5</TD><TD VALIGN="TOP"><FONT FACE="Courier New">putstatic2_quick</FONT></TD></TR>
+<TR><TD VALIGN="TOP">214</TD><TD VALIGN="TOP">0xd6</TD><TD VALIGN="TOP"><FONT FACE="Courier New">invokevirtual_quick</FONT></TD></TR>
+<TR><TD VALIGN="TOP">215</TD><TD VALIGN="TOP">0xd7</TD><TD VALIGN="TOP"><FONT FACE="Courier New">invokenonvirtual_quick</FONT></TD></TR>
+<TR><TD VALIGN="TOP">216</TD><TD VALIGN="TOP">0xd8</TD><TD VALIGN="TOP"><FONT FACE="Courier New">invokesuper_quick</FONT></TD></TR>
+<TR><TD VALIGN="TOP">217</TD><TD VALIGN="TOP">0xd9</TD><TD VALIGN="TOP"><FONT FACE="Courier New">invokestatic_quick</FONT></TD></TR>
+<TR><TD VALIGN="TOP">218</TD><TD VALIGN="TOP">0xda</TD><TD VALIGN="TOP"><FONT FACE="Courier New">invokeinterface_quick</FONT></TD></TR>
+<TR><TD VALIGN="TOP">219</TD><TD VALIGN="TOP">0xdb</TD><TD VALIGN="TOP"><FONT FACE="Courier New">invokevirtualobject_quick</FONT></TD></TR>
+<TR><TD VALIGN="TOP">221</TD><TD VALIGN="TOP">0xdd</TD><TD VALIGN="TOP"><FONT FACE="Courier New">new_quick</FONT></TD></TR>
+<TR><TD VALIGN="TOP">222</TD><TD VALIGN="TOP">0xde</TD><TD VALIGN="TOP"><FONT FACE="Courier New">anewarray_quick</FONT></TD></TR>
+<TR><TD VALIGN="TOP">223</TD><TD VALIGN="TOP">0xdf</TD><TD VALIGN="TOP"><FONT FACE="Courier New">multianewarray_quick</FONT></TD></TR>
+<TR><TD VALIGN="TOP">224</TD><TD VALIGN="TOP">0xe0</TD><TD VALIGN="TOP"><FONT FACE="Courier New">checkcast_quick</FONT></TD></TR>
+<TR><TD VALIGN="TOP">225</TD><TD VALIGN="TOP">0xe1</TD><TD VALIGN="TOP"><FONT FACE="Courier New">instanceof_quick</FONT></TD></TR>
+<TR><TD VALIGN="TOP">226</TD><TD VALIGN="TOP">0xe2</TD><TD VALIGN="TOP"><FONT FACE="Courier New">invokevirtual_quick_w</FONT></TD></TR>
+<TR><TD VALIGN="TOP">227</TD><TD VALIGN="TOP">0xe3</TD><TD VALIGN="TOP"><FONT FACE="Courier New">getfield_quick_w</FONT></TD></TR>
+<TR><TD VALIGN="TOP">228</TD><TD VALIGN="TOP">0xe4</TD><TD VALIGN="TOP"><FONT FACE="Courier New">putfield_quick_w</FONT></TD></TR>
+</TABLE>
+<H3><EM><P>Reserved Opcodes</P>
+</EM></H3><TABLE WIDTH="500">
+<TR><TD VALIGN="TOP">202</TD><TD VALIGN="TOP">0xca</TD><TD VALIGN="TOP"><FONT FACE="Courier New">breakpoint</FONT></TD></TR>
+<TR><TD VALIGN="TOP">254</TD><TD VALIGN="TOP">0xfe</TD><TD VALIGN="TOP"><FONT FACE="Courier New">impdep1</FONT></TD></TR>
+<TR><TD VALIGN="TOP">255</TD><TD VALIGN="TOP">0xff</TD><TD VALIGN="TOP"><FONT FACE="Courier New">impdep2</FONT></TD></TR>
+</TABLE>
+<TABLE BORDER="0" WIDTH="100%">
+<TR><TD><A HREF="http://www.pbg.mcgraw-hill.com/betabooks/stores.html" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/stores.html" target="bottom"><IMG SRC="hotkey.gif" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/images/hotkey.gif" ALIGN="LEFT" BORDER="0" WIDTH="40" HEIGHT="40" ALT="Orders"></A>
+<IMG SRC="order_text.gif" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/images/order_text.gif" WIDTH="103" HEIGHT="41" ALT="Orders"></TD>
+<TD ALIGN="RIGHT"><A HREF="appb.html" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/venners/appb.html"><IMG SRC="backward.gif" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/images/backward.gif" BORDER="0" ALT="Backward" WIDTH="32" HEIGHT="32"></A></TD></TR>
+<TR><TD COLSPAN="2"><A HREF="mailto:computing@mcgraw-hill.com"><IMG SRC="hotkey.gif" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/images/hotkey.gif" ALIGN="LEFT" BORDER="0" WIDTH="40" HEIGHT="40" ALT="Comments"></A>
+<IMG SRC="comment_text.gif" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/images/comment_text.gif" WIDTH="73" HEIGHT="39" ALT="Comments"></TD></TR>
+
+</TABLE>
+<HR>
+<P ALIGN=CENTER>&nbsp;<A HREF="http://www.pbg.mcgraw-hill.com/computing/computing-home.html" tppabs="http://www.pbg.mcgraw-hill.com/computing/computing-home.html" TARGET="_top">COMPUTING
+MCGRAW-HILL</A> | <A HREF="http://www.pbg.mcgraw-hill.com/betabooks/betabooks-home.html" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/betabooks-home.html" TARGET="_top">Beta Books</A>
+| <A HREF="http://www.pbg.mcgraw-hill.com/computing/contact.html" tppabs="http://www.pbg.mcgraw-hill.com/computing/contact.html" TARGET="_top">Contact Us</A>
+| <A HREF="http://www.pbg.mcgraw-hill.com/betabooks/stores.html" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/stores.html" TARGET="_top">Order Information</A>
+| <A HREF="http://mcgraw-hill.inforonics.com/compsearch.shtml" tppabs="http://mcgraw-hill.inforonics.com/compsearch.shtml" TARGET="_top">Online Catalog</A></P>
+
+<P ALIGN=CENTER><FONT SIZE="-1"><A HREF="http://www.pbg.mcgraw-hill.com/computing/computing-home.html" tppabs="http://www.pbg.mcgraw-hill.com/computing/computing-home.html" TARGET="_top">Computing McGraw-Hill</A> is an imprint of the <A HREF="http://www.pbg.mcgraw-hill.com/pbg-home.html" tppabs="http://www.pbg.mcgraw-hill.com/pbg-home.html" TARGET="_top">McGraw-Hill Professional Book Group</A>.</FONT></P>
+
+<!-- begin footer -->
+<HR>
+<A HREF="http://www.mcgraw-hill.com/" tppabs="http://www.mcgraw-hill.com/" TARGET="_top"><IMG SRC="division-white.gif" tppabs="http://www.pbg.mcgraw-hill.com/images/division-white.gif" WIDTH="350" HEIGHT="44" ALT="A Division of the McGraw-Hill Companies" BORDER="0"></A><BR>
+<FONT SIZE="-2">Copyright &copy; 1997 <A HREF="http://www.mcgraw-hill.com/" tppabs="http://www.mcgraw-hill.com/" TARGET="_top">
+The McGraw-Hill Companies</A>. All rights reserved. Any use is subject to the 
+<A HREF="http://www.mcgraw-hill.com/corporate/news_info/copyrttm.htm" tppabs="http://www.mcgraw-hill.com/corporate/news_info/copyrttm.htm" TARGET="_top">
+Terms of Use</A>; the corporation also has a comprehensive <A HREF="http://www.mcgraw-hill.com/corporate/news_info/privacy.html" tppabs="http://www.mcgraw-hill.com/corporate/news_info/privacy.html" TARGET="_top">
+Privacy Policy</A> governing information we may collect from our customers.</FONT>
+<!-- end footer -->
+</BODY>
+</HTML>

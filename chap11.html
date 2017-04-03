@@ -1,0 +1,201 @@
+<!-- All material contained herein is copyright (c) McGraw-Hill Professional Books
+All Rights Reserved. No use of this material may be made without express written
+permission of the copyright holder. HTML conversions by Mega Space [barry@megaspace.com] -->
+
+<HTML>
+<HEAD>
+<META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=ISO-8859-1">
+<TITLE>Understanding Digital Signatures: Inside the Java Virtual Machine
+ by Bill Venners - Beta Version</TITLE>
+</HEAD>
+<BODY BGCOLOR="#FFFFFF">
+<TABLE BORDER="0" WIDTH="100%">
+<TR><TD><A HREF="http://www.pbg.mcgraw-hill.com/betabooks/stores.html" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/stores.html" target="bottom"><IMG SRC="hotkey.gif" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/images/hotkey.gif" ALIGN="LEFT" BORDER="0" WIDTH="40" HEIGHT="40" ALT="Orders"></A>
+<IMG SRC="order_text.gif" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/images/order_text.gif" WIDTH="103" HEIGHT="41" ALT="Orders"></TD>
+<TD ALIGN="RIGHT"><A HREF="chap10.html" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/venners/chap10.html"><IMG SRC="backward.gif" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/images/backward.gif" BORDER="0" ALT="Backward" WIDTH="32" HEIGHT="32"></A>&nbsp;<A HREF="chap12.html" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/venners/chap12.html"><IMG SRC="forward.gif" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/images/forward.gif" BORDER="0" ALT="Forward" WIDTH="32" HEIGHT="32"></A></TD></TR>
+<TR><TD COLSPAN="2"><A HREF="mailto:computing@mcgraw-hill.com"><IMG SRC="hotkey.gif" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/images/hotkey.gif" ALIGN="LEFT" BORDER="0" WIDTH="40" HEIGHT="40" ALT="Comments"></A>
+<IMG SRC="comment_text.gif" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/images/comment_text.gif" WIDTH="73" HEIGHT="39" ALT="Comments"></TD></TR>
+
+<TR><TD COLSPAN="2"><FONT FACE="ARIEL,HELVETICA" SIZE="-1"><I>&copy; 1997 The McGraw-Hill Companies, Inc.  All rights reserved.  <BR>Any use of this Beta Book is subject to the rules stated in the <A HREF="http://www.mcgraw-hill.com/corporate/news_info/copyrttm.htm" tppabs="http://www.mcgraw-hill.com/corporate/news_info/copyrttm.htm" target="_top">Terms of Use</A>.</I></FONT><br>
+<script language="javascript">
+    document.write("<a href='http://banners.linkbuddies.com/click.php?id=237296'><img src='http://banners.linkbuddies.com/image.php?id=237296&ref=" + document.referrer + "' width=468 height=60 alt='Click Here' border=0></a>");
+</script></TD></TR>
+
+</TABLE>
+<HR>
+<P><H1>Chapter Eleven</H1></P>
+<P><H2>Type Conversion</H2></P>
+<P>This chapter describes the instructions that convert values from one primitive type to another inside the Java Virtual Machine. It also looks at some of the idiosyncrasies of type conversion that arise from the virtual machineís limited support of <FONT FACE="Courier New">byte</FONT>s, <FONT FACE="Courier New">short</FONT>s, and <FONT FACE="Courier New">char</FONT>s.</P>
+<P>Accompanying this chapter on the CD-ROM is an applet that interactively illustrates the material presented in the chapter. The applet, named <I>Conversion Diversion</I>, simulates the Java Virtual Machine executing a method that performs type conversion. At the end of this chapter, you will find a description of this applet and the bytecodes it executes.</P>
+<H3><EM><P>The Conversion Opcodes</P>
+</EM></H3><P>The Java Virtual Machine has many opcodes that convert from one primitive type to another. No operands follow the conversion opcodes in the bytecode stream. The value to convert is taken from the top of the stack. The Java Virtual Machine pops the value at the top of the stack, converts it, and pushes the result back onto the stack. Opcodes that convert between <FONT FACE="Courier New">int</FONT>, <FONT FACE="Courier New">long</FONT>, <FONT FACE="Courier New">float</FONT>, and <FONT FACE="Courier New">double</FONT> are shown in Table 11-1. There is an opcode for each possible from-to combination of these four types: </P>
+<P>Table 11-1. Converting <FONT FACE="Courier New">int</FONT>s, <FONT FACE="Courier New">long</FONT>s, <FONT FACE="Courier New">float</FONT>s, and <FONT FACE="Courier New">double</FONT>s</P>
+<TABLE WIDTH="500">
+<TR><TD VALIGN="TOP"><STRONG>Opcode</STRONG></TD><TD VALIGN="TOP"><STRONG>Operand(s)</STRONG></TD><TD VALIGN="TOP"><STRONG>Description</STRONG></TD></TR>
+<TR><TD VALIGN="TOP"><FONT FACE="Courier New">i2l</FONT></TD><TD VALIGN="TOP">(none)</TD><TD VALIGN="TOP">converts <FONT FACE="Courier New">int</FONT> to <FONT FACE="Courier New">long</FONT></TD></TR>
+<TR><TD VALIGN="TOP"><FONT FACE="Courier New">i2f</FONT></TD><TD VALIGN="TOP">(none)</TD><TD VALIGN="TOP">converts <FONT FACE="Courier New">int</FONT> to <FONT FACE="Courier New">float</FONT></TD></TR>
+<TR><TD VALIGN="TOP"><FONT FACE="Courier New">i2d</FONT></TD><TD VALIGN="TOP">(none)</TD><TD VALIGN="TOP">converts <FONT FACE="Courier New">int</FONT> to <FONT FACE="Courier New">double</FONT></TD></TR>
+<TR><TD VALIGN="TOP"><FONT FACE="Courier New">l2i</FONT></TD><TD VALIGN="TOP">(none)</TD><TD VALIGN="TOP">converts <FONT FACE="Courier New">long</FONT> to <FONT FACE="Courier New">int</FONT></TD></TR>
+<TR><TD VALIGN="TOP"><FONT FACE="Courier New">l2f</FONT></TD><TD VALIGN="TOP">(none)</TD><TD VALIGN="TOP">converts <FONT FACE="Courier New">long</FONT> to <FONT FACE="Courier New">float</FONT></TD></TR>
+<TR><TD VALIGN="TOP"><FONT FACE="Courier New">l2d</FONT></TD><TD VALIGN="TOP">(none)</TD><TD VALIGN="TOP">converts <FONT FACE="Courier New">long</FONT> to <FONT FACE="Courier New">double</FONT></TD></TR>
+<TR><TD VALIGN="TOP"><FONT FACE="Courier New">f2i</FONT></TD><TD VALIGN="TOP">(none)</TD><TD VALIGN="TOP">converts <FONT FACE="Courier New">float</FONT> to <FONT FACE="Courier New">int</FONT></TD></TR>
+<TR><TD VALIGN="TOP"><FONT FACE="Courier New">f2l</FONT></TD><TD VALIGN="TOP">(none)</TD><TD VALIGN="TOP">converts <FONT FACE="Courier New">float</FONT> to <FONT FACE="Courier New">long</FONT></TD></TR>
+<TR><TD VALIGN="TOP"><FONT FACE="Courier New">f2d</FONT></TD><TD VALIGN="TOP">(none)</TD><TD VALIGN="TOP">converts <FONT FACE="Courier New">float</FONT> to <FONT FACE="Courier New">double</FONT></TD></TR>
+<TR><TD VALIGN="TOP"><FONT FACE="Courier New">d2i</FONT></TD><TD VALIGN="TOP">(none)</TD><TD VALIGN="TOP">converts <FONT FACE="Courier New">double</FONT> to <FONT FACE="Courier New">int</FONT></TD></TR>
+<TR><TD VALIGN="TOP"><FONT FACE="Courier New">d2l</FONT></TD><TD VALIGN="TOP">(none)</TD><TD VALIGN="TOP">converts <FONT FACE="Courier New">double</FONT> to <FONT FACE="Courier New">long</FONT></TD></TR>
+<TR><TD VALIGN="TOP"><FONT FACE="Courier New">d2f</FONT></TD><TD VALIGN="TOP">(none)</TD><TD VALIGN="TOP">converts <FONT FACE="Courier New">double</FONT> to <FONT FACE="Courier New">float</FONT></TD></TR>
+</TABLE>
+<P>Opcodes that convert from an <FONT FACE="Courier New">int</FONT> to a type smaller than <FONT FACE="Courier New">int</FONT> are shown in Table 11-2. These opcodes pop one <FONT FACE="Courier New">int</FONT> off the operand stack, convert it to an <FONT FACE="Courier New">int</FONT> value that fits into a <FONT FACE="Courier New">byte</FONT>, <FONT FACE="Courier New">short</FONT>, or <FONT FACE="Courier New">char</FONT>, and push the resulting <FONT FACE="Courier New">int</FONT> back onto the operand stack. The <FONT FACE="Courier New">i2b</FONT> instruction truncates the popped <FONT FACE="Courier New">int</FONT> value to a <FONT FACE="Courier New">byte</FONT>, then sign-extends back out to an <FONT FACE="Courier New">int</FONT>. The <FONT FACE="Courier New">i2s</FONT> instruction truncates the popped <FONT FACE="Courier New">int</FONT> value to a <FONT FACE="Courier New">short</FONT>, then sign-extends back out to an <FONT FACE="Courier New">int</FONT>. The <FONT FACE="Courier New">i2c</FONT> instruction truncates the popped <FONT FACE="Courier New">int</FONT> value to a <FONT FACE="Courier New">char</FONT>, then zero-extends back out to an <FONT FACE="Courier New">int</FONT>.</P>
+<P>Table 11-2. Converting <FONT FACE="Courier New">int</FONT>s, <FONT FACE="Courier New">byte</FONT>s, <FONT FACE="Courier New">chars</FONT>, and <FONT FACE="Courier New">short</FONT>s.</P>
+<TABLE WIDTH="500">
+<TR><TD VALIGN="TOP"><STRONG>Opcode</STRONG></TD><TD VALIGN="TOP"><STRONG>Operand(s)</STRONG></TD><TD VALIGN="TOP"><STRONG>Description</STRONG></TD></TR>
+<TR><TD VALIGN="TOP"><FONT FACE="Courier New">i2b</FONT></TD><TD VALIGN="TOP">(none)</TD><TD VALIGN="TOP">converts <FONT FACE="Courier New">int</FONT> to <FONT FACE="Courier New">byte</FONT></TD></TR>
+<TR><TD VALIGN="TOP"><FONT FACE="Courier New">i2c</FONT></TD><TD VALIGN="TOP">(none)</TD><TD VALIGN="TOP">converts <FONT FACE="Courier New">int</FONT> to <FONT FACE="Courier New">char</FONT></TD></TR>
+<TR><TD VALIGN="TOP"><FONT FACE="Courier New">i2s</FONT></TD><TD VALIGN="TOP">(none)</TD><TD VALIGN="TOP">converts <FONT FACE="Courier New">int</FONT> to <FONT FACE="Courier New">short</FONT></TD></TR>
+</TABLE>
+<P>No opcodes exist that convert directly from a <FONT FACE="Courier New">long</FONT>, <FONT FACE="Courier New">float</FONT>, or <FONT FACE="Courier New">double</FONT> to the types smaller than <FONT FACE="Courier New">int</FONT>. Therefore converting from a <FONT FACE="Courier New">float</FONT> to a <FONT FACE="Courier New">byte</FONT>, for example, requires two steps. First the <FONT FACE="Courier New">float</FONT> must be converted to an <FONT FACE="Courier New">int</FONT> with <CODE>f2i</CODE>, then the resulting <FONT FACE="Courier New">int</FONT> can be converted to a <FONT FACE="Courier New">byte</FONT> with <CODE>i2b</CODE>.</P>
+<P>Although opcodes exist that convert an <FONT FACE="Courier New">int</FONT> to primitive types smaller than <FONT FACE="Courier New">int</FONT> (<FONT FACE="Courier New">byte</FONT>, <FONT FACE="Courier New">short</FONT>, and <FONT FACE="Courier New">char</FONT>), no opcodes exist that convert in the opposite direction. This is because any <FONT FACE="Courier New">byte</FONT>s, <FONT FACE="Courier New">short</FONT>s, or <FONT FACE="Courier New">char</FONT>s are effectively converted to <FONT FACE="Courier New">int</FONT> before being pushed onto the stack. The instructions that retrieve <FONT FACE="Courier New">byte</FONT>, <FONT FACE="Courier New">short</FONT>, and <FONT FACE="Courier New">char</FONT> values from arrays or objects on the heap and push them onto the stack convert the values to <FONT FACE="Courier New">int</FONT>. These instructions are described in Chapter 15, &quot;Objects and Arrays.&quot;</P>
+<P>Arithmetic operations upon <FONT FACE="Courier New">byte</FONT>s, <FONT FACE="Courier New">short</FONT>s, and <FONT FACE="Courier New">char</FONT>s are done by first converting the values to <FONT FACE="Courier New">int</FONT>, performing the arithmetic operations on the <FONT FACE="Courier New">int</FONT>s, and being happy with an <FONT FACE="Courier New">int</FONT> result. This means that if you add 2 <FONT FACE="Courier New">byte</FONT>s you get an <FONT FACE="Courier New">int</FONT>, and if you want a <FONT FACE="Courier New">byte</FONT> result you must explicitly convert the <FONT FACE="Courier New">int</FONT> result back to a <FONT FACE="Courier New">byte</FONT>. For example, the following code won't compile: </P>
+<PRE><P><FONT FACE="Courier New">begin</FONT></P>
+<FONT SIZE="2"><P></FONT><FONT FACE="Courier New">// On the CD-ROM in file opcodes/ex1/BadArithmetic.java
+<P>class BadArithmetic {</P>
+<P>&nbsp;</P>
+<P>    static byte addOneAndOne() {</P>
+<P>        byte a = 1;</P>
+<P>        byte b = 1;</P>
+<P>        byte c = a + b;</P>
+<P>        return c;</P>
+<P>    }</P>
+<P>}</P>
+</FONT><FONT SIZE="2"><P>&nbsp;</P></FONT><FONT FACE="Courier New">end</FONT></P></PRE>
+<P>When presented with the above code, <FONT FACE="Courier New">javac</FONT> objects with the following remark: </P>
+<PRE><P><FONT FACE="Courier New">begin</FONT></P>
+<FONT SIZE="2"><P></FONT><FONT FACE="Courier New">BadArithmetic.java(7): Incompatible type for declaration. Explicit
+<P>cast needed to convert int to byte.</P>
+<P>        byte c = a + b;</P>
+<P>             ^</P>
+</FONT><FONT SIZE="2"><P>&nbsp;</P></FONT> <FONT FACE="Courier New">end</FONT></P></PRE>
+<P>To remedy the situation, the you must explicitly convert the <FONT FACE="Courier New">int</FONT> result of the addition of <FONT FACE="Courier New">a + b</FONT> back to a <FONT FACE="Courier New">byte</FONT>, as in the following code: </P>
+<PRE><P><FONT FACE="Courier New">begin</FONT></P>
+<FONT SIZE="2"><P></FONT><FONT FACE="Courier New">// On the CD-ROM in file opcodes/ex1/GoodArithmetic.java
+<P>class GoodArithmetic {</P>
+<P>&nbsp;</P>
+<P>    static byte addOneAndOne() {</P>
+<P>        byte a = 1;</P>
+<P>        byte b = 1;</P>
+<P>        byte c = (byte) (a + b);</P>
+<P>        return c;</P>
+<P>    }</P>
+<P>}</P>
+</FONT><FONT SIZE="2"><P>&nbsp;</P></FONT><FONT FACE="Courier New">end</FONT></P></PRE>
+<P>This makes <FONT FACE="Courier New">javac</FONT> so happy it drops a <FONT FACE="Courier New">GoodArithmetic.class</FONT> file, which contains the following bytecode sequence for the <FONT FACE="Courier New">addOneAndOne()</FONT> method:</P>
+<PRE><P><FONT FACE="Courier New">begin</FONT></P>
+<FONT SIZE="2"><P></FONT><FONT FACE="Courier New"> 0 iconst_1   // Push int constant 1.
+<P> 1 istore_0   // Pop into local variable 0, which is a: byte a = 1;</P>
+<P> 2 iconst_1   // Push int constant 1 again.</P>
+<P> 3 istore_1   // Pop into local variable 1, which is b: byte b = 1;</P>
+<P> 4 iload_0    // Push a (a is already stored as an int in local</P>
+<P>              // variable 0).</P>
+<P> 5 iload_1    // Push b (b is already stored as an int in local</P>
+<P>              // variable 1).</P>
+<P> 6 iadd       // Perform addition. Top of stack is</P>
+<P>              // now (a + b), an int.</P>
+<P> 7 i2b        // Convert int result to byte (result still</P>
+<P>              // occupies 32 bits).</P>
+<P> 8 istore_2   // Pop into local variable 3, which is</P>
+<P>              // byte c: byte c = (byte) (a + b);</P>
+<P> 9 iload_2    // Push the value of c so it can be returned.</P>
+<P>10 ireturn    // Proudly return the result of the addition: return c;</P>
+</FONT><FONT SIZE="2"><P>&nbsp;</P></FONT><FONT FACE="Courier New">end</FONT></P></PRE>
+<I><STRONG><P>Conversion Diversion: A Simulation</P>
+</I></STRONG><H3><P></H3>The <I>Conversion Diversion</I> applet, shown in Figure 11-1, demonstrates a Java Virtual Machine executing a sequence of bytecodes. The applet is embedded in a web page on the CD-ROM in file <FONT FACE="Courier New">applets/ConversionDiversion.html</FONT>. The bytecode sequence in the simulation was generated by <CODE>javac</CODE> for the <FONT FACE="Courier New">Convert()</FONT> method of the class shown below: </P>
+<PRE><P><FONT FACE="Courier New">begin</FONT></P>
+<FONT SIZE="2"><P></FONT><FONT FACE="Courier New">// On CD-ROM in file opcodes/ex1/Diversion.java
+<P>class Diversion {</P>
+<P>&nbsp;</P>
+<P>    static void Convert() {</P>
+<P>&nbsp;</P>
+<P>        byte imByte = 0;</P>
+<P>        int imInt = 125;</P>
+<P>&nbsp;</P>
+<P>        for (;;) {</P>
+<P>            ++imInt;</P>
+<P>            imByte = (byte) imInt;</P>
+<P>&nbsp;</P>
+<P>            imInt *= -1;</P>
+<P>            imByte = (byte) imInt;</P>
+<P>            imInt *= -1;</P>
+<P>        }</P>
+<P>    }</P>
+<P>}</P>
+</FONT><FONT SIZE="2"><P>&nbsp;</P></FONT><FONT FACE="Courier New">end</FONT></P></PRE>
+<P>The bytecodes generated by <CODE>javac</CODE> for <FONT FACE="Courier New">Convert()</FONT> are shown below:</P>
+<PRE><P><FONT FACE="Courier New">begin</FONT></P>
+<FONT SIZE="2"><P></FONT><FONT FACE="Courier New"> 0 iconst_0    // Push int constant 0.
+<P> 1 istore_0    // Pop to local variable 0, which is</P>
+<P>               // imByte: byte imByte = 0;</P>
+<P> 2 bipush 125  // Expand byte constant 125 to int and push.</P>
+<P> 4 istore_1    // Pop to local variable 1, which</P>
+<P>               // is imInt: int imInt = 125;</P>
+<P> 5 iinc 1 1    // Increment local variable 1 (imInt) by 1: ++imInt;</P>
+<P> 8 iload_1     // Push local variable 1 (imInt).</P>
+<P> 9 i2b         // Truncate and sign extend top of stack so it</P>
+<P>               // has a valid byte value.</P>
+<P>10 istore_0    // Pop to local variable 0 (imByte):</P>
+<P>               // imByte = (byte) imInt;</P>
+<P>11 iload_1     // Push local variable 1 (imInt) again.</P>
+<P>12 iconst_m1   // Push integer -1.</P>
+<P>13 imul        // Pop top two ints, multiply, push result.</P>
+<P>14 istore_1    // Pop result of multiply to local variable 1 (imInt):</P>
+<P>               // imInt *= -1;</P>
+<P>15 iload_1     // Push local variable 1 (imInt).</P>
+<P>16 i2b         // Truncate and sign extend top of stack so it has</P>
+<P>               // a valid byte value.</P>
+<P>17 istore_0    // Pop to local variable 0 (imByte):</P>
+<P>               // imByte = (byte) imInt;</P>
+<P>18 iload_1     // Push local variable 1 (imInt) again.</P>
+<P>19 iconst_m1   // Push integer -1.</P>
+<P>20 imul        // Pop top two ints, multiply, push result.</P>
+<P>21 istore_1    // Pop result of multiply to local variable 1 (imInt):</P>
+<P>               // imInt *= -1;</P>
+<P>22 goto 5      // Jump back to the iinc instruction: for (;;) {}</P>
+</FONT><FONT SIZE="2"><P>&nbsp;</P></FONT><FONT FACE="Courier New">end</FONT></P></PRE>
+<P>The <FONT FACE="Courier New">Convert()</FONT> method demonstrates the manner in which the Java Virtual Machine converts from <FONT FACE="Courier New">int</FONT> to <FONT FACE="Courier New">byte</FONT>. <CODE>imInt</CODE> starts out as 125. Each pass through the while loop, it is incremented and converted to a <FONT FACE="Courier New">byte</FONT>. Then it is multiplied by -1 and again converted to a <FONT FACE="Courier New">byte</FONT>. The simulation quickly shows what happens at the edges of the valid range for the <FONT FACE="Courier New">byte</FONT> type. </P>
+<P>The maximum value for a <FONT FACE="Courier New">byte</FONT> is 127. The minimum value is -128. Values of type <FONT FACE="Courier New">int</FONT> that are within this range convert directly to <FONT FACE="Courier New">byte</FONT>. As soon as the <FONT FACE="Courier New">int</FONT> gets beyond the valid range for <FONT FACE="Courier New">byte</FONT>, however, things get interesting. </P>
+<P>The Java Virtual Machine converts an <FONT FACE="Courier New">int</FONT> to a <FONT FACE="Courier New">byte</FONT> by truncating and sign extending. The highest order bit, the "sign bit," of <FONT FACE="Courier New">long</FONT>s, <FONT FACE="Courier New">int</FONT>s, <FONT FACE="Courier New">short</FONT>s, and <FONT FACE="Courier New">byte</FONT>s indicate whether or not the integer value is positive or negative. If the sign bit is zero, the value is positive. If the sign bit is one, the value is negative. Bit 7 of a <FONT FACE="Courier New">byte</FONT> value is its sign bit. To convert an <FONT FACE="Courier New">int</FONT> to a <FONT FACE="Courier New">byte</FONT>, bit 7 of the <FONT FACE="Courier New">int</FONT> is copied to bits 8 through 31. This produces an <FONT FACE="Courier New">int</FONT> that has the same numerical value that the <FONT FACE="Courier New">int</FONT>'s lowest order byte would have if it were interpreted as a <FONT FACE="Courier New">byte</FONT> type. After the truncation and sign extension, the <FONT FACE="Courier New">int</FONT> will contain a valid <FONT FACE="Courier New">byte</FONT> value. </P>
+<P>The simulation applet shows what happens when an <FONT FACE="Courier New">int</FONT> that is just beyond the valid range for <FONT FACE="Courier New">byte</FONT> types gets converted to a <FONT FACE="Courier New">byte</FONT>. For example, when the <FONT FACE="Courier New">imInt</FONT> variable has a value of 128 (0x00000080) and is converted to <FONT FACE="Courier New">byte</FONT>, the resulting <FONT FACE="Courier New">byte</FONT> value is -128 (0xffffff80). Later, when the <FONT FACE="Courier New">imInt</FONT> variable has a value of -129 (0xffffff7f) and is converted to <FONT FACE="Courier New">byte</FONT>, the resulting <FONT FACE="Courier New">byte</FONT> value is 127 (0x0000007f). </P>
+<P>To drive the <I>Conversion Diversion</I> simulation, use the Step, Reset, Run, and Stop buttons. Each time you press the Step button, the simulator will execute the instruction pointed to by the pc register. If you press the Run button, the simulation will continue with no further coaxing on your part until you press the Stop button. To start the simulation over, press the Reset button. For each step of the simulation, a panel at the bottom of the applet contains an explanation of what the next instruction will do. Happy clicking.</P>
+<P><IMG SRC="fig11-1.gif" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/venners/images/fig11-1.gif" ALT="Figure 11-1"></P>
+
+<H3><EM><P>On the CD-ROM</P>
+</EM></H3><P> The CD-ROM contains the source code examples from this chapter in the <FONT FACE="Courier New">opcodes</FONT> directory. The <I>Conversion Diversion</I> applet is contained in a web page on the CD-ROM in file <FONT FACE="Courier New">applets/ConversionDiversion.html</FONT>. The source code for this applet is found alongside its class files, in the <FONT FACE="Courier New">applets/JVMSimulators</FONT> and <FONT FACE="Courier New">applets/JVMSimulators/COM/artima/jvmsim</FONT> directories.</P>
+<H3><EM><P>The Resources Page</P>
+</EM></H3><P>For more information about the material presented in this chapter, visit the resources page: <FONT FACE="Courier New"><A HREF="http://www.artima.com/insidejvm/typeconv.html" tppabs="http://www.artima.com/insidejvm/typeconv.html">http://www.artima.com/insidejvm/typeconv.html</A></FONT>.</P>
+<TABLE BORDER="0" WIDTH="100%">
+<TR><TD><A HREF="http://www.pbg.mcgraw-hill.com/betabooks/stores.html" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/stores.html" target="bottom"><IMG SRC="hotkey.gif" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/images/hotkey.gif" ALIGN="LEFT" BORDER="0" WIDTH="40" HEIGHT="40" ALT="Orders"></A>
+<IMG SRC="order_text.gif" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/images/order_text.gif" WIDTH="103" HEIGHT="41" ALT="Orders"></TD>
+<TD ALIGN="RIGHT"><A HREF="chap10.html" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/venners/chap10.html"><IMG SRC="backward.gif" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/images/backward.gif" BORDER="0" ALT="Backward" WIDTH="32" HEIGHT="32"></A>&nbsp;<A HREF="chap12.html" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/venners/chap12.html"><IMG SRC="forward.gif" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/images/forward.gif" BORDER="0" ALT="Forward" WIDTH="32" HEIGHT="32"></A></TD></TR>
+<TR><TD COLSPAN="2"><A HREF="mailto:computing@mcgraw-hill.com"><IMG SRC="hotkey.gif" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/images/hotkey.gif" ALIGN="LEFT" BORDER="0" WIDTH="40" HEIGHT="40" ALT="Comments"></A>
+<IMG SRC="comment_text.gif" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/images/comment_text.gif" WIDTH="73" HEIGHT="39" ALT="Comments"></TD></TR>
+
+</TABLE>
+<HR>
+<P ALIGN=CENTER>&nbsp;<A HREF="http://www.pbg.mcgraw-hill.com/computing/computing-home.html" tppabs="http://www.pbg.mcgraw-hill.com/computing/computing-home.html" TARGET="_top">COMPUTING
+MCGRAW-HILL</A> | <A HREF="http://www.pbg.mcgraw-hill.com/betabooks/betabooks-home.html" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/betabooks-home.html" TARGET="_top">Beta Books</A>
+| <A HREF="http://www.pbg.mcgraw-hill.com/computing/contact.html" tppabs="http://www.pbg.mcgraw-hill.com/computing/contact.html" TARGET="_top">Contact Us</A>
+| <A HREF="http://www.pbg.mcgraw-hill.com/betabooks/stores.html" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/stores.html" TARGET="_top">Order Information</A>
+| <A HREF="http://mcgraw-hill.inforonics.com/compsearch.shtml" tppabs="http://mcgraw-hill.inforonics.com/compsearch.shtml" TARGET="_top">Online Catalog</A></P>
+
+<P ALIGN=CENTER><FONT SIZE="-1"><A HREF="http://www.pbg.mcgraw-hill.com/computing/computing-home.html" tppabs="http://www.pbg.mcgraw-hill.com/computing/computing-home.html" TARGET="_top">Computing McGraw-Hill</A> is an imprint of the <A HREF="http://www.pbg.mcgraw-hill.com/pbg-home.html" tppabs="http://www.pbg.mcgraw-hill.com/pbg-home.html" TARGET="_top">McGraw-Hill Professional Book Group</A>.</FONT></P>
+
+<!-- begin footer -->
+<HR>
+<A HREF="http://www.mcgraw-hill.com/" tppabs="http://www.mcgraw-hill.com/" TARGET="_top"><IMG SRC="division-white.gif" tppabs="http://www.pbg.mcgraw-hill.com/images/division-white.gif" WIDTH="350" HEIGHT="44" ALT="A Division of the McGraw-Hill Companies" BORDER="0"></A><BR>
+<FONT SIZE="-2">Copyright &copy; 1997 <A HREF="http://www.mcgraw-hill.com/" tppabs="http://www.mcgraw-hill.com/" TARGET="_top">
+The McGraw-Hill Companies</A>. All rights reserved. Any use is subject to the 
+<A HREF="http://www.mcgraw-hill.com/corporate/news_info/copyrttm.htm" tppabs="http://www.mcgraw-hill.com/corporate/news_info/copyrttm.htm" TARGET="_top">
+Terms of Use</A>; the corporation also has a comprehensive <A HREF="http://www.mcgraw-hill.com/corporate/news_info/privacy.html" tppabs="http://www.mcgraw-hill.com/corporate/news_info/privacy.html" TARGET="_top">
+Privacy Policy</A> governing information we may collect from our customers.</FONT>
+<!-- end footer -->
+</BODY>
+</HTML>

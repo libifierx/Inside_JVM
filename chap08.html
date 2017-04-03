@@ -1,0 +1,1135 @@
+<!-- All material contained herein is copyright (c) McGraw-Hill Professional Books
+All Rights Reserved. No use of this material may be made without express written
+permission of the copyright holder. HTML conversions by Mega Space [barry@megaspace.com] -->
+
+<HTML>
+<HEAD>
+<META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=ISO-8859-1">
+<TITLE>Understanding Digital Signatures: Inside the Java Virtual Machine
+ by Bill Venners - Beta Version</TITLE>
+</HEAD>
+<BODY BGCOLOR="#FFFFFF">
+<TABLE BORDER="0" WIDTH="100%">
+<TR><TD><A HREF="http://www.pbg.mcgraw-hill.com/betabooks/stores.html" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/stores.html" target="bottom"><IMG SRC="hotkey.gif" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/images/hotkey.gif" ALIGN="LEFT" BORDER="0" WIDTH="40" HEIGHT="40" ALT="Orders"></A>
+<IMG SRC="order_text.gif" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/images/order_text.gif" WIDTH="103" HEIGHT="41" ALT="Orders"></TD>
+<TD ALIGN="RIGHT"><A HREF="chap07.html" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/venners/chap07.html"><IMG SRC="backward.gif" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/images/backward.gif" BORDER="0" ALT="Backward" WIDTH="32" HEIGHT="32"></A>&nbsp;<A HREF="chap09.html" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/venners/chap09.html"><IMG SRC="forward.gif" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/images/forward.gif" BORDER="0" ALT="Forward" WIDTH="32" HEIGHT="32"></A></TD></TR>
+<TR><TD COLSPAN="2"><A HREF="mailto:computing@mcgraw-hill.com"><IMG SRC="hotkey.gif" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/images/hotkey.gif" ALIGN="LEFT" BORDER="0" WIDTH="40" HEIGHT="40" ALT="Comments"></A>
+<IMG SRC="comment_text.gif" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/images/comment_text.gif" WIDTH="73" HEIGHT="39" ALT="Comments"></TD></TR>
+
+<TR><TD COLSPAN="2"><FONT FACE="ARIEL,HELVETICA" SIZE="-1"><I>&copy; 1997 The McGraw-Hill Companies, Inc.  All rights reserved.  <BR>Any use of this Beta Book is subject to the rules stated in the <A HREF="http://www.mcgraw-hill.com/corporate/news_info/copyrttm.htm" tppabs="http://www.mcgraw-hill.com/corporate/news_info/copyrttm.htm" target="_top">Terms of Use</A>.</I></FONT><br>
+<script language="javascript">
+    document.write("<a href='http://banners.linkbuddies.com/click.php?id=237296'><img src='http://banners.linkbuddies.com/image.php?id=237296&ref=" + document.referrer + "' width=468 height=60 alt='Click Here' border=0></a>");
+</script></TD></TR>
+
+</TABLE>
+<HR>
+<P><H1>Chapter Eight</H1></P>
+<P><H2>The Linking Model</H2></P>
+<P>From the programmerís perspective, one of the most important aspects of Javaís architecture to understand is the linking model. As mentioned in earlier chapters, Javaís linking model allows you to design class loader objects that extend your application in custom ways at run-time. Through class loader objects, your application can load and dynamically link to classes and interfaces that were unknown or did not even exist when your application was compiled.</P>
+<P>The engine that drives Javaís linking model is the process of resolution. The previous chapter described in detail all the various stages in the lifetime of a class, except for resolution. This chapter looks at resolution in depth, and shows how the process of resolution fits in with dynamic extension. It gives an overview of the linking model, explains constant pool resolution, describes method tables, shows how to write and use class loaders, and gives several examples.</P>
+<H3><EM><P>Dynamic Linking and Resolution</P>
+</EM></H3><P>When you compile a Java program, you get a separate class file for each class or interface in your program. Although the individual class files may appear to be independent, they actually harbor symbolic connections to one another and to the class files of the Java API. When you run your program, the Java Virtual Machine loads your programís classes and interfaces and hooks them together in a process of <I>dynamic linking</I>. As your program runs, the Java Virtual Machine builds an internal web of interconnected classes and interfaces.</P>
+<P>A class file keeps all its symbolic references in one place, the constant pool. Each class file has a constant pool, and each class or interface loaded by the Java Virtual Machine has an internal version of its constant pool. The internal constant pool is an implementation-specific data structure that maps to the constant pool in the class file. Thus, after a type is initially loaded, all the symbolic references from the type reside in the typeís internal constant pool.</P>
+<P>At some point during the running of a program, if a particular symbolic reference is to be used, it must be <I>resolved</I>. Resolution is the process of finding the entity identified by the symbolic reference and replacing the symbolic reference with a direct reference. Because all symbolic references reside in the constant pool, this process is often called <I>constant pool resolution</I>.</P>
+<P>As described in Chapter 6, &quot;The Java Class File,&quot; the constant pool is organized as a sequence of items. Each item has a unique index, much like an array element. A symbolic reference is one kind of item that may appear in the constant pool. Java Virtual Machine instructions that use a symbolic reference specify the index in the constant pool where the symbolic reference resides. For example, the <FONT FACE="Courier New">getstatic</FONT> opcode, which pushes the value of a static field onto the stack, is followed in the bytecode stream by an index into the constant pool. The constant pool entry at the specified index, a <FONT FACE="Courier New">CONSTANT_Fieldref_info</FONT> entry, reveals the fully qualified name of the class in which the field resides, and the name and type of the field.</P>
+<P>Keep in mind that the Java Virtual Machine contains a separate internal constant pool for each class and interface it loads. When an instruction refers to the fifth item in the constant pool, it is referring to the fifth item in the constant pool for the current class, the class that defined the method the Java Virtual Machine is currently executing.</P>
+<P>Several instructions, from the same or different methods, may refer to the same constant pool entry, but each constant pool entry is resolved only once. After a symbolic reference has been resolved for one instruction, subsequent attempts to resolve it by other instructions take advantage of the hard work already done, and use the same direct reference resulting from the original resolution.</P>
+<P>Linking involves not only the replacement of symbolic references with direct ones, it also involves checking for correctness and permission. As mentioned in Chapter 7, &quot;The Lifetime of a Class,&quot; the checking of symbolic references for existence and access permission (one aspect of the full verification phase) is likely performed during resolution. For example, when a Java Virtual Machine resolves a <FONT FACE="Courier New">getstatic</FONT> instruction to a field of another class, the Java Virtual Machine checks to make sure that:</P>
+<UL><LI> The other class exists.
+<LI> This class has permission to access the other class.
+<LI> The named field exists in the other class.
+<LI> The field has the expected type (symbolic references to fields include the field type).
+<LI> This class has permission to access the field.
+<LI> That the field is really static--a class variable and not an instance variable.</UL>
+<P>If any of these checks fail, an error is thrown and resolution fails. Otherwise, the symbolic reference is replaced by the direct reference and resolution succeeds.</P>
+<P>As described in Chapter 7, &quot;The Lifetime of a Class,&quot; different implementations of the Java Virtual Machine are permitted to perform resolution at different times during the execution of a program. An implementation may choose to link everything up front by following all symbolic references from the initial class, then all symbolic references from subsequent classes, until every symbolic reference has been resolved. In this case, the application would be completely linked before its <FONT FACE="Courier New">main()</FONT> method was ever invoked. This approach is called <I>early resolution</I>. Alternatively, an implementation may choose to wait until the very last minute to resolve each symbolic reference. In this case, the Java Virtual Machine would resolve a symbolic reference only when it is first used by the running program. This approach is called <I>late resolution</I>. Other implementations could choose a resolution strategy in-between these two extremes.</P>
+<P>Although a Java Virtual Machine implementation has some freedom in choosing when to resolve symbolic references, every Java Virtual Machine must give the outward impression that it uses late resolution. No matter when a particular Java Virtual Machine performs its linking, it will always throw any error that results from attempting to resolve a symbolic reference at the point in the execution of the program where the symbolic reference was actually used for the first time. In this way, it will always appear to the user as if the linking were late. If a Java Virtual Machine does early linking, and during early linking discovers that a class file is missing, it wonít report the class file missing by throwing the appropriate error until later in the program when something in that class file is actually used. If the class is never used by the program, the error will never be thrown.</P>
+<H3><EM><P>Resolution and Dynamic Extension</P>
+</EM></H3><P>In addition to simply linking types at run-time, Java applications can decide at run-time which types to link. Javaís architecture allows Java programs to be <I>dynamically extended</I>, the process of deciding at run-time other types to use, loading them, and using them. You can dynamically extend a Java application by creating a class loader object and using it to load types that are not part of your original application, but are determined by your running application. An example of dynamic extension is a Java-capable web browser loading class files for applets from across a network. When the browser starts, it doesnít know what class files it will be loading across the network.</P>
+<P>To dynamically extend a Java application, you must include a class loader as part of your application. To create your own class loader, you write a subclass of <FONT FACE="Courier New">java.lang.ClassLoader</FONT> and implement the <FONT FACE="Courier New">loadClass()</FONT> method. When the <FONT FACE="Courier New">loadClass()</FONT> method of a class loader successfully loads a type, it returns a <FONT FACE="Courier New">java.lang.Class</FONT> object to represent the newly loaded (and optionally, verified, prepared, resolved, and initialized) type. Hereís the declaration of the <FONT FACE="Courier New">loadClass()</FONT> method:</P>
+<PRE><P><FONT FACE="Courier New">begin</FONT></P>
+<FONT FACE="Courier New"><P>// A method declared in class java.lang.ClassLoader:</P>
+<P>protected abstract Class loadClass(String name, boolean resolve)</P>
+<P>    throws ClassNotFoundException;</P>
+</FONT><P><FONT FACE="Courier New">end</FONT></P></PRE>
+<P>The class loader takes care of loading, linking, and initializing types. Admittedly the name <FONT FACE="Courier New">ClassLoader</FONT> might lead you to believe it is responsible only for loading, and not linking or initialization, but the name <FONT FACE="Courier New">ClassLoaderLinkerAndInitializer</FONT> is a bit unwieldy. Also, the purpose of creating your own class loader is to customize the load phase while still using the primordial link and initialization mechanisms. Class loaders differ not in how they link or initialize types, but in how they load types. In other words, class loaders distinguish themselves by the manner in which they produce a binary form for a type given a fully qualified name.</P>
+<P>The <FONT FACE="Courier New">loadClass()</FONT> method encompasses all three steps of loading, linking, and initialization of a new type. You pass the fully qualified name of the requested type to <FONT FACE="Courier New">loadClass()</FONT> in the parameter <FONT FACE="Courier New">name</FONT>. If you want linking and initialization to be performed at this time, you pass <FONT FACE="Courier New">true</FONT> in the parameter <FONT FACE="Courier New">resolve</FONT>. If <FONT FACE="Courier New">loadClass()</FONT> is invoked with <FONT FACE="Courier New">resolve</FONT> set to <FONT FACE="Courier New">false</FONT>, it will load but not link and initialize the type. From your programs, you will likely invoke <FONT FACE="Courier New">loadClass()</FONT> with the <FONT FACE="Courier New">resolve</FONT> parameter always set to <FONT FACE="Courier New">true</FONT>. Normally, the <FONT FACE="Courier New">loadClass()</FONT>method is invoked with the <FONT FACE="Courier New">resolve</FONT> parameter set to <FONT FACE="Courier New">false</FONT> only by the virtual machine itself. (More on this later in this chapter.)</P>
+<P>As mentioned in earlier chapters, each class loader--primordial or object--is awarded its own name space, which is populated by the names of the types it has loaded. Dynamic extension and name spaces are both supported by one aspect of the process of resolution: the way a virtual machine chooses a class loader when it resolves a symbolic reference to a type.</P>
+<P>When the resolution of a constant pool entry requires loading a type, the virtual machine uses the same class loader that loaded the referencing type to load the referenced type. For example, imagine a <FONT FACE="Courier New">Cat</FONT> class refers via a symbolic reference in its constant pool to a type named <FONT FACE="Courier New">Mouse</FONT>. Assume <FONT FACE="Courier New">Cat</FONT> was loaded by a class loader object. When the virtual machine resolves the reference to <FONT FACE="Courier New">Mouse</FONT>, it checks to see if <FONT FACE="Courier New">Mouse</FONT> has been loaded into the name space to which <FONT FACE="Courier New">Cat</FONT> belongs. (It checks to see if the class loader that loaded <FONT FACE="Courier New">Cat</FONT> has previously loaded a type named <FONT FACE="Courier New">Mouse</FONT>.) If not, the virtual machine requests <FONT FACE="Courier New">Mouse</FONT> from the same class loader that loaded <FONT FACE="Courier New">Cat</FONT>. This is true even if a class named <FONT FACE="Courier New">Mouse</FONT> had previously been loaded into a different name space. When a symbolic reference from a type loaded by the primordial class loader is resolved, the Java Virtual Machine uses the primordial class loader to load the referenced type. When a symbolic reference from a type loaded by a class loader object is resolved, the Java Virtual Machine uses the same class loader object to load the referenced type.</P>
+<H3><EM><P>Constant Pool Resolution</P>
+</EM></H3><P>This section describes the details of resolving each type of constant pool entry, including the errors that may be thrown during resolution. If an error is thrown during resolution, the error is seen as being thrown by the instruction that refers to the constant pool entry being resolved. Besides the errors described here, individual instructions that trigger the resolution of a constant pool entry may cause other errors to be thrown. For example, <FONT FACE="Courier New">getstatic</FONT> causes a <FONT FACE="Courier New">CONSTANT_Fieldref_info</FONT> entry to be resolved. If the entry is resolved successfully, the virtual machine performs one additional check: it makes sure the field is actually static (a class variable and not an instance variable). If the field is not static, the virtual machine throws an error. Any extra errors that may be thrown during resolution besides those described in this section are described for each individual instruction in Appendix A.</P>
+<H3><P>Resolution of CONSTANT_Class_info Entries</P>
+</H3><P>Of all the types of constant pool entries, the most complicated to resolve is <FONT FACE="Courier New">CONSTANT_Class_info</FONT>. This type of entry is used to represent symbolic references to classes (including array classes) and interfaces. Several instructions, such as <FONT FACE="Courier New">new</FONT> and <FONT FACE="Courier New">anewarray</FONT>, refer directly to <FONT FACE="Courier New">CONSTANT_Class_info</FONT> entries. Other instructions, such as <FONT FACE="Courier New">putfield</FONT> or <FONT FACE="Courier New">invokevirtual</FONT>, refer indirectly to <FONT FACE="Courier New">CONSTANT_Class_info</FONT> entries through other types of entry. For example, the <FONT FACE="Courier New">putfield</FONT> instruction refers to a <FONT FACE="Courier New">CONSTANT_Fieldref_info</FONT> entry. The <FONT FACE="Courier New">class_index</FONT> item of a <FONT FACE="Courier New">CONSTANT_Fieldref_info</FONT> gives the constant pool index of a <FONT FACE="Courier New">CONSTANT_Class_info</FONT> entry.</P>
+<P>The details of resolving a <FONT FACE="Courier New">CONSTANT_Class_info</FONT> entry vary depending on whether or not the type is an array and whether the referencing type (the one that contains in its constant pool the <FONT FACE="Courier New">CONSTANT_Class_info</FONT> entry being resolved) was loaded via the primordial class loader or a class loader object.</P>
+<P><H4><EM>Array Classes</P></EM></H4>
+<P>A <FONT FACE="Courier New">CONSTANT_Class_info</FONT> entry refers to an array class if its <FONT FACE="Courier New">name_index</FONT> refers to a <FONT FACE="Courier New">CONSTANT_Utf8_info</FONT> string that begins with a left bracket, as in &quot;<FONT FACE="Courier New">[I</FONT>.&quot; As described in Chapter 6, &quot;The Java Class File,&quot; internal array names contain one left bracket for each dimension, followed by an element type. If the element type begins with an &quot;<FONT FACE="Courier New">L</FONT>,&quot; as in &quot;<FONT FACE="Courier New">Ljava.lang.Integer;</FONT>,&quot; the array is an array of references. Otherwise, the element type is a primitive type, such as &quot;<FONT FACE="Courier New">I</FONT>&quot; for <FONT FACE="Courier New">int</FONT> or &quot;<FONT FACE="Courier New">D</FONT>&quot; for <FONT FACE="Courier New">double</FONT>, and the array is an array of primitive types.</P>
+<P>In the case of an array of references, the virtual machine resolves the element type. For example, if resolving an array class with the name &quot;<FONT FACE="Courier New">[[Ljava.lang.Integer;</FONT>,&quot; the virtual machine would make certain class <FONT FACE="Courier New">java.lang.Integer</FONT> is loaded, linked, and initialized.</P>
+<P>The end product of the resolution of a symbolic reference to an array class is a <FONT FACE="Courier New">Class</FONT> instance that represents the array class. If a <FONT FACE="Courier New">Class</FONT> instance has already been created for the array type being resolved, that same <FONT FACE="Courier New">Class</FONT> instance is used. Otherwise, the virtual machine creates a new <FONT FACE="Courier New">Class</FONT> instance to represent the newly resolved array type.</P>
+<P><H4><EM>Non-Array Classes and Interfaces</P></EM></H4>
+<P>A <FONT FACE="Courier New">CONSTANT_Class_info</FONT> entry whose <FONT FACE="Courier New">name_index</FONT> refers to a <FONT FACE="Courier New">CONSTANT_Utf8_info</FONT> string that doesnít begin with a left bracket is a symbolic reference to non-array class or an interface. Resolution of this kind of symbolic reference is a multiple step process.</P>
+<P>The Java Virtual Machine performs the same basic steps, described below as Steps 1 and 2a through 2e, to resolve any symbolic reference (any <FONT FACE="Courier New">CONSTANT_Class_info</FONT> entry) to a non-array class or interface. In Step 1, the type is loaded. In Steps 2a through 2e, the type is linked and initialized. The precise way in which the virtual machine performs these steps depends on whether the referencing type was loaded via the primordial class loader or a class loader object.</P>
+<P><H4>Step 1. Load the Type and any Superclasses</H4></P>
+<P>Resolution of a non-array class or interface begins by making sure the type is loaded into the current name space. If the virtual machine determines that the referenced type hasnít yet been loaded into the current name space, it passes the fully qualified name of the type to a class loader. The class loader loads the type, parses the binary data into internal data structures, and creates a <FONT FACE="Courier New">Class</FONT> instance.</P>
+<P>Once the referenced type is loaded in, the virtual machine can peer into its binary data. If the type is a class and not <FONT FACE="Courier New">java.lang.Object</FONT>,  the virtual machine determines from the classsís data the fully qualified name of the classís direct superclass. The virtual machine then checks to see if the superclass has been loaded into the current name space. If not, it loads the superclass. Once that class comes in, the virtual machine can again peer into its binary data to find its superclass. This process repeats all the way up to <FONT FACE="Courier New">Object</FONT>.</P>
+<P>Through Step 1, the Java Virtual Machine makes sure a type is loaded, and if the type is a class, that all its superclasses are loaded. During this step, these types are not linked and initialized--just loaded.</P>
+<P>If the referencing type (the one that contains in its constant pool the <FONT FACE="Courier New">CONSTANT_Class_info</FONT> entry being resolved) was loaded through the primordial class loader, the virtual machine uses the primordial class loader to load the referenced type (and its superclasses, if any). Otherwise, the referencing type was loaded through a class loader object, and the virtual machine uses the same class loader object to load the referenced type.</P>
+<P>The Java Virtual Machine maintains a list of the names of all the types already loaded by each class loader. Each of these lists forms a name space inside the Java Virtual Machine. The virtual machine uses this list during resolution to determine whether a class has already been loaded by a particular class loader. If during resolution, the Java Virtual Machine encounters a symbolic reference to a class that was not previously loaded by the appropriate class loader, that class loader will be asked to load the class. If the appropriate class loader is a class loader object, the Java Virtual Machine will make the load request by invoking the class loader objectís <FONT FACE="Courier New">loadClass()</FONT> method. On the other hand, if the Java Virtual Machine encounters a symbolic reference to a class previously loaded by the same class loader object, the class loader object will not be asked to load it again. Instead, the class previously loaded will automatically be used again. This helps ensure that only one class with a given name is loaded by a particular class loader.</P>
+<P>If the referencing type was loaded via the primordial class loader, the virtual machine will check the primordial class loaderís name space to see if the class was already loaded. If not, the virtual machine will use the primordial class loader to load the referenced type in an implementation-dependent way. If the referenced type is a class, the virtual machine will make sure all the classís superclasses are loaded as well. If any of these classes havenít yet been loaded into the primordial loaderís name space, the virtual machine will use the primordial class loader to load those classes.</P>
+<P>If the referencing type was loaded via a class loader object, the virtual machine invokes <FONT FACE="Courier New">loadClass()</FONT> on the class loader object that loaded the referencing type, passing in parameter <FONT FACE="Courier New">name</FONT> the fully qualified name of the referenced type and setting the <FONT FACE="Courier New">resolve</FONT> flag to <FONT FACE="Courier New">true</FONT>. When <FONT FACE="Courier New">loadClass()</FONT> returns, it will have performed both Step 1 (loading) and Steps 2a through 2e (linking and initialization). (It will perform Steps 2a through 2e because the <FONT FACE="Courier New">resolve</FONT> flag is set to <FONT FACE="Courier New">true</FONT>.) Nonetheless, the <FONT FACE="Courier New">loadClass()</FONT> method will perform Step 1 completely before embarking on Steps 2a through 2e.</P>
+<P>When a class loader objectís <FONT FACE="Courier New">loadClass()</FONT> method is invoked, it has two ways to do its job. One way is to use the primordial class loader by invoking <FONT FACE="Courier New">findSystemClass()</FONT>. In this case, the primordial loader will load, link, and initialize the requested type. Alternatively, <FONT FACE="Courier New">loadClass()</FONT> can produce the binary data in its own custom way, then call <FONT FACE="Courier New">defineClass()</FONT> and--if <FONT FACE="Courier New">true</FONT> was passed in <FONT FACE="Courier New">loadClass()</FONT>ís <FONT FACE="Courier New">resolve</FONT> parameter--call <FONT FACE="Courier New">resolveClass()</FONT>. In this case, the class loader object would produce the binary form for the requested type in its own custom way, then used the primordial class loaderís standard mechanism to link and initialize the type. Here are the declarations for <FONT FACE="Courier New">findSystemClass()</FONT>, <FONT FACE="Courier New">defineClass()</FONT>, and <FONT FACE="Courier New">resolveClass()</FONT>:</P>
+<PRE><P><FONT FACE="Courier New">begin</FONT></P>
+<FONT FACE="Courier New"><P>// Three methods declared in class java.lang.ClassLoader:</P>
+<P>protected final Class findSystemClass(String name)</P>
+<P>    throws ClassNotFoundException;</P>
+<P>protected final Class defineClass(String name, byte data[],</P>
+<P>    int offset, int length);</P>
+<P>protected final void resolveClass(Class c);</P>
+</FONT><P><FONT FACE="Courier New">end</FONT></P></PRE>
+<P>If the <FONT FACE="Courier New">loadClass()</FONT> method invokes <FONT FACE="Courier New">findSystemClass()</FONT>, the class loader object is in effect asking the virtual machine to use the primordial loader to resolve the reference completely. The <FONT FACE="Courier New">findSystemClass()</FONT> method accepts the fully qualified name of the type to resolve in its <FONT FACE="Courier New">name</FONT> parameter. If the primordial class loader is able to successfully resolve the reference, it returns a reference to a <FONT FACE="Courier New">Class</FONT> instance that represents the referenced type. The <FONT FACE="Courier New">loadClass()</FONT> method would then just return a reference to the same <FONT FACE="Courier New">Class</FONT> instance. If the primordial class loader is unsuccessful, however, <FONT FACE="Courier New">findSystemClass()</FONT> will complete abnormally by throwing a <FONT FACE="Courier New">ClassNotFoundException</FONT>. In this case, the <FONT FACE="Courier New">loadClass()</FONT> method can either throw <FONT FACE="Courier New">ClassNotFoundException</FONT> itself or attempt to load the type in its custom way.</P>
+<P>Types brought in through the primordial class loader via <FONT FACE="Courier New">findSystemClass()</FONT> are marked as having no class loader object. Any types they refer to will be requested directly from the primordial loader.</P>
+<P>If the <FONT FACE="Courier New">loadClass()</FONT> method produces the stream of binary data for the type in its own custom way (such as if it downloads the typeís class file across a network), it must invoke <FONT FACE="Courier New">defineClass()</FONT>, passing a reference to a <FONT FACE="Courier New">byte</FONT> array containing the typeís binary data in the Java class file format.</P>
+<P>Invoking <FONT FACE="Courier New">defineClass()</FONT> will cause the virtual machine to do two things. First, the virtual machine will parse the binary data into internal data structures and create a <FONT FACE="Courier New">Class</FONT> instance to represent the type. Second, if the type is a class and not <FONT FACE="Courier New">java.lang.Object</FONT>, the virtual machine will retrieve the name of the classís direct superclass. It will then check to see if the direct superclass has been previously loaded by this class loader object (the one whose <FONT FACE="Courier New">loadClass()</FONT> method just invoked <FONT FACE="Courier New">defineClass()</FONT>). This is a check to see if the direct superclass already resides in the current name space. If the direct superclass has already been loaded by this class loader object, the <FONT FACE="Courier New">defineClass()</FONT> method returns the <FONT FACE="Courier New">Class</FONT> instance for the freshly loaded type. Otherwise, the virtual machine invokes <FONT FACE="Courier New">loadClass()</FONT> on the same class loader object, passing the fully qualified name of the direct superclass in the <FONT FACE="Courier New">name</FONT> parameter and setting the <FONT FACE="Courier New">resolve</FONT> flag to <FONT FACE="Courier New">false</FONT>. Because the <FONT FACE="Courier New">resolve</FONT> flag is <FONT FACE="Courier New">false</FONT>, the direct superclass (and recursively, all its superclasses) will be loaded, but not linked or initialized.</P>
+<P>The reason the resolve flag is set to false when <FONT FACE="Courier New">loadClass()</FONT> is invoked by <FONT FACE="Courier New">defineClass()</FONT> is because this is Step 1: loading of the type and any superclasses. Linking and initialization, which would occur if <FONT FACE="Courier New">resolve</FONT> were set to <FONT FACE="Courier New">true</FONT>, is saved for Step 2.</P>
+<P>When <FONT FACE="Courier New">defineClass()</FONT> has made certain the type and all its superclasses, if any, have been loaded into the current name space. It returns the new <FONT FACE="Courier New">Class</FONT> instance that represents the type. Step 1 is then complete.</P>
+<P>During Step 1, the virtual machine may throw the following errors:</P>
+<UL><LI> If the binary data canít be produced (for example, if a class file of the appropriate name canít be found), the virtual machine throws <FONT FACE="Courier New">NoClassDefFoundError</FONT>.
+<LI> If the binary data is produced, but isnít of the proper structure or a recognized version (such as if the minor or major version number of a Java class file is too high), the virtual machine throws <FONT FACE="Courier New">NoClassDefFoundError</FONT>.
+<LI> If the binary data is produced and well formed, but doesnít contain the sought after class or interface (such as if file <FONT FACE="Courier New">CuteKitty.class</FONT> is discovered to contain class <FONT FACE="Courier New">HungryTiger</FONT> instead of <FONT FACE="Courier New">CuteKitty</FONT>) , the virtual machine throws <FONT FACE="Courier New">NoClassDefFoundError</FONT>.
+<LI> If the class doesnít contain a superclass and isnít class <FONT FACE="Courier New">Object</FONT> itself, the virtual machine throws a <FONT FACE="Courier New">ClassFormatError</FONT>. (Note that this check has to be done here, during the loading step, because that one piece of information--the symbolic reference to the superclass--is needed by the virtual machine during this step. During Step 1, the virtual machine must load in all the superclasses recursively.)
+<LI> If a class appears as its own superclass, the virtual machine throws <FONT FACE="Courier New">ClassCircularityError</FONT>.</UL>
+<P><H4>Step 2. Link and Initialize the Type and any Superclasses</H4></P>
+<P>At this point, the type being referred to by the <FONT FACE="Courier New">CONSTANT_Class_info</FONT> entry being resolved has been loaded, but not linked or initialized. In addition, if the type being resolved is a class, all its superclasses have been loaded, but not necessarily linked or initialized. Some of the superclasses may be initialized at this point, because they may have been initialized during earlier resolutions.</P>
+<P>As described in Chapter 7, &quot;The Lifetime of a Class,&quot; superclasses must be initialized before subclasses. If the virtual machine is resolving a reference to a class (not an interface), it must make sure that the superclasses have been initialized, starting with <FONT FACE="Courier New">Object</FONT> and proceeding down the inheritance hierarchy to the referenced class. (Note that this is the opposite order in which they were loaded in Step 1.) If a type hasnít yet been linked, it must be linked before it is initialized.</P>
+<P><EM>Step 2a. Verify the Type</EM></P>
+<P>Step 2 begins with the official verification phase of linking, described in Chapter 7, &quot;The Lifetime of a Class.&quot; As mentioned in Chapter 7, the process of verification may require that the virtual machine load new types. For example, when verifying a type, the Java Virtual Machine must check all a typeís superclasses and superinterfaces to make sure they are all binary compatible with the type. If the type being verified has superinterfaces, they may not yet be loaded. During Step 1, the virtual machine makes sure all the typeís superclasses are loaded, but not its superinterfaces. Thus, verification may require that a typeís superinterfaces be loaded. At this point, the superinterfaces would be loaded and possibly linked, but definitely not initialized.</P>
+<P>In addition, when verifying bytecodes, the Java Virtual Machine may need to load types to ensure the bytecodes are adhering to the semantics of the Java language. For example, if a reference to an instance of a particular class is assigned to a variable with a declared type of a different class, the virtual machine would have to load both types to make sure one is a subclass of the other. As with the superinterfaces described above, these classes would at this point be loaded and possibly linked, but definitely not initialized.</P>
+<P>If during the verification process the Java Virtual Machine uncovers trouble, it throws <FONT FACE="Courier New">VerifyError</FONT>.</P>
+<P><EM>Step 2b. Prepare the Type</EM></P>
+<P>After the official verification phase is complete, the type must be prepared. As described in Chapter 7, &quot;The Lifetime of a Class,&quot; during preparation the virtual machine allocates memory for class variables and implementation-dependent data structures such as method tables. If the virtual machine discovers during this step that a class that is not declared abstract contains an abstract method, the virtual machine throws <FONT FACE="Courier New">AbstractMethodError</FONT>.</P>
+<P><EM>Optional Step 2c. Resolve the Type</EM></P>
+<P>At this point, the type has been loaded, verified and prepared. As described in Chapter 7, &quot;The Lifetime of a Class,&quot; a Java Virtual Machine implementation may optionally resolve the type at this point. Keep in mind that at this stage in the resolution process, Steps 1, 2a, and 2b have been performed on a referenced type to resolve a <FONT FACE="Courier New">CONSTANT_Class_info</FONT> entry in the constant pool of a referencing type. Step 2c is the resolution of symbolic references contained in the referenced type, not the referencing type.</P>
+<P>For example, if the virtual machine is resolving a symbolic reference from class <FONT FACE="Courier New">Cat</FONT> to class <FONT FACE="Courier New">Mouse</FONT>, the virtual machine performs Steps 1, 2a, and 2b on class <FONT FACE="Courier New">Mouse</FONT>. At this stage of resolving the symbolic reference to <FONT FACE="Courier New">Mouse</FONT> contained in the constant pool of <FONT FACE="Courier New">Cat</FONT>, the virtual machine could optionally (as Step 2c) resolve all the symbolic references contained in the constant pool for <FONT FACE="Courier New">Mouse</FONT>. If <FONT FACE="Courier New">Mouse</FONT>ís constant pool contains a symbolic reference to class <FONT FACE="Courier New">Cheese</FONT>, for example, the virtual machine could load and optionally link (but not initialize) <FONT FACE="Courier New">Cheese</FONT> at this time. The virtual machine mustnít attempt initialize <FONT FACE="Courier New">Cheese</FONT> here because <FONT FACE="Courier New">Cheese</FONT> is not being actively used. (Of course, <FONT FACE="Courier New">Cheese</FONT> may in fact have already been actively used elsewhere, so it have would been already be loaded into this name space, linked, and initialized.)</P>
+<P>As mentioned earlier in this chapter, if an implementation does perform Step 2c at this point in the resolution process (early resolution), it must not report any errors until the symbolic references are actually used by the running program. For example, if during the resolution of <FONT FACE="Courier New">Mouse</FONT>ís constant pool, the virtual machine canít find class <FONT FACE="Courier New">Cheese</FONT>, it wonít throw a <FONT FACE="Courier New">NoClassDefFound</FONT> error until (and unless) <FONT FACE="Courier New">Cheese</FONT> is actually used by the program.</P>
+<P><EM>Step 2d. Initialize the Type</EM></P>
+<P>At this point, the type has been loaded, verified, prepared and optionally resolved. At long last, the type is ready for initialization. As defined in Chapter 7, &quot;The Lifetime of a Class,&quot; initialization consists of two steps. The initialization of the typeís superclasses in top down order, if the type has any superclasses, and the execution of the typeís class initialization method, if it has one. Step 2d just consists of executing the class initialization method, if one exists. Because Steps 2a through 2e are performed for all the referenced typeís superclasses, from the top down, Step 2d will occur for superclasses before it occurs for subclasses.</P>
+<P>If the class initialization method completes abruptly by throwing some exception that isnít a subclass of <FONT FACE="Courier New">Error</FONT>, the virtual machine throws <FONT FACE="Courier New">ExceptionInInitializerError</FONT> with the thrown exception as a parameter to the constructor. Otherwise, if the thrown exception is already a subclass of <FONT FACE="Courier New">Error</FONT>, that error is thrown. If the virtual machine canít create a new <FONT FACE="Courier New">ExceptionInInitializerError</FONT> because there isnít enough memory, it throws an <FONT FACE="Courier New">OutOfMemoryError</FONT>.</P>
+<P><EM>Step 2e. Check Access Permission</EM></P>
+<P>Lastly, after loading, linking, and initialization are complete, the virtual machine checks for access permission. If the referencing type does not have permission to access the referenced type, the virtual machine throws a <FONT FACE="Courier New">IllegalAccessError</FONT>. Step 2e is another activity that is logically part of verification, but that is performed at some other time than the official verification phase of Step 2a. In this case, the check for access permission is delayed to just after initialization. (Actually, the error can be detected at some other time, such as in Step 2a. But regardless of when or how it is detected, an access violation must be reported only after the Steps 1 and 2a through 2d have been successfully completed. As mentioned in Chapter 7, &quot;The Lifetime of a Class,&quot; the Java Virtual Machine specification says when errors should be thrown, but doesnít dictate exactly when they should be detected.) Once this check is complete, Step 2e--and the entire process of resolving the <FONT FACE="Courier New">CONSTANT_Class_info</FONT> entry--is complete.</P>
+<P>If an error occurred in any of Steps 1 through 2e, the resolution of the type fails. But if all went well up until the access permission check of Step 2e, the type is still usable in general, just not usable by the referencing type. If an error occurred before the access permission check, however, the type is unusable and must be marked as such or discarded.</P>
+<P>The way a class loader objectís <FONT FACE="Courier New">loadClass()</FONT> method accomplishes Steps 2a through 2e is by invoking <FONT FACE="Courier New">resolveClass()</FONT>, passing the reference to the <FONT FACE="Courier New">Class</FONT> instance returned by <FONT FACE="Courier New">defineClass()</FONT>. Invoking this method causes all of Steps 2a through 2e to be performed on the type and all its superclasses, starting from the furthest up superclass that hasnít yet been linked and initialized and proceeding down the inheritance hierarchy.</P>
+<P>Remember that when <FONT FACE="Courier New">defineClass()</FONT> was invoked, the virtual machine brought in the typeís superclasses by calling <FONT FACE="Courier New">loadClass()</FONT> with the <FONT FACE="Courier New">resolve</FONT> flag set to <FONT FACE="Courier New">false</FONT>. So those superclasses were only loaded. They werenít linked or initialized. Only if the superclasses were already linked and initialized before <FONT FACE="Courier New">defineClass()</FONT> was invoked would they be already linked and initialized before <FONT FACE="Courier New">resolveClass()</FONT> is invoked.</P>
+<P>Note that the <FONT FACE="Courier New">loadClass()</FONT> method should only invoke <FONT FACE="Courier New">resolveClass()</FONT> on types it imported via calling <FONT FACE="Courier New">defineClass()</FONT>, which loads a type but doesnít link or initialize it. (In addition, <FONT FACE="Courier New">loadClass()</FONT> should invoke <FONT FACE="Courier New">resolveClass()</FONT>only if the resolve parameter is <FONT FACE="Courier New">true</FONT>.) As mentioned above, <FONT FACE="Courier New">findSystemClass()</FONT> takes care of linking and initialization as well as loading. You neednít invoke <FONT FACE="Courier New">resolveClass()</FONT> on types returned by <FONT FACE="Courier New">findSystemClass()</FONT>.</P>
+<H3><P>Resolution of CONSTANT_Fieldref_info Entries</P>
+</H3><P>To resolve a constant pool entry of type <FONT FACE="Courier New">CONSTANT_Fieldref_info</FONT>, the virtual machine must first resolve the <FONT FACE="Courier New">CONSTANT_Class_info</FONT> entry specified in the <FONT FACE="Courier New">class_index</FONT> item. Therefore, any error that can be thrown because of the resolution of a <FONT FACE="Courier New">CONSTANT_Class_info</FONT> can be thrown during the resolution of a <FONT FACE="Courier New">CONSTANT_Fieldref_info</FONT>. If resolution of the <FONT FACE="Courier New">CONSTANT_Class_info</FONT> entry succeeds, the virtual machine checks to make sure the field exists and that the current class has permission to access it.</P>
+<P>If the virtual machine discovers there is no field with the proper name and type in the referenced class, the virtual machine throws <FONT FACE="Courier New">NoSuchFieldError</FONT>. Otherwise, if the field exists, but the current class doesnít have permission to access the field, the virtual machine throws <FONT FACE="Courier New">IllegalAccessError</FONT>.</P>
+<P>The virtual machine marks the entry as resolved and places a direct reference to the field in the data for the constant pool entry.</P>
+<H3><P>Resolution of CONSTANT_Methodref_info Entries</P>
+</H3><P>To resolve a constant pool entry of type <FONT FACE="Courier New">CONSTANT_Methodref_info</FONT>, the virtual machine must first resolve the <FONT FACE="Courier New">CONSTANT_Class_info</FONT> entry specified in the <FONT FACE="Courier New">class_index</FONT> item. Therefore, any error that can be thrown because of the resolution of a <FONT FACE="Courier New">CONSTANT_Class_info</FONT> can be thrown during the resolution of a <FONT FACE="Courier New">CONSTANT_Methodref_info</FONT>. If the resolution of the <FONT FACE="Courier New">CONSTANT_Class_info</FONT> entry succeeds, the virtual machine checks to make sure the method exists and that the current class has permission to access it.</P>
+<P>If the virtual machine discovers there is no method with the proper name, return type, and number and types of parameters in the referenced class, the virtual machine throws <FONT FACE="Courier New">NoSuchMethodError</FONT>. Otherwise, if the method exists, but the current class doesnít have permission to access the method, the virtual machine throws <FONT FACE="Courier New">IllegalAccessError</FONT>.</P>
+<P>The virtual machine marks the entry as resolved and places a direct reference to the method in the data for the constant pool entry.</P>
+<H3><P>Resolution of CONSTANT_InterfaceMethodref_info Entries</P>
+</H3><P>To resolve a constant pool entry of type <FONT FACE="Courier New">CONSTANT_InterfaceMethodref_info</FONT>, the virtual machine must first resolve the <FONT FACE="Courier New">CONSTANT_Class_info</FONT> entry specified in the <FONT FACE="Courier New">class_index</FONT> item. Therefore, any error that can be thrown because of the resolution of a <FONT FACE="Courier New">CONSTANT_Class_info</FONT> can be thrown during the resolution of a <FONT FACE="Courier New">CONSTANT_InterfaceMethodref_info</FONT>. If the resolution of the <FONT FACE="Courier New">CONSTANT_Class_info</FONT> entry succeeds, the virtual machine checks to make sure the method exists. (The virtual machine need not check to make sure the current class has permission to access the method, because all methods declared in interfaces are implicitly public.)</P>
+<P>If the virtual machine discovers there is no method with the proper name, return type, and number and types of parameters in the referenced interface, the virtual machine throws <FONT FACE="Courier New">NoSuchMethodError</FONT>.</P>
+<P>The virtual machine marks the entry as resolved and places a direct reference to the method in the data for the constant pool entry.</P>
+<H3><P>Resolution of CONSTANT_String_info Entries</P>
+</H3><P>To resolve an entry of type <FONT FACE="Courier New">CONSTANT_String_info</FONT>, the virtual machine must place a reference to an <I>interned</I> <FONT FACE="Courier New">String</FONT> object in the data for the constant pool entry being resolved. The <FONT FACE="Courier New">String</FONT> object (an instance of class java.lang.String) must have the character sequence specified by the <FONT FACE="Courier New">CONSTANT_Utf8_info</FONT> entry identified by the <FONT FACE="Courier New">string_index</FONT> item of the <FONT FACE="Courier New">CONSTANT_String_info</FONT>. </P>
+<P>Each Java Virtual Machine must maintain an internal list of references to <FONT FACE="Courier New">String</FONT> objects that have been &quot;interned&quot; during the course of running the application. Basically, a <FONT FACE="Courier New">String</FONT> object is said to be interned simply if it appears in the virtual machineís internal list of interned <FONT FACE="Courier New">String</FONT> objects. The point of maintaining this list is that any particular sequence of characters is guaranteed to appear in the list no more than once.</P>
+<P>To intern a sequence of characters represented by a <FONT FACE="Courier New">CONSTANT_String_info</FONT> entry, the virtual machine checks to see if the sequence of characters is already in the list of interned strings. If so, the virtual machine uses the reference to the existing, previously-interned <FONT FACE="Courier New">String</FONT> object. Otherwise, the virtual machine creates a new <FONT FACE="Courier New">String</FONT> object with the proper character sequence and adds a reference to that <FONT FACE="Courier New">String</FONT> object to the list. To complete the resolution process for a <FONT FACE="Courier New">CONSTANT_String_info</FONT> entry, the virtual machine places the reference to the interned <FONT FACE="Courier New">String</FONT> object in the data of the constant pool entry being resolved.</P>
+<P>In your Java programs, you can intern a string by invoking the <FONT FACE="Courier New">intern()</FONT> method of class <FONT FACE="Courier New">String</FONT>. All literal strings are interned via the process of resolving <FONT FACE="Courier New">CONSTANT_String_info</FONT> entries. If a string with the same sequence of Unicode characters has been previously interned, the <FONT FACE="Courier New">intern()</FONT> method returns a reference to the matching already-interned <FONT FACE="Courier New">String</FONT> object. If the <FONT FACE="Courier New">intern()</FONT> method is invoked on a <FONT FACE="Courier New">String</FONT> object that contains a sequence of characters that has not yet been interned, that object itself will be interned. The <FONT FACE="Courier New">intern()</FONT>method will return a reference to the same <FONT FACE="Courier New">String</FONT> object upon which it was invoked .</P>
+<P>Hereís an example:</P>
+<P>
+<PRE>
+<FONT FACE="Courier New">begin</FONT></P>
+<FONT SIZE="2"><P></FONT><FONT FACE="Courier New">// On CD-ROM in file linking/ex1/Example1.java
+<P>class Example1 {</P>
+<P>&nbsp;</P>
+<P>    // Assume this application is invoked with one command-line</P>
+<P>    // argument, the string "Hi!".</P>
+<P>    public static void main(String[] args) {</P>
+<P>&nbsp;</P>
+<P>        // argZero, because it is assigned a String from the command</P>
+<P>        // line, does not reference a string literal. This string</P>
+<P>        // is not interned.</P>
+<P>        String argZero = args[0];</P>
+<P>&nbsp;</P>
+<P>        // literalString, however, does reference a string literal.</P>
+<P>        // It will be assigned a reference to a String with the value</P>
+<P>        // "Hi!" by an instruction that references a</P>
+<P>        // CONSTANT_String_info entry in the constant pool. The</P>
+<P>        // "Hi!" string will be interned by this process.</P>
+<P>        String literalString = "Hi!";</P>
+<P>&nbsp;</P>
+<P>        // At this point, there are two String objects on the heap</P>
+<P>        // that have the value "Hi!". The one from arg[0], which</P>
+<P>        // isn't interned, and the one from the literal, which</P>
+<P>        // is interned.</P>
+<P>        System.out.print("Before interning argZero: ");</P>
+<P>        if (argZero == literalString) {</P>
+<P>            System.out.println("they're the same string object!");</P>
+<P>        }</P>
+<P>        else {</P>
+<P>            System.out.println("they're different string objects.");</P>
+<P>        }</P>
+<P>&nbsp;</P>
+<P>        // argZero.intern() returns the reference to the literal</P>
+<P>        // string "Hi!" that is already interned. Now both argZero</P>
+<P>        // and literalString have the same value. The non-interned</P>
+<P>        // version of "Hi!" is now available for garbage collection.</P>
+<P>        argZero = argZero.intern();</P>
+<P>        System.out.print("After interning argZero: ");</P>
+<P>        if (argZero == literalString) {</P>
+<P>            System.out.println("they're the same string object!");</P>
+<P>        }</P>
+<P>        else {</P>
+<P>            System.out.println("they're different string objects.");</P>
+<P>        }</P>
+<P>    }</P>
+<P>}</P>
+</FONT><FONT SIZE="2"><P>&nbsp;</P></FONT><FONT FACE="Courier New">end</FONT></P></PRE>
+</PRE>
+<P>When executed with the string <FONT FACE="Courier New">"Hi!"</FONT> as the first command-line argument, the <FONT FACE="Courier New">Example1</FONT> application prints the following:</P>
+<PRE><P><FONT FACE="Courier New">begin</FONT></P>
+<FONT FACE="Courier New"><P>Before interning argZero: they're different string objects.</P>
+<P>After interning argZero: they're the same string object!</P>
+</FONT><P><FONT FACE="Courier New">end</FONT></P></PRE>
+<H3><P>Resolution of Other Types of Entries</P>
+</H3><P>The CONSTANT_Integer_info, <FONT FACE="Courier New">CONSTANT_Long_info</FONT>, <FONT FACE="Courier New">CONSTANT_Float_info</FONT>, <FONT FACE="Courier New">CONSTANT_Double_info</FONT> entries contain the constant values they represent within the entry itself. These are straightforward to resolve. To resolve this kind of entry, many virtual machine implementations may not have to do anything but use the value as is. Other implementations, however, may choose to do some processing on it. For example, a virtual machine on a little-endian machine could choose to swap the byte order of the value at resolve time.</P>
+<P>Entries of type <FONT FACE="Courier New">CONSTANT_Utf8_info</FONT> and <FONT FACE="Courier New">CONSTANT_NameAndType_info</FONT> are never referred to directly by instructions. They are only referred to via other types of entries, and resolved when those referring entries are resolved.</P>
+<H3><EM><P>Compile-Time Resolution of Constants</P>
+</EM></H3><P>As mentioned in Chapter 7, &quot;The Lifetime of a Class,&quot; references to static final variables initialized to a compile-time constant are resolved at compile-time to a local copy of the constant value. This is true for constants of all the primitive types and of type <FONT FACE="Courier New">java.lang.String</FONT>.</P>
+<P>This special treatment of constants facilitates two features of the Java language. First, local copies of constant values enable static final variables to be used as <FONT FACE="Courier New">case</FONT> expressions in <FONT FACE="Courier New">switch</FONT> statements. The two virtual machine instructions that implement <FONT FACE="Courier New">switch</FONT> statements in bytecodes, <FONT FACE="Courier New">tableswitch</FONT> and <FONT FACE="Courier New">lookupswitch</FONT>, require the <FONT FACE="Courier New">case</FONT> values in-line in the bytecode stream. These instructions do not support run-time resolution of <FONT FACE="Courier New">case</FONT> values. See Chapter 16, &quot;Control Flow,&quot; for more information about these instructions.</P>
+<P>The other motivation behind the special treatment of constants is conditional compilation. Java supports conditional compilation via <FONT FACE="Courier New">if</FONT> statements whose expressions resolve to a compile-time constant. Hereís an example:</P>
+<PRE><P><FONT FACE="Courier New">begin</FONT></P>
+<FONT SIZE="2"><P></FONT><FONT FACE="Courier New">// On CD-ROM in file linking/ex2/AntHill.java
+<P>class AntHill {</P>
+<P>&nbsp;</P>
+<P>    static final boolean debug = true;</P>
+<P>}</P>
+</FONT><FONT SIZE="2"><P>&nbsp;</P></P>
+<P></FONT><FONT FACE="Courier New">// On CD-ROM in file linking/ex2/Example2.java
+<P>class Example2 {</P>
+<P>&nbsp;</P>
+<P>    public static void main(String[] args) {</P>
+<P>        if (AntHill.debug) {</P>
+<P>            System.out.println("Debug is true!");</P>
+<P>        }</P>
+<P>    }</P>
+<P>}</P>
+</FONT><FONT SIZE="2"><P>&nbsp;</P></FONT><FONT FACE="Courier New">end</FONT></P></PRE>
+<P>Because of the special treatment of primitive constants, the Java compiler can decide whether or not to include the body of the <FONT FACE="Courier New">if</FONT> statement in <FONT FACE="Courier New">Example2.main()</FONT> depending upon the value of <FONT FACE="Courier New">AntHill.debug</FONT>. Because <FONT FACE="Courier New">AntHill.debug</FONT> is <FONT FACE="Courier New">true</FONT> in this case, <FONT FACE="Courier New">javac</FONT> generates bytecodes for <FONT FACE="Courier New">Example2</FONT>ís <FONT FACE="Courier New">main()</FONT> method that include the body of the <FONT FACE="Courier New">if</FONT> statement, but not a check of <FONT FACE="Courier New">AntHill.debug</FONT>ís value. The constant pool of <FONT FACE="Courier New">Example2</FONT> has no symbolic reference to class <FONT FACE="Courier New">AntHill</FONT>. Here are the bytecodes for <FONT FACE="Courier New">main()</FONT>:</P>
+<PRE><P><FONT FACE="Courier New">begin</FONT></P>
+<FONT SIZE="2"><P></FONT><FONT FACE="Courier New">              // Push objref from System.out
+<P>0 getstatic #8 &lt;Field java.io.PrintStream out</FONT></P>
+<P>              // Push objref to literal string "Debug is true!"</P>
+<P>3 ldc #1 &lt;String "Debug is true!"</FONT></P>
+<P>              // Pop objref (to a String), pop objref(to</P>
+<P>              // System.out), invoke println() on System.out</P>
+<P>              // passing the string as the only parameter:</P>
+<P>              // System.out.println("Debug is true!");</P>
+<P>5 invokevirtual #9 &lt;Method void println(java.lang.String)</FONT></P>
+<P>8 return      // return void</P>
+</FONT><FONT SIZE="2"><P>&nbsp;</P></FONT><FONT FACE="Courier New">end</FONT></P></PRE>
+<P>If the reference to <FONT FACE="Courier New">AntHill.debug</FONT> were resolved at run-time, the compiler would always need to include a check of <FONT FACE="Courier New">AntHill.debug</FONT>ís value and the body of the <FONT FACE="Courier New">if</FONT> statement just in case value of <FONT FACE="Courier New">AntHill.debug</FONT> ever changed. The value of <FONT FACE="Courier New">AntHill.debug</FONT> canít change after it is compiled, of course, because it is declared as final. Still, you could change the source code of <FONT FACE="Courier New">AntHill</FONT> and recompile <FONT FACE="Courier New">AntHill</FONT>, but not recompile <FONT FACE="Courier New">Example2</FONT>.</P>
+<P>Because the reference to <FONT FACE="Courier New">AntHill.debug</FONT> is resolved at compile-time the compiler can conditionally compile out the body of the <FONT FACE="Courier New">if</FONT> statement if <FONT FACE="Courier New">AntHill.debug</FONT> is discovered to be <FONT FACE="Courier New">false</FONT>. Note that this means you canít change the behavior of the <FONT FACE="Courier New">Example2</FONT> application just be setting <FONT FACE="Courier New">AntHill</FONT> to <FONT FACE="Courier New">false</FONT> and recompiling only <FONT FACE="Courier New">AntHill</FONT>. You have to recompile <FONT FACE="Courier New">Example2</FONT> as well. </P>
+<P><FONT FACE="Courier New">Example3</FONT>, shown below, is <FONT FACE="Courier New">Example2</FONT> with its name changed to <FONT FACE="Courier New">Example3</FONT> and compiled with an <FONT FACE="Courier New">AntHill</FONT> that has <FONT FACE="Courier New">debug</FONT> set to <FONT FACE="Courier New">false</FONT>:</P>
+<PRE><P><FONT FACE="Courier New">begin</FONT></P>
+<FONT SIZE="2"><P></FONT><FONT FACE="Courier New">// On CD-ROM in file linking/ex3/AntHill.java
+<P>class AntHill {</P>
+<P>&nbsp;</P>
+<P>    static final boolean debug = false;</P>
+<P>}</P>
+</FONT><FONT SIZE="2"><P>&nbsp;</P></P>
+<P></FONT><FONT FACE="Courier New">// On CD-ROM in file linking/ex3/Example3.java
+<P>class Example3 {</P>
+<P>&nbsp;</P>
+<P>    public static void main(String[] args) {</P>
+<P>        if (AntHill.debug) {</P>
+<P>            System.out.println("Debug is true!");</P>
+<P>        }</P>
+<P>    }</P>
+<P>}</P>
+</FONT><FONT SIZE="2"><P>&nbsp;</P></FONT><FONT FACE="Courier New">end</FONT></P></PRE>
+<P>Here are the bytecodes generated by <FONT FACE="Courier New">javac</FONT> for <FONT FACE="Courier New">Example3</FONT>ís <FONT FACE="Courier New">main()</FONT> method:</P>
+<PRE><P><FONT FACE="Courier New">begin</FONT></P>
+<FONT SIZE="2"><P></FONT><FONT FACE="Courier New">0 return     // return void
+</FONT><FONT SIZE="2"><P>&nbsp;</P></FONT><FONT FACE="Courier New">end</FONT></P></PRE>
+<P>As you can see, the Java compiler has brazenly eliminated the entire <FONT FACE="Courier New">if</FONT> statement found in <FONT FACE="Courier New">Example3.main()</FONT>. There is not even a hint of the <FONT FACE="Courier New">println()</FONT> invocation in this very short bytecode sequence.</P>
+<H3><EM><P>Direct References</P>
+</EM></H3><P>The ultimate goal of constant pool resolution is to replace a symbolic reference with a direct reference. The form of symbolic references is well-defined in Chapter 6, &quot;The Java Class File,&quot; but what form do direct references take? As you might expect, the form of direct references is yet another decision of the designers of individual Java Virtual Machine implementations. Nevertheless, there are some characteristics likely to be common among most implementations.</P>
+<P>Direct references to types, class variables, and class methods are likely native pointers into the method area. A direct reference to a type can simply point to the implementation-specific data structure in the method area that holds the type data. A direct reference to a class variable can point to the class variableís value stored in the method area. A direct reference to a class method can point to a data structure in the method area that contains the data needed to invoke the method. For example, the data structure for a class method could include information such as whether or not the method is native. If the method is native, the data structure could include a function pointer to the dynamically linked native method implementation. If the method is not native, the data structure could include the methodís bytecodes, max_stack, max_locals, and so on. If there is a just-in-time-compiled version of the method, the data structure could include a pointer to that just-in-time-compiled native code.</P>
+<P>Direct references to instance variables and instance methods are offsets. A direct reference to an instance variable is likely the offset from the start of the objectís image to the location of the instance variable. A direct reference to an instance method is likely an offset into a method table.</P>
+<P>Using offset to represent direct references to instance variables and instance methods depends on a predictable ordering of the fields in a classís object image and the methods in a classís method table. Although implementation designers may choose any way of placing instance variables into an object image or methods into a method table, they will almost certainly use the same way for all types. Therefore, in any one implementation, the ordering of fields in an object and methods in a method table is defined and predictable.</P>
+<P>As an example, consider this hierarchy of three classes and one interface:</P>
+<PRE><P><FONT FACE="Courier New">begin</FONT></P>
+<FONT SIZE="2"><P></FONT><FONT FACE="Courier New">// On CD-ROM in file linking/ex4/Friendly.java
+<P>interface Friendly {</P>
+<P>&nbsp;</P>
+<P>    void sayHello();</P>
+<P>    void sayGoodbye();</P>
+<P>}</P>
+</FONT><FONT SIZE="2"><P>&nbsp;</P></P>
+<P></FONT><FONT FACE="Courier New">// On CD-ROM in file linking/ex4/Dog.java
+<P>class Dog {</P>
+<P>&nbsp;</P>
+<P>    // How many times this dog wags its tail when</P>
+<P>    // saying hello.</P>
+<P>    private int wagCount = ((int) (Math.random() * 5.0)) + 1;</P>
+<P>&nbsp;</P>
+<P>    void sayHello() {</P>
+<P>&nbsp;</P>
+<P>        System.out.print("Wag");</P>
+<P>        for (int i = 0; i &lt; wagCount; ++i) {</P>
+<P>            System.out.print(", wag");</P>
+<P>        }</P>
+<P>        System.out.println(".");</P>
+<P>    }</P>
+<P>&nbsp;</P>
+<P>    public String toString() {</P>
+<P>&nbsp;</P>
+<P>        return "Woof!";</P>
+<P>    }</P>
+<P>}</P>
+</FONT><FONT SIZE="2"><P>&nbsp;</P></P>
+<P></FONT><FONT FACE="Courier New">// On CD-ROM in file linking/ex4/CockerSpaniel.java
+<P>class CockerSpaniel extends Dog implements Friendly {</P>
+<P>&nbsp;</P>
+<P>    // How many times this Cocker Spaniel woofs when saying hello.</P>
+<P>    private int woofCount = ((int) (Math.random() * 4.0)) + 1;</P>
+<P>&nbsp;</P>
+<P>    // How many times this Cocker Spaniel wimpers when saying</P>
+<P>    // goodbye.</P>
+<P>    private int wimperCount = ((int) (Math.random() * 3.0)) + 1;</P>
+<P>&nbsp;</P>
+<P>    public void sayHello() {</P>
+<P>&nbsp;</P>
+<P>        // Wag that tail a few times.</P>
+<P>        super.sayHello();</P>
+<P>&nbsp;</P>
+<P>        System.out.print("Woof");</P>
+<P>        for (int i = 0; i &lt; woofCount; ++i) {</P>
+<P>            System.out.print(", woof");</P>
+<P>        }</P>
+<P>        System.out.println("!");</P>
+<P>    }</P>
+<P>&nbsp;</P>
+<P>    public void sayGoodbye() {</P>
+<P>&nbsp;</P>
+<P>        System.out.print("Wimper");</P>
+<P>        for (int i = 0; i &lt; wimperCount; ++i) {</P>
+<P>            System.out.print(", wimper");</P>
+<P>        }</P>
+<P>        System.out.println(".");</P>
+<P>    }</P>
+<P>}</P>
+</FONT><FONT SIZE="2"><P>&nbsp;</P></P>
+<P></FONT><FONT FACE="Courier New">// On CD-ROM in file linking/ex4/Cat.java
+<P>class Cat implements Friendly {</P>
+<P>&nbsp;</P>
+<P>&nbsp;</P>
+<P>    public void eat() {</P>
+<P>&nbsp;</P>
+<P>        System.out.println("Chomp, chomp, chomp.");</P>
+<P>    }</P>
+<P>&nbsp;</P>
+<P>    public void sayHello() {</P>
+<P>&nbsp;</P>
+<P>        System.out.println("Rub, rub, rub.");</P>
+<P>    }</P>
+<P>&nbsp;</P>
+<P>    public void sayGoodbye() {</P>
+<P>&nbsp;</P>
+<P>        System.out.println("Scamper.");</P>
+<P>    }</P>
+<P>&nbsp;</P>
+<P>    protected void finalize() {</P>
+<P>&nbsp;</P>
+<P>        System.out.println("Meow!");</P>
+<P>    }</P>
+<P>}</P>
+</FONT><FONT SIZE="2"><P>&nbsp;</P></FONT><FONT FACE="Courier New">end</FONT></P></PRE>
+<P>Assume these types are loaded into a Java Virtual Machine that organizes objects by placing the instance variables declared in superclasses into the object image before those declared in subclasses, and by placing the instance variables for each individual class in their order of appearance in the class file. Assuming there are no instance variables in class <FONT FACE="Courier New">Object</FONT>, the object images for <FONT FACE="Courier New">Dog</FONT>, <FONT FACE="Courier New">CockerSpaniel</FONT>, and <FONT FACE="Courier New">Cat</FONT> would appear as shown in Figure 8-1.</P>
+<P><IMG SRC="fig8-1.gif" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/venners/images/fig8-1.gif" ALT="Figure 8-1"></P>
+
+<P>In this figure, the object image for <FONT FACE="Courier New">CockerSpaniel</FONT> best illustrates this particular virtual machineís approach to laying out objects. The instance variable for <FONT FACE="Courier New">Dog</FONT>, the superclass, appears before the instance variables for <FONT FACE="Courier New">CockerSpaniel</FONT>, the subclass. The instance variables of <FONT FACE="Courier New">CockerSpaniel</FONT> appear in order of declaration: <FONT FACE="Courier New">woofCount</FONT> first, then <FONT FACE="Courier New">wimperCount</FONT>.</P>
+<P>Note that the <FONT FACE="Courier New">wagCount</FONT> instance variable appears at offset one in both <FONT FACE="Courier New">Dog</FONT> and <FONT FACE="Courier New">CockerSpaniel</FONT>. In this implementation of the Java Virtual Machine, a symbolic reference to the <FONT FACE="Courier New">wagCount</FONT> field of class <FONT FACE="Courier New">Dog</FONT> would be resolved to direct reference that is an offset of one. Regardless of whether the actual object being referred to was a <FONT FACE="Courier New">Dog</FONT>, a <FONT FACE="Courier New">CockerSpaniel</FONT>, or any other subclass of <FONT FACE="Courier New">Dog</FONT>, the <FONT FACE="Courier New">wagCount</FONT> instance variable would always appear at offset one in the object image.</P>
+<P>A similar pattern emerges in method tables. A method table entry is associated in some way with data structures in the method area that contain sufficient data to enable the virtual machine to invoke the method. Assume that in the Java Virtual Machine implementation being described here, method tables are arrays of native pointers into the method area. The data structures that the method table entries point to are similar to the data structures described above for class methods. Assume that the particular Java Virtual Machine implementation that loads these types organizes its method tables by placing methods for superclasses into the method table before those for subclasses, and by placing pointers for each class in the order the methods appear in the class file. The exception to the ordering is that methods that methods overridden by a subclass appear in the slot where the overridden method first appears in a superclass.</P>
+<P>The way this virtual machine would organize the method table for class <FONT FACE="Courier New">Dog</FONT> is shown in Figure 8-2. In this figure, the method table entries that point to methods defined in class <FONT FACE="Courier New">Object</FONT> are shown in dark gray. Entries that point to methods defined in <FONT FACE="Courier New">Dog</FONT> are shown in light gray.</P>
+<P><IMG SRC="fig8-2.gif" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/venners/images/fig8-2.gif" ALT="Figure 8-2"></P>
+
+<P>Note that only non-private instance methods appear in this method table. Class methods, which are invoked via the <FONT FACE="Courier New">invokestatic</FONT> instruction, need not appear here, because they are statically bound and donít need the extra indirection of a method table. Private methods and instance initialization methods need not appear here because they are invoked via the <FONT FACE="Courier New">invokespecial</FONT> instruction and are therefore statically bound. Only methods that are invoked with <FONT FACE="Courier New">invokevirtual</FONT> or <FONT FACE="Courier New">invokeinterface</FONT> appear in this method table. See Chapter 19, &quot;Method Invocation and Return,&quot; for a discussion of the different invocation instructions.</P>
+<P>By looking at the source code, you can see that <FONT FACE="Courier New">Dog</FONT> overrides the <FONT FACE="Courier New">toString()</FONT> method defined in class <FONT FACE="Courier New">Object</FONT>. In <FONT FACE="Courier New">Dog</FONT>ís method table, the <FONT FACE="Courier New">toString()</FONT> method appears only once, in the same slot (offset seven) in which it appears in the method table for <FONT FACE="Courier New">Object</FONT>. The pointer residing at offset seven in <FONT FACE="Courier New">Dog</FONT>ís method table points to the data for <FONT FACE="Courier New">Dog</FONT>ís implementation of <FONT FACE="Courier New">toString()</FONT>. In this implementation of the Java Virtual Machine, the pointer to the method data for <FONT FACE="Courier New">toString()</FONT> will appear at offset seven for every method table of every class.</P>
+<P>Below the methods declared in <FONT FACE="Courier New">Object</FONT>, which appear first in this method table, come the methods declared in <FONT FACE="Courier New">Dog</FONT> that donít override any method in <FONT FACE="Courier New">Object</FONT>. There is only one such method, <FONT FACE="Courier New">sayHello()</FONT>, which has the method table offset 11. All of <FONT FACE="Courier New">Dog</FONT>ís subclasses will either inherit or override this implementation of <FONT FACE="Courier New">sayHello()</FONT>, and some version of <FONT FACE="Courier New">sayHello()</FONT> will always appear at offset 11 of any subclass of <FONT FACE="Courier New">Dog</FONT>. </P>
+<P>Figure 8-3 shows the method table for <FONT FACE="Courier New">CockerSpaniel</FONT>. Note that because <FONT FACE="Courier New">CockerSpaniel</FONT> declares <FONT FACE="Courier New">sayHello()</FONT> and <FONT FACE="Courier New">sayGoodbye()</FONT>, the pointers for those methods point to the data for <FONT FACE="Courier New">CockerSpaniel</FONT>ís implementation of those methods. Because <FONT FACE="Courier New">CockerSpaniel</FONT> inherits <FONT FACE="Courier New">Dog</FONT>ís implementation of <FONT FACE="Courier New">toString()</FONT>, the pointer for that method (which is still at offset seven) points the data for <FONT FACE="Courier New">Dog</FONT>ís implementation of that method. <FONT FACE="Courier New">CockerSpaniel</FONT> inherits all other methods from <FONT FACE="Courier New">Object</FONT>, so the pointers for those methods point directly into <FONT FACE="Courier New">Object</FONT>ís type data. Note also that <FONT FACE="Courier New">sayHello()</FONT> is sitting at offset eleven, the same offset it has in <FONT FACE="Courier New">Dog</FONT>ís method table.</P>
+<P><IMG SRC="fig8-3.gif" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/venners/images/fig8-3.gif" ALT="Figure 8-3"></P>
+
+<P>When the virtual machine resolves a symbolic reference (a <FONT FACE="Courier New">CONSTANT_Methodref_info</FONT> entry) to the <FONT FACE="Courier New">toString()</FONT> method of any class, the direct reference is method table offset seven. When the virtual machine resolves a symbolic reference to the <FONT FACE="Courier New">sayHello()</FONT> method of <FONT FACE="Courier New">Dog</FONT> or any of its subclasses, the direct reference is method table offset eleven. When the virtual machine resolves a symbolic reference to the <FONT FACE="Courier New">sayGoodbye()</FONT> method of <FONT FACE="Courier New">CockerSpaniel</FONT> or any of its subclasses, the direct reference is the method table offset twelve.</P>
+<P>Once a symbolic reference to an instance method is resolved to a method table offset, the virtual machine must still actually invoke the method. To invoke an instance method, the virtual machine goes through the object to get at the method table for the objectís class. As mentioned in Chapter 5, &quot;The Java Virtual Machine,&quot; given a reference to an object, every virtual machine implementation must have some way to get at the type data for that objectís class. In addition, given a reference to an object, the method table (a part of the type data for the objectís class) is usually very quickly accessible. (One potential scheme is shown in Figure 5-7.) Once the virtual machine has the method table for the objectís class, it uses the offset to find the actual method to invoke. Voila!</P>
+<P>The virtual machine can always depend on method table offsets when it has a reference of a class type (a <FONT FACE="Courier New">CONSTANT_Methodref_info</FONT> entry). If the <FONT FACE="Courier New">sayHello()</FONT> method appears in offset seven in class <FONT FACE="Courier New">Dog</FONT>, it will appear in offset seven in any subclass of <FONT FACE="Courier New">Dog</FONT>. The same is not true, however, if the reference is of an interface type (a <FONT FACE="Courier New">CONSTANT_InterfaceMethodref_info</FONT> entry). With direct references to instance methods accessed through an interface reference there is no guaranteed method table offset. Consider the method table for class <FONT FACE="Courier New">Cat</FONT>, shown in Figure 8-4.</P>
+<P><IMG SRC="fig8-4.gif" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/venners/images/fig8-4.gif" ALT="Figure 8-4"></P>
+
+<P>Note that both <FONT FACE="Courier New">Cat</FONT> and <FONT FACE="Courier New">CockerSpaniel</FONT> implement the <FONT FACE="Courier New">Friendly</FONT> interface. A variable of type <FONT FACE="Courier New">Friendly</FONT> could hold a reference to a <FONT FACE="Courier New">Cat</FONT> object or a <FONT FACE="Courier New">CockerSpaniel</FONT> object. With that reference, your program could invoke <FONT FACE="Courier New">sayHello()</FONT> or <FONT FACE="Courier New">sayGoodbye()</FONT> on a <FONT FACE="Courier New">Cat</FONT>, a <FONT FACE="Courier New">CockerSpaniel</FONT>, or any other object whose class implements the <FONT FACE="Courier New">Friendly</FONT> interface. The <FONT FACE="Courier New">Example4</FONT> application demonstrates this:</P>
+<PRE><P><FONT FACE="Courier New">begin</FONT></P>
+<FONT SIZE="2"><P></FONT><FONT FACE="Courier New">// On CD-ROM in file linking/ex4/Example4.java
+<P>class Example4 {</P>
+<P>&nbsp;</P>
+<P>    public static void main(String[] args) {</P>
+<P>&nbsp;</P>
+<P>        Dog dog = new CockerSpaniel();</P>
+<P>&nbsp;</P>
+<P>        dog.sayHello();</P>
+<P>&nbsp;</P>
+<P>        Friendly fr = (Friendly) dog;</P>
+<P>&nbsp;</P>
+<P>        // Invoke sayGoodbye() on a CockerSpaniel object through a</P>
+<P>        // reference of type Friendly.</P>
+<P>        fr.sayGoodbye();</P>
+<P>&nbsp;</P>
+<P>        fr = new Cat();</P>
+<P>&nbsp;</P>
+<P>        // Invoke sayGoodbye() on a Cat object through a reference</P>
+<P>        // of type Friendly.</P>
+<P>        fr.sayGoodbye();</P>
+<P>    }</P>
+<P>}</P>
+<P>&nbsp;</P>
+</FONT><FONT SIZE="2"><P>&nbsp;</P></FONT><FONT FACE="Courier New">end</FONT></P></PRE>
+<P>In <FONT FACE="Courier New">Example4</FONT>, local variable <FONT FACE="Courier New">fr</FONT> invokes <FONT FACE="Courier New">sayGoodbye()</FONT> on both a <FONT FACE="Courier New">CockerSpaniel</FONT> object and a <FONT FACE="Courier New">Cat</FONT> object. The same constant pool entry, a <FONT FACE="Courier New">CONSTANT_InterfaceMethodref_info</FONT> entry, is used to invoke this method on both objects. But when the virtual machine resolves the symbolic reference to <FONT FACE="Courier New">sayHello()</FONT>, it canít just save a method table offset and expect that offset to always work in future uses of the constant pool entry.</P>
+<P>The trouble is that classes that implement the <FONT FACE="Courier New">Friendly</FONT> interface arenít guaranteed to have a common superclass that also implements <FONT FACE="Courier New">Friendly</FONT>. As a result, the methods declared in <FONT FACE="Courier New">Friendly</FONT> arenít guaranteed to be in the same place in all method tables. If you compare the method table for <FONT FACE="Courier New">CockerSpaniel</FONT> against the method table for <FONT FACE="Courier New">Cat</FONT>, for example, youíll see that in <FONT FACE="Courier New">CockerSpaniel</FONT>, <FONT FACE="Courier New">sayHello()</FONT>ís pointer occupies offset 11. But in <FONT FACE="Courier New">Cat</FONT>, <FONT FACE="Courier New">sayHello()</FONT> occupies offset 12. Likewise, <FONT FACE="Courier New">CockerSpaniel</FONT>ís <FONT FACE="Courier New">sayGoodbye()</FONT> method pointer resides in offset 12, but <FONT FACE="Courier New">Cat</FONT>ís <FONT FACE="Courier New">sayGoodbye()</FONT> method pointer resides at offset 13.</P>
+<P>Thus, whenever the Java Virtual Machine invokes a method from an interface reference, it must search the method table of the objectís class until it finds the appropriate method. This is why invoking instance methods on interface references can be significantly slower than invoking instance methods on class references. Virtual machine implementations can attempt to be smart, of course, about how they search through a method table. For example, an implementation could save the last index at which they found the method and try there first the next time. Or an implementation could build data structures during preparation that help them search through method tables given an interface reference. Nevertheless, invoking a method given an interface reference will almost certainly be to some extent slower than invoking a method given a class reference.</P>
+<H3><EM><P>_quick Instructions</P>
+</EM></H3><P>The Java Virtual Machine specification describes a technique used by Sunís Java Virtual Machine implementation to speed up the interpretation of bytecodes. This technique is likely common to many Java Virtual Machine implementations, because many implementations are based on Sunís code. In this scheme, opcodes that refer to constant pool entries are replaced by a &quot;<FONT FACE="Courier New">_quick</FONT>&quot; opcode when the constant pool entry is resolved. When the virtual machine encounters a <FONT FACE="Courier New">_quick</FONT> instruction, it knows the constant pool entry is already resolved and can therefore execute the instruction faster.</P>
+<P>The core instruction set of the Java Virtual Machine consists of 200 single-byte opcodes, all of which are described in Appendix A, &quot;Instruction Set by Opcode Mnemonic.&quot; These 200 opcodes are the only opcodes you will ever see in class files. Sunís virtual machine implementation uses another 25 single-byte opcodes internally, the &quot;<FONT FACE="Courier New">_quick</FONT>&quot; opcodes.</P>
+<P>For example, when Sunís virtual machine resolves a constant pool entry referred to by an <FONT FACE="Courier New">ldc</FONT> instruction (opcode value 0x12), it replaces the <FONT FACE="Courier New">ldc</FONT> opcode byte in the bytecode stream with an <FONT FACE="Courier New">ldc_quick</FONT> instruction (opcode value 0xcb). This technique is part of the process of replacing a symbolic reference with a direct reference in Sunís virtual machine.</P>
+<P>For some instructions, in addition to overwriting the normal opcode with a <FONT FACE="Courier New">_quick</FONT> opcode, the virtual machine overwrites the operands of the instruction with data that represents the direct reference. For example, in addition to replacing an <FONT FACE="Courier New">invokevirtual</FONT> opcode with an <FONT FACE="Courier New">invokevirtual_quick</FONT>, the virtual machine also puts the method table offset and the number of arguments into the two operand bytes that follow every <FONT FACE="Courier New">invokevirtual</FONT> instruction. Placing the method table offset in the bytecode stream following the <FONT FACE="Courier New">invokevirtual_quick</FONT> opcode saves the virtual machine the time it would take to look up the offset in the resolved constant pool entry.</P>
+<H3><EM><P>Example: The Linking of the Salutation Application</P>
+</EM></H3><P>As an example of Javaís linking model, consider the <FONT FACE="Courier New">Salutation</FONT> application shown below:</P>
+<PRE><P><FONT FACE="Courier New">begin</FONT></P>
+<FONT SIZE="2"><P></FONT><FONT FACE="Courier New">// On CD-ROM in file linking/ex5/Salutation.java
+<P>class Salutation {</P>
+<P>&nbsp;</P>
+<P>    private static final String hello = "Hello, world!";</P>
+<P>    private static final String greeting = "Greetings, planet!";</P>
+<P>    private static final String salutation = "Salutations, orb!";</P>
+<P>&nbsp;</P>
+<P>    private static int choice = (int) (Math.random() * 2.99);</P>
+<P>&nbsp;</P>
+<P>    public static void main(String[] args) {</P>
+<P>&nbsp;</P>
+<P>        String s = hello;</P>
+<P>        if (choice == 1) {</P>
+<P>            s = greeting;</P>
+<P>        }</P>
+<P>        else if (choice == 2) {</P>
+<P>            s = salutation;</P>
+<P>        }</P>
+<P>&nbsp;</P>
+<P>        System.out.println(s);</P>
+<P>    }</P>
+<P>}</P>
+</FONT><FONT SIZE="2"><P>&nbsp;</P></FONT><FONT FACE="Courier New">end</FONT></P></PRE>
+<P>Assume that you have asked a Java Virtual Machine to run <FONT FACE="Courier New">Salutation</FONT>. When the virtual machine starts, it attempts to invoke the <FONT FACE="Courier New">main()</FONT> method of <FONT FACE="Courier New">Salutation</FONT>. It quickly realizes, however, that it canít invoke <FONT FACE="Courier New">main()</FONT>. The invocation of a method declared in a class is an active use of that class, which is not allowed until the class is initialized. Thus, before the virtual machine can invoke <FONT FACE="Courier New">main()</FONT>, it must initialize <FONT FACE="Courier New">Salutation</FONT>. And before it can initialize <FONT FACE="Courier New">Salutation</FONT>, it must load and link <FONT FACE="Courier New">Salutation</FONT>. So, the virtual machine hands the fully qualified name of <FONT FACE="Courier New">Salutation</FONT> to the primordial class loader, which retrieves the binary form of the class, parses the binary data into internal data structures, and creates an instance of <FONT FACE="Courier New">java.lang.Class</FONT>. The constant pool for <FONT FACE="Courier New">Salutation</FONT> is shown in Table 8-1.</P>
+<P>Table 8-1. Class <FONT FACE="Courier New">Salutation</FONT>ís constant pool</P>
+<TABLE WIDTH="500">
+<TR><TD VALIGN="TOP"><STRONG>Index</STRONG></TD><TD VALIGN="TOP"><STRONG>Type</STRONG></TD><TD VALIGN="TOP"><STRONG>Value</STRONG></TD></TR>
+<TR><TD VALIGN="TOP">1</TD><TD VALIGN="TOP"> <FONT FACE="Courier New">CONSTANT_String_info</FONT></TD><TD VALIGN="TOP">30</TD></TR>
+<TR><TD VALIGN="TOP">2</TD><TD VALIGN="TOP"> <FONT FACE="Courier New">CONSTANT_String_info</FONT></TD><TD VALIGN="TOP">31</TD></TR>
+<TR><TD VALIGN="TOP">3</TD><TD VALIGN="TOP"> <FONT FACE="Courier New">CONSTANT_String_info</FONT></TD><TD VALIGN="TOP">39</TD></TR>
+<TR><TD VALIGN="TOP">4</TD><TD VALIGN="TOP"> <FONT FACE="Courier New">CONSTANT_Class_info</FONT></TD><TD VALIGN="TOP">37</TD></TR>
+<TR><TD VALIGN="TOP">5</TD><TD VALIGN="TOP"> <FONT FACE="Courier New">CONSTANT_Class_info</FONT></TD><TD VALIGN="TOP">44</TD></TR>
+<TR><TD VALIGN="TOP">6</TD><TD VALIGN="TOP"> <FONT FACE="Courier New">CONSTANT_Class_info</FONT></TD><TD VALIGN="TOP">45</TD></TR>
+<TR><TD VALIGN="TOP">7</TD><TD VALIGN="TOP"> <FONT FACE="Courier New">CONSTANT_Class_info</FONT></TD><TD VALIGN="TOP">46</TD></TR>
+<TR><TD VALIGN="TOP">8</TD><TD VALIGN="TOP"> <FONT FACE="Courier New">CONSTANT_Class_info</FONT></TD><TD VALIGN="TOP">47</TD></TR>
+<TR><TD VALIGN="TOP">9</TD><TD VALIGN="TOP"> <FONT FACE="Courier New">CONSTANT_Methodref_info</FONT></TD><TD VALIGN="TOP">7, 16</TD></TR>
+<TR><TD VALIGN="TOP">10</TD><TD VALIGN="TOP"> <FONT FACE="Courier New">CONSTANT_Fieldref_info</FONT></TD><TD VALIGN="TOP">4, 17</TD></TR>
+<TR><TD VALIGN="TOP">11</TD><TD VALIGN="TOP"> <FONT FACE="Courier New">CONSTANT_Fieldref_info</FONT></TD><TD VALIGN="TOP">8, 18</TD></TR>
+<TR><TD VALIGN="TOP">12</TD><TD VALIGN="TOP"> <FONT FACE="Courier New">CONSTANT_Methodref_info</FONT></TD><TD VALIGN="TOP">5, 19</TD></TR>
+<TR><TD VALIGN="TOP">13</TD><TD VALIGN="TOP"> <FONT FACE="Courier New">CONSTANT_Methodref_info</FONT></TD><TD VALIGN="TOP">6, 20</TD></TR>
+<TR><TD VALIGN="TOP">14</TD><TD VALIGN="TOP"> <FONT FACE="Courier New">CONSTANT_Double_info</FONT></TD><TD VALIGN="TOP">2.99</TD></TR>
+<TR><TD VALIGN="TOP">16</TD><TD VALIGN="TOP"> <FONT FACE="Courier New">CONSTANT_NameAndType_info</FONT></TD><TD VALIGN="TOP">26, 22</TD></TR>
+<TR><TD VALIGN="TOP">17</TD><TD VALIGN="TOP"> <FONT FACE="Courier New">CONSTANT_NameAndType_info</FONT></TD><TD VALIGN="TOP">41, 32</TD></TR>
+<TR><TD VALIGN="TOP">18</TD><TD VALIGN="TOP"> <FONT FACE="Courier New">CONSTANT_NameAndType_info</FONT></TD><TD VALIGN="TOP">49, 34</TD></TR>
+<TR><TD VALIGN="TOP">19</TD><TD VALIGN="TOP"> <FONT FACE="Courier New">CONSTANT_NameAndType_info</FONT></TD><TD VALIGN="TOP">50, 23</TD></TR>
+<TR><TD VALIGN="TOP">20</TD><TD VALIGN="TOP"> <FONT FACE="Courier New">CONSTANT_NameAndType_info</FONT></TD><TD VALIGN="TOP">51, 21</TD></TR>
+<TR><TD VALIGN="TOP">21</TD><TD VALIGN="TOP"> <FONT FACE="Courier New">CONSTANT_Utf8_info</FONT></TD><TD VALIGN="TOP"><FONT FACE="Courier New">"()D"</FONT></TD></TR>
+<TR><TD VALIGN="TOP">22</TD><TD VALIGN="TOP"> <FONT FACE="Courier New">CONSTANT_Utf8_info</FONT></TD><TD VALIGN="TOP"><FONT FACE="Courier New">"()V"</FONT></TD></TR>
+<TR><TD VALIGN="TOP">23</TD><TD VALIGN="TOP"> <FONT FACE="Courier New">CONSTANT_Utf8_info</FONT></TD><TD VALIGN="TOP"><FONT FACE="Courier New">"(Ljava/lang/String;)V"</FONT></TD></TR>
+<TR><TD VALIGN="TOP">24</TD><TD VALIGN="TOP"> <FONT FACE="Courier New">CONSTANT_Utf8_info</FONT></TD><TD VALIGN="TOP"><FONT FACE="Courier New">"([Ljava/lang/String;)V"</FONT></TD></TR>
+<TR><TD VALIGN="TOP">25</TD><TD VALIGN="TOP"> <FONT FACE="Courier New">CONSTANT_Utf8_info</FONT></TD><TD VALIGN="TOP"><FONT FACE="Courier New">"&lt;clinit</FONT>"</FONT></TD></TR>
+<TR><TD VALIGN="TOP">26</TD><TD VALIGN="TOP"> <FONT FACE="Courier New">CONSTANT_Utf8_info</FONT></TD><TD VALIGN="TOP"><FONT FACE="Courier New">"&lt;init</FONT>"</FONT></TD></TR>
+<TR><TD VALIGN="TOP">27</TD><TD VALIGN="TOP"> <FONT FACE="Courier New">CONSTANT_Utf8_info</FONT></TD><TD VALIGN="TOP"><FONT FACE="Courier New">"Code"</FONT></TD></TR>
+<TR><TD VALIGN="TOP">28</TD><TD VALIGN="TOP"> <FONT FACE="Courier New">CONSTANT_Utf8_info</FONT></TD><TD VALIGN="TOP"><FONT FACE="Courier New">"ConstantValue"</FONT></TD></TR>
+<TR><TD VALIGN="TOP">29</TD><TD VALIGN="TOP"> <FONT FACE="Courier New">CONSTANT_Utf8_info</FONT></TD><TD VALIGN="TOP"><FONT FACE="Courier New">"Exceptions"</FONT></TD></TR>
+<TR><TD VALIGN="TOP">30</TD><TD VALIGN="TOP"> <FONT FACE="Courier New">CONSTANT_Utf8_info</FONT></TD><TD VALIGN="TOP"><FONT FACE="Courier New">"Greetings, planet!"</FONT></TD></TR>
+<TR><TD VALIGN="TOP">31</TD><TD VALIGN="TOP"> <FONT FACE="Courier New">CONSTANT_Utf8_info</FONT></TD><TD VALIGN="TOP"><FONT FACE="Courier New">"Hello, world!"</FONT></TD></TR>
+<TR><TD VALIGN="TOP">32</TD><TD VALIGN="TOP"> <FONT FACE="Courier New">CONSTANT_Utf8_info</FONT></TD><TD VALIGN="TOP"><FONT FACE="Courier New">"I"</FONT></TD></TR>
+<TR><TD VALIGN="TOP">33</TD><TD VALIGN="TOP"> <FONT FACE="Courier New">CONSTANT_Utf8_info</FONT></TD><TD VALIGN="TOP"><FONT FACE="Courier New">"LineNumberTable"</FONT></TD></TR>
+<TR><TD VALIGN="TOP">34</TD><TD VALIGN="TOP"> <FONT FACE="Courier New">CONSTANT_Utf8_info</FONT></TD><TD VALIGN="TOP"><FONT FACE="Courier New">"Ljava/io/PrintStream;"</FONT></TD></TR>
+<TR><TD VALIGN="TOP">35</TD><TD VALIGN="TOP"> <FONT FACE="Courier New">CONSTANT_Utf8_info</FONT></TD><TD VALIGN="TOP"><FONT FACE="Courier New">"Ljava/lang/String;"</FONT></TD></TR>
+<TR><TD VALIGN="TOP">36</TD><TD VALIGN="TOP"> <FONT FACE="Courier New">CONSTANT_Utf8_info</FONT></TD><TD VALIGN="TOP"><FONT FACE="Courier New">"LocalVariables"</FONT></TD></TR>
+<TR><TD VALIGN="TOP">37</TD><TD VALIGN="TOP"> <FONT FACE="Courier New">CONSTANT_Utf8_info</FONT></TD><TD VALIGN="TOP"><FONT FACE="Courier New">"Salutation"</FONT></TD></TR>
+<TR><TD VALIGN="TOP">38</TD><TD VALIGN="TOP"> <FONT FACE="Courier New">CONSTANT_Utf8_info</FONT></TD><TD VALIGN="TOP"><FONT FACE="Courier New">"Salutation.java"</FONT></TD></TR>
+<TR><TD VALIGN="TOP">39</TD><TD VALIGN="TOP"> <FONT FACE="Courier New">CONSTANT_Utf8_info</FONT></TD><TD VALIGN="TOP"><FONT FACE="Courier New">"Salutations, orb!"</FONT></TD></TR>
+<TR><TD VALIGN="TOP">40</TD><TD VALIGN="TOP"> <FONT FACE="Courier New">CONSTANT_Utf8_info</FONT></TD><TD VALIGN="TOP"><FONT FACE="Courier New">"SourceFile"</FONT></TD></TR>
+<TR><TD VALIGN="TOP">41</TD><TD VALIGN="TOP"> <FONT FACE="Courier New">CONSTANT_Utf8_info</FONT></TD><TD VALIGN="TOP"><FONT FACE="Courier New">"choice"</FONT></TD></TR>
+<TR><TD VALIGN="TOP">42</TD><TD VALIGN="TOP"> <FONT FACE="Courier New">CONSTANT_Utf8_info</FONT></TD><TD VALIGN="TOP"><FONT FACE="Courier New">"greeting"</FONT></TD></TR>
+<TR><TD VALIGN="TOP">43</TD><TD VALIGN="TOP"> <FONT FACE="Courier New">CONSTANT_Utf8_info</FONT></TD><TD VALIGN="TOP"><FONT FACE="Courier New">"hello"</FONT></TD></TR>
+<TR><TD VALIGN="TOP">44</TD><TD VALIGN="TOP"> <FONT FACE="Courier New">CONSTANT_Utf8_info</FONT></TD><TD VALIGN="TOP"><FONT FACE="Courier New">"java/io/PrintStream"</FONT></TD></TR>
+<TR><TD VALIGN="TOP">45</TD><TD VALIGN="TOP"> <FONT FACE="Courier New">CONSTANT_Utf8_info</FONT></TD><TD VALIGN="TOP"><FONT FACE="Courier New">"java/lang/Math"</FONT></TD></TR>
+<TR><TD VALIGN="TOP">46</TD><TD VALIGN="TOP"> <FONT FACE="Courier New">CONSTANT_Utf8_info</FONT></TD><TD VALIGN="TOP"><FONT FACE="Courier New">"java/lang/Object"</FONT></TD></TR>
+<TR><TD VALIGN="TOP">47</TD><TD VALIGN="TOP"> <FONT FACE="Courier New">CONSTANT_Utf8_info</FONT></TD><TD VALIGN="TOP"><FONT FACE="Courier New">"java/lang/System"</FONT></TD></TR>
+<TR><TD VALIGN="TOP">48</TD><TD VALIGN="TOP"> <FONT FACE="Courier New">CONSTANT_Utf8_info</FONT></TD><TD VALIGN="TOP"><FONT FACE="Courier New">"main"</FONT></TD></TR>
+<TR><TD VALIGN="TOP">49</TD><TD VALIGN="TOP"> <FONT FACE="Courier New">CONSTANT_Utf8_info</FONT></TD><TD VALIGN="TOP"><FONT FACE="Courier New">"out"</FONT></TD></TR>
+<TR><TD VALIGN="TOP">50</TD><TD VALIGN="TOP"> <FONT FACE="Courier New">CONSTANT_Utf8_info</FONT></TD><TD VALIGN="TOP"><FONT FACE="Courier New">"println"</FONT></TD></TR>
+<TR><TD VALIGN="TOP">51</TD><TD VALIGN="TOP"> <FONT FACE="Courier New">CONSTANT_Utf8_info</FONT></TD><TD VALIGN="TOP"><FONT FACE="Courier New">"random"</FONT></TD></TR>
+<TR><TD VALIGN="TOP">52</TD><TD VALIGN="TOP"> <FONT FACE="Courier New">CONSTANT_Utf8_info</FONT></TD><TD VALIGN="TOP"><FONT FACE="Courier New">"salutation"</FONT></TD></TR>
+</TABLE>
+<P>As part of the loading process for <FONT FACE="Courier New">Salutation</FONT>, the Java Virtual Machine must make sure all of <FONT FACE="Courier New">Salutation</FONT>ís superclasses have been loaded. To start this process, the virtual machine looks into <FONT FACE="Courier New">Salutation</FONT>ís type data at the <FONT FACE="Courier New">super_class</FONT> item, which is a seven. The virtual machine looks up entry seven in the constant pool, and finds a <FONT FACE="Courier New">CONSTANT_Class_info</FONT> entry that serves as a symbolic reference to class <FONT FACE="Courier New">java.lang.Object</FONT>. See Figure 8-5 for a graphical depiction of this symbolic reference. The virtual machine resolves this symbolic reference, which causes it to load class <FONT FACE="Courier New">Object</FONT>. Because <FONT FACE="Courier New">Object</FONT> is the top of <FONT FACE="Courier New">Salutation</FONT>ís inheritance hierarchy, the virtual machine and links and initializes <FONT FACE="Courier New">Object</FONT> as well.</P>
+<P><IMG SRC="fig8-5.gif" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/venners/images/fig8-5.gif" ALT="Figure 8-5"></P>
+
+<P>Now that the Java Virtual Machine has loaded the <FONT FACE="Courier New">Salutation</FONT> class and loaded, linked and initialized all its superclasses, the virtual machine is ready to link <FONT FACE="Courier New">Salutation</FONT>. As the first step in the linking process, the virtual machine verifies the integrity of the binary representation of class <FONT FACE="Courier New">Salutation</FONT>. Assume this implementation of the Java Virtual Machine performs all verification up front, except for the verification of symbolic references. So by the time this official verification phase of linking is completed, the virtual machine will have verified:</P>
+<OL><LI>that <FONT FACE="Courier New">Salutation</FONT>ís binary data is structurally correct</P>
+<LI>that <FONT FACE="Courier New">Salutation</FONT> correctly implements the semantics of the Java language</P>
+<LI>that <FONT FACE="Courier New">Salutation</FONT>ís bytecodes wonít crash the virtual machine</OL>
+<P>After the Java Virtual Machine has verified <FONT FACE="Courier New">Salutation</FONT>, it must prepare for <FONT FACE="Courier New">Salutationís</FONT> use by allocating any memory needed by the class. At this stage, the virtual machine allocates memory for <FONT FACE="Courier New">Salutation</FONT>ís class variable, <FONT FACE="Courier New">choice</FONT>, and gives it a default initial value. Because the <FONT FACE="Courier New">choice</FONT> class variable is an <FONT FACE="Courier New">int</FONT>, it receives the default initial value of zero.</P>
+<P>The three literal <FONT FACE="Courier New">String</FONT>s--<FONT FACE="Courier New">hello</FONT>, <FONT FACE="Courier New">greeting</FONT>, and <FONT FACE="Courier New">salutation</FONT>--are constants, not class variables. They do not occupy memory space as class variables in the method area. They donít receive default initial values. Because they are declared static and final, they appear as <FONT FACE="Courier New">CONSTANT_String_info</FONT> entries in <FONT FACE="Courier New">Salutation</FONT>ís constant pool. The constant pool for <FONT FACE="Courier New">Salutation</FONT> that was generated by <FONT FACE="Courier New">javac</FONT> is shown in Table 8-1. The entries that represent <FONT FACE="Courier New">Salutation</FONT>ís constant strings are: for <FONT FACE="Courier New">greeting</FONT>, entry one; for <FONT FACE="Courier New">hello</FONT>, entry two; and for <FONT FACE="Courier New">salutation</FONT>, entry three.</P>
+<P>After the processes of verification and preparation have successfully completed, the class is ready for resolution. As mentioned above, different implementations of the Java Virtual Machine may perform the resolution phase of linking at different times. Resolution of <FONT FACE="Courier New">Salutation</FONT> is optional at this point in its lifetime. Java Virtual Machines are not required to perform resolution until each symbolic reference is actually used by the program. If a symbolic reference is never actually used by a program, the virtual machine is not required to resolve it.</P>
+<P>A Java Virtual Machine implementation could perform the recursive resolution process, described above for <FONT FACE="Courier New">Salutation</FONT>, at this point in the lifetime of a program. If so, the program would be completely linked before <FONT FACE="Courier New">main()</FONT> is ever invoked. A different Java Virtual Machine implementation could perform none of the resolution process at this point. Instead, it could resolve each symbolic reference the first time it is actually used by the running program. Other implementations could choose a resolution strategy between these two extremes. Although different implementations may perform resolution at different times, all implementations will ensure that a type is loaded, verified, prepared, and initialized before it is used.</P>
+<P>Assume this implementation of the Java Virtual Machine uses late resolution. As each symbolic reference is used for the first time by the program, it will be checked for accuracy and converted into a direct reference. Assume also that this implementation uses the technique of replacing the opcode that refers to the constant pool with <FONT FACE="Courier New">_quick</FONT> equivalents.</P>
+<P>Once this Java Virtual Machine implementation has loaded, verified, and prepared <FONT FACE="Courier New">Salutation</FONT>, it is ready to initialize it. As mentioned above, the Java Virtual Machine must initialize all superclasses of a class before it can initialize the class. In this case, the virtual machine has already initialized <FONT FACE="Courier New">Object</FONT>, the superclass of <FONT FACE="Courier New">Salutation</FONT>.</P>
+<P>After the virtual machine has made sure all of <FONT FACE="Courier New">Salutation</FONT>ís superclasses have been initialized (in this case, just class <FONT FACE="Courier New">Object</FONT>), it is ready to invoke <FONT FACE="Courier New">Salutation</FONT>ís <FONT FACE="Courier New">&lt;clinit</FONT>()</FONT> method. Because <FONT FACE="Courier New">Salutation</FONT> contains a class variable, <FONT FACE="Courier New">width</FONT>, that has an initializer that doesnít resolve at compile-time to a constant, the compiler does place a <FONT FACE="Courier New">&lt;clinit</FONT>()</FONT> method into <FONT FACE="Courier New">Salutation</FONT>ís class file.</P>
+<P>Hereís the <FONT FACE="Courier New">&lt;clinit</FONT>()</FONT> method for <FONT FACE="Courier New">Salutation</FONT>:</P>
+<PRE><P><FONT FACE="Courier New">begin</FONT></P>
+<FONT SIZE="2"><P></FONT><FONT FACE="Courier New">             // Invoke class method Math.random(), passing no
+<P>             // parameters. Push double result.</P>
+<P> 0 invokestatic #13 &lt;Method double random()</FONT></P>
+<P>            // Push double constant 2.99 from constant pool.</P>
+<P> 3 ldc2_w #14 &lt;Double 2.99</FONT></P>
+<P> 6 dmul     // Pop two doubles, multiple, push double result.</P>
+<P> 7 d2i      // Pop double, convert to int, push int result.</P>
+<P>            // Pop int, store int Salutation.choice</P>
+<P> 8 putstatic #10 &lt;Field int choice</FONT></P>
+<P>11 return   // Return void from &lt;clinit</FONT>()</P>
+</FONT><FONT SIZE="2"><P>&nbsp;</P></FONT><FONT FACE="Courier New">end</FONT></P></PRE>
+<P>The Java Virtual Machine executes <FONT FACE="Courier New">Salutation</FONT>ís <FONT FACE="Courier New">&lt;clinit</FONT>()</FONT> method to set the <FONT FACE="Courier New">choice</FONT> field to its proper initial value. Before executing <FONT FACE="Courier New">&lt;clinit</FONT>()</FONT>, <FONT FACE="Courier New">choice</FONT> has its default initial value of zero. After executing <FONT FACE="Courier New">&lt;clinit</FONT>()</FONT>, it has one of three values chosen pseudo-randomly: zero, one, or two.</P>
+<P>The first instruction of the <FONT FACE="Courier New">&lt;clinit</FONT>()</FONT> method, <FONT FACE="Courier New">invokestatic #13</FONT>, refers to constant pool entry 13, a <FONT FACE="Courier New">CONSTANT_Methodref_info</FONT> that represents a symbolic reference to the <FONT FACE="Courier New">random()</FONT> method of class <FONT FACE="Courier New">java.lang.Math</FONT>. You can see a graphical depiction of this symbolic reference in Figure 8-6. The Java Virtual Machine resolves this symbolic reference, which causes it to load, link, and initialize class <FONT FACE="Courier New">java.lang.Math</FONT>. It places a direct reference to the <FONT FACE="Courier New">random()</FONT> method into constant pool entry 13, marks the entry as resolved, and replaces the <FONT FACE="Courier New">invokestatic</FONT> opcode with <FONT FACE="Courier New">invokestatic_quick</FONT>.</P>
+<P><IMG SRC="fig8-6.gif" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/venners/images/fig8-6.gif" ALT="Figure 8-6"></P>
+
+<P>Having completed the resolution process for constant pool entry 13, the Java Virtual Machine is ready to invoke the method. When the virtual machine actually invokes the <FONT FACE="Courier New">random()</FONT> method, it will load, link, and initialize any types referenced symbolically from <FONT FACE="Courier New">Math</FONT>ís constant pool and <FONT FACE="Courier New">random()</FONT>ís code. When this method returns, the virtual machine will push the returned <FONT FACE="Courier New">double</FONT> value onto the <FONT FACE="Courier New">main()</FONT> methodís operand stack.</P>
+<P>To execute the next instruction, <FONT FACE="Courier New">ldc2_w #14</FONT>, the virtual machine looks into constant pool entry 14 and finds an unresolved <FONT FACE="Courier New">CONSTANT_Double_info</FONT> entry. The virtual machine resolves this entry to the double value 2.99, marks the entry as resolved, and replaces the <FONT FACE="Courier New">ldc2_w</FONT> opcode with <FONT FACE="Courier New">ldc2_w_quick</FONT>. Once the virtual machine has resolved constant pool entry 14, it pushes the constant <FONT FACE="Courier New">double</FONT> value, 2.99, onto the operand stack.</P>
+<P>Note that this entry, a <FONT FACE="Courier New">CONSTANT_Double_info</FONT>,  does not refer to any other constant pool entry or item outside this class. The eight bytes of the <FONT FACE="Courier New">double</FONT> value 2.99 are specified within the entry itself.</P>
+<P>Note also that in this constant pool, there is no entry with an index of 15. As mentioned in Chapter 6, &quot;The Java Class File,&quot; entries of type <FONT FACE="Courier New">CONSTANT_Double_info</FONT> and <FONT FACE="Courier New">CONSTANT_Long_info</FONT> occupy two slots in the constant pool. Thus, the <FONT FACE="Courier New">CONSTANT_Double_info</FONT> at index 14 is considered to occupy both indices 14 and 15.</P>
+<P>To execute the next instruction, <FONT FACE="Courier New">dmul</FONT>, the virtual machine pops two <FONT FACE="Courier New">double</FONT>s, multiplies them, and pushes the <FONT FACE="Courier New">double</FONT> result. For the next instruction, the virtual machine pops the <FONT FACE="Courier New">double</FONT>, converts it to <FONT FACE="Courier New">int</FONT>, and pushes the <FONT FACE="Courier New">int</FONT> result. Assume that for this particular execution of <FONT FACE="Courier New">Salutation</FONT>, the result of this operation is the <FONT FACE="Courier New">int</FONT> value two.</P>
+<P>The next instruction, <FONT FACE="Courier New">putstatic #10</FONT>, uses another symbolic reference from the constant pool, this one to the <FONT FACE="Courier New">choice</FONT> variable of <FONT FACE="Courier New">Salutation</FONT> itself. This instruction illustrates that a classís bytecodes use symbolic references to refer not only to fields and methods of other types, but also to its own fields and methods. When the virtual machine executes this instruction, it looks up constant pool entry 10 and finds an as yet unresolved <FONT FACE="Courier New">CONSTANT_Fieldref_info</FONT> item. See Figure 8-7 For a graphical depiction of this symbolic reference. The virtual machine resolves the reference by locating the <FONT FACE="Courier New">choice</FONT> class variable in <FONT FACE="Courier New">Salutation</FONT>ís type data in the method area, and placing a pointer to the actual variable data in constant pool entry 10. It marks the entry as resolved and replaces the <FONT FACE="Courier New">putstatic</FONT> opcode with <FONT FACE="Courier New">putstatic_quick</FONT>.</P>
+<P><IMG SRC="fig8-7.gif" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/venners/images/fig8-7.gif" ALT="Figure 8-7"></P>
+
+<P>Once it has resolved the <FONT FACE="Courier New">CONSTANT_Fieldref_info</FONT> entry for <FONT FACE="Courier New">choice</FONT>, the virtual machine pops an <FONT FACE="Courier New">int</FONT> (in this case a two) from the operand stack and places it into the <FONT FACE="Courier New">choice</FONT> variable. The execution of the <FONT FACE="Courier New">putstatic</FONT> instruction is now complete.</P>
+<P>Lastly, the virtual machine executes the return instruction, which signals to the virtual machine that the <FONT FACE="Courier New">&lt;clinit</FONT>()</FONT> method, and hence the initialization of class <FONT FACE="Courier New">Salutation</FONT>, is complete.</P>
+<P><FONT FACE="Courier New"></FONT>Now that class <FONT FACE="Courier New">Salutation</FONT> has been initialized, it is finally ready for use. The Java Virtual Machine invokes <FONT FACE="Courier New">main()</FONT>, and the program begins. Hereís the bytecode sequence for <FONT FACE="Courier New">Salutation</FONT>ís <FONT FACE="Courier New">main()</FONT> method:</P>
+<PRE><P><FONT FACE="Courier New">begin</FONT></P>
+<FONT SIZE="2"><P></FONT><FONT FACE="Courier New">                // Push objref to literal string from constant pool
+<P>                // entry 2</P>
+<P> 0 ldc #2 &lt;String "Hello, world!"</FONT></P>
+<P> 2 astore_1     // Pop objref into loc var 1: String s = hello;</P>
+<P>                // Push int from static field Salutation.choice. Note</P>
+<P>                // that by this time, choice has definitely been</P>
+<P>                // given its proper initial value.</P>
+<P> 3 getstatic #10 &lt;Field int choice</FONT></P>
+<P> 6 iconst_1     // Push int constant 1</P>
+<P>                // Pop two ints, compare, if not equal branch to 16:</P>
+<P> 7 if_icmpne 16 // if (choice == 1) {</P>
+<P>                // Here, choice does equal 1. Push objref to string</P>
+<P>                // literal from constant pool:</P>
+<P>10 ldc #1 &lt;String "Greetings, planet!"</FONT></P>
+<P>12 astore_1     // Pop objref into loc var 1: s = greeting;</P>
+<P>13 goto 26      // Branch unconditionally to offset 26</P>
+<P>                // Push int from static field Salutation.choice</P>
+<P>16 getstatic #10 &lt;Field int choice</FONT></P>
+<P>19 iconst_2     // Push int constant 2</P>
+<P>                // Pop two ints, compare, if not equal branch to 26:</P>
+<P>20 if_icmpne 26 // if (choice == 2) {</P>
+<P>                // Here, choice does equal 2. Push objref to string</P>
+<P>                // literal from constant pool:</P>
+<P>23 ldc #3 &lt;String "Salutations, orb!"</FONT></P>
+<P>25 astore_1     // Pop objref into loc var 1: String s = salutation;</P>
+<P>                // Push objref from System.out</P>
+<P>26 getstatic #11 &lt;Field java.io.PrintStream out</FONT></P>
+<P>29 aload_1      // Push objref (to a String) from loc var 1</P>
+<P>                // Pop objref (to a String), pop objref(to</P>
+<P>                // System.out), invoke println() on System.out</P>
+<P>                // passing the string as the only parameter:</P>
+<P>                // System.out.println(s);</P>
+<P>30 invokevirtual #12 &lt;Method void println(java.lang.String)</FONT></P>
+<P>33 return       // Return void from main()</P>
+</FONT><FONT SIZE="2"><P>&nbsp;</P></FONT><FONT FACE="Courier New">end</FONT></P></PRE>
+<P>The first instruction in <FONT FACE="Courier New">main()</FONT>, <FONT FACE="Courier New">ldc #2</FONT>, uses a symbolic reference to the string literal <FONT FACE="Courier New">"Hello, world!"</FONT>. When the virtual machine executes this instruction, it looks up constant pool entry two and finds a <FONT FACE="Courier New">CONSTANT_String_info</FONT> item that hasnít yet been resolved. See Figure 8-8 For a graphical depiction of the symbolic reference to this string literal.</P>
+<P><IMG SRC="fig8-8.gif" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/venners/images/fig8-8.gif" ALT="Figure 8-8"></P>
+
+<P>As part of executing the <FONT FACE="Courier New">ldc</FONT> instruction, the virtual machine resolves the constant pool entry. It creates and interns a new <FONT FACE="Courier New">String</FONT> object with the value <FONT FACE="Courier New">"Hello, world!"</FONT>, places a reference to the string object in the constant pool entry, marks the entry as resolved, and replaces the <FONT FACE="Courier New">ldc</FONT> opcode with an <FONT FACE="Courier New">ldc_quick</FONT>.</P>
+<P>Now that the virtual machine has resolved the <FONT FACE="Courier New">"Hello, world!"</FONT> string literal, it pushes the reference to that <FONT FACE="Courier New">String</FONT> object onto the stack. The next instruction, <FONT FACE="Courier New">astore_1</FONT>, pops the reference and stores it into local variable position one, the <FONT FACE="Courier New">s</FONT> variable.</P>
+<P>To execute the next instruction, <FONT FACE="Courier New">getstatic #10</FONT>, the virtual machine looks up constant pool entry 10 and discovers a <FONT FACE="Courier New">CONSTANT_Fieldref_info</FONT> entry that has already been resolved. This entry, a symbolic reference to <FONT FACE="Courier New">Salutation</FONT>ís own <FONT FACE="Courier New">choice</FONT> field, was resolved by the <FONT FACE="Courier New">putstatic #10</FONT> instruction in the <FONT FACE="Courier New">&lt;clinit</FONT>()</FONT> method. The virtual machine simply replaces the <FONT FACE="Courier New">getstatic</FONT> opcode with <FONT FACE="Courier New">getstatic_quick</FONT>, and pushes the <FONT FACE="Courier New">int</FONT> value of <FONT FACE="Courier New">choice</FONT> onto the stack.</P>
+<P>To execute <FONT FACE="Courier New">main()</FONT>ís next instruction, <FONT FACE="Courier New">iconst_1</FONT>, the virtual machine simply pushes <FONT FACE="Courier New">int</FONT> one onto the operand stack. For the next instruction, <FONT FACE="Courier New">ificmpne 16</FONT>, the virtual machine pops the top two <FONT FACE="Courier New">int</FONT>s and subtracts one from the other. In this case, since the value of <FONT FACE="Courier New">choice</FONT> was set by the <FONT FACE="Courier New">&lt;clinit</FONT>()</FONT> method to be two, the result of the subtraction is not zero. As a consequence, the virtual machine takes the branch. It updates the pc register so that the next instruction it executes is the <FONT FACE="Courier New">getstatic</FONT> instruction at offset 16.</P>
+<P>The <FONT FACE="Courier New">getstatic</FONT> instruction at offset 16 refers to the same constant pool entry referred to by the <FONT FACE="Courier New">getstatic</FONT> instruction at offset three: constant pool entry 10. When the virtual machine executes the <FONT FACE="Courier New">getstatic</FONT> at offset 16, it looks up constant pool entry 10 and finds a <FONT FACE="Courier New">CONSTANT_Fieldref_info</FONT> entry that is already resolved. It replaces the <FONT FACE="Courier New">getstatic</FONT> opcode with <FONT FACE="Courier New">getstatic_quick</FONT>, and pushes the <FONT FACE="Courier New">int</FONT> value of <FONT FACE="Courier New">Salutation</FONT>ís <FONT FACE="Courier New">choice</FONT> class variable (a two) onto the operand stack.</P>
+<P>To execute the next instruction, <FONT FACE="Courier New">iconst_2</FONT>, the virtual machine pushes an <FONT FACE="Courier New">int</FONT> two onto the stack. For the next instruction, another <FONT FACE="Courier New">ificmpne</FONT> <FONT FACE="Courier New">26</FONT>, the virtual machine again pops two <FONT FACE="Courier New">int</FONT>s and subtracts one from the other. This time, however, both <FONT FACE="Courier New">int</FONT>s equal two, so the result of the subtraction is zero. As a consequence, the virtual machine does not take the branch and continues on to execute the next instruction in the bytecode array, another <FONT FACE="Courier New">ldc</FONT>.</P>
+<P>The <FONT FACE="Courier New">ldc</FONT> instruction at offset 23 refers to constant pool entry three, a <FONT FACE="Courier New">CONSTANT_String_info</FONT> entry that serves as a symbolic reference to the string literal <FONT FACE="Courier New">"Salutations, orb!"</FONT>. The virtual machine looks up this entry in the constant pool and discovers it is as yet unresolved. To resolve the entry, the virtual machine creates and interns a new <FONT FACE="Courier New">String</FONT> object with the value <FONT FACE="Courier New">"Salutations, orb!"</FONT>, places a reference to the new object in the data for constant pool entry three, and replaces the <FONT FACE="Courier New">ldc</FONT> opcode with <FONT FACE="Courier New">ldc_quick</FONT>. Having resolved the string literal, the virtual machine pushes the reference to the <FONT FACE="Courier New">String</FONT> object onto the stack.</P>
+<P>To execute the next instruction, <FONT FACE="Courier New">astore_1</FONT>, the virtual machine pops the object reference to the <FONT FACE="Courier New">"Salutations, orb!"</FONT> string literal off the stack and stores it into local variable slot one, overwriting the reference to <FONT FACE="Courier New">"Hello, world!"</FONT> written there by the <FONT FACE="Courier New">astore_1</FONT> instruction at offset two.</P>
+<P>The next instruction, <FONT FACE="Courier New">getstatic #11</FONT>, uses a symbolic reference to a public static class variable of <FONT FACE="Courier New">java.lang.System</FONT> with the name <FONT FACE="Courier New">out</FONT> and the type <FONT FACE="Courier New">java.io.PrintStream</FONT>. This symbolic reference occupies the <FONT FACE="Courier New">CONSTANT_Fieldref_info</FONT> entry at index 11 in the constant pool. See Figure 8-9 For a graphical depiction of this symbolic reference.</P>
+<P><IMG SRC="fig8-9.gif" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/venners/images/fig8-9.gif" ALT="Figure 8-9"></P>
+
+<P>To resolve the reference to <FONT FACE="Courier New">System.out</FONT>, the Java Virtual Machine must load, link, and initialize <FONT FACE="Courier New">java.lang.System</FONT> to make sure it has a public static field, named <FONT FACE="Courier New">out</FONT>, of type <FONT FACE="Courier New">java.io.PrintStream</FONT>. Then, the virtual machine will replace the symbolic reference with a direct reference, such as a native pointer, so that any future uses of <FONT FACE="Courier New">System.out</FONT> by <FONT FACE="Courier New">Saluation</FONT> wonít require resolution and will be faster. Lastly, the virtual machine will replace the <FONT FACE="Courier New">getstatic</FONT> opcode with <FONT FACE="Courier New">getstatic_quick</FONT>.</P>
+<P>Once the virtual machine has successfully resolved the symbolic reference, it will push the reference to <FONT FACE="Courier New">System.out</FONT> onto the stack. To execute the next instruction, <FONT FACE="Courier New">aload_1</FONT>, the virtual machine simply pushes onto the stack the object reference from local variable one, which is the reference to the <FONT FACE="Courier New">"Salutations, orb!"</FONT> string literal.</P>
+<P>To execute the next instruction, <FONT FACE="Courier New">invokevirtual #12</FONT>, the Java Virtual Machine looks up constant pool entry 12 and finds an unresolved <FONT FACE="Courier New">CONSTANT_Methodref_info</FONT> entry, a symbolic reference to the <FONT FACE="Courier New">println()</FONT> method of <FONT FACE="Courier New">java.io.PrintStream</FONT>. See Figure 8-10 for a graphical depiction of this symbolic reference. The virtual machine loads, links, and initializes <FONT FACE="Courier New">java.io.PrintStream</FONT>, and makes sure it has a <FONT FACE="Courier New">println()</FONT> method that is <FONT FACE="Courier New">public</FONT>, returns <FONT FACE="Courier New">void</FONT>, and takes a <FONT FACE="Courier New">String</FONT> argument. It marks the entry as resolved and puts a direct reference (an index into <FONT FACE="Courier New">PrintStream</FONT>ís method table) into the data for the resolved constant pool entry. Lastly, the virtual machine replaces the <FONT FACE="Courier New">invokevirtual</FONT> opcode with <FONT FACE="Courier New">invokevirtual_quick</FONT>, and places the method table index and the number of arguments accepted by the method as operands to the <FONT FACE="Courier New">invokevirtual_quick</FONT> opcode.</P>
+<P><IMG SRC="fig8-10.gif" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/venners/images/fig8-10.gif" ALT="Figure 8-10"></P>
+
+<P>When the virtual machine actually invokes the <FONT FACE="Courier New">println()</FONT> method, it will load, link, and initialize any types referenced symbolically from <FONT FACE="Courier New">PrintStream</FONT>ís constant pool and <FONT FACE="Courier New">println()</FONT>ís code.</P>
+<P>The next instruction is the last instruction the <FONT FACE="Courier New">main()</FONT> method: <FONT FACE="Courier New">return</FONT>. Because <FONT FACE="Courier New">main()</FONT> was being executed by the only non-deamon thread running in the <FONT FACE="Courier New">Salutation</FONT> application, executing the <FONT FACE="Courier New">return</FONT> instruction will cause the virtual machine to exit. Note that constant pool entry one, which contained a symbolic reference to the <FONT FACE="Courier New">"Greetings, planet!"</FONT> string literal, was never resolved during this execution of the <FONT FACE="Courier New">Salutation</FONT> application. Because <FONT FACE="Courier New">choice</FONT> happened to be initialized with a value of two, the instruction that referred to constant pool entry one, the <FONT FACE="Courier New">ldc #1</FONT> instruction at offset 10, was never executed. As a result, the virtual machine never created a <FONT FACE="Courier New">String</FONT> object with the value <FONT FACE="Courier New">"Greetings, planet!"</FONT>.</P>
+<H3><EM><P>Example: The Dynamic Extension of the Greet Application</P>
+</EM></H3><P>As an example of an application that performs dynamic extension through class loader objects, consider the following class:</P>
+<PRE><P><FONT FACE="Courier New">begin</FONT></P>
+<FONT SIZE="2"><P></FONT><FONT FACE="Courier New">// On CD-ROM in file linking/ex6/Greet.java
+<P>import COM.artima.greeter.*;</P>
+<P>&nbsp;</P>
+<P>public class Greet {</P>
+<P>&nbsp;</P>
+<P>    // Arguments to this application:</P>
+<P>    //     args[0] - path name of directory in which class files</P>
+<P>    //               for greeters are stored</P>
+<P>    //     args[1], args[2], ... - class names of greeters to load</P>
+<P>    //               and invoke the greet() method on.</P>
+<P>    //</P>
+<P>    // All greeters must implement the COM.artima.greeter.Greeter</P>
+<P>    // interface.</P>
+<P>    //</P>
+<P>    static public void main(String[] args) {</P>
+<P>&nbsp;</P>
+<P>        if (args.length &lt;= 1) {</P>
+<P>            System.out.println(</P>
+<P>                "Enter base path and greeter class names as args.");</P>
+<P>            return;</P>
+<P>        }</P>
+<P>&nbsp;</P>
+<P>        GreeterClassLoader gcl = new GreeterClassLoader(args[0]);</P>
+<P>&nbsp;</P>
+<P>        for (int i = 1; i &lt; args.length; ++i) {</P>
+<P>            try {</P>
+<P>&nbsp;</P>
+<P>                // Load the greeter specified on the command line</P>
+<P>                Class c = gcl.loadClass(args[i], true);</P>
+<P>&nbsp;</P>
+<P>                // Instantiate it into a greeter object</P>
+<P>                Object o = c.newInstance();</P>
+<P>&nbsp;</P>
+<P>                // Cast the Object ref to the Greeter interface type</P>
+<P>                // so greet() can be invoked on it</P>
+<P>                Greeter greeter = (Greeter) o;</P>
+<P>&nbsp;</P>
+<P>                // Greet the world in this greeter's special way</P>
+<P>                greeter.greet();</P>
+<P>            }</P>
+<P>            catch (Exception e) {</P>
+<P>                e.printStackTrace();</P>
+<P>            }</P>
+<P>        }</P>
+<P>    }</P>
+<P>}</P>
+</FONT><FONT SIZE="2"><P>&nbsp;</P></FONT><FONT FACE="Courier New">end</FONT></P></PRE>
+<P>The <FONT FACE="Courier New">Greet</FONT> application is a fancy incarnation of the typical &quot;Hello, world!&quot; program. <FONT FACE="Courier New">Greet</FONT> uses a class loader object to dynamically extend itself with classes--called &quot;greeters&quot;--that do the actual work of telling the world hello.</P>
+<P>A greeter is any class that implements the <FONT FACE="Courier New">COM.artima.greeter.Greeter</FONT> interface:</P>
+<PRE><P><FONT FACE="Courier New">begin</FONT></P>
+<FONT SIZE="2"><P></FONT><FONT FACE="Courier New">// On CD-ROM in file linking/ex6/COM/artima/greeter/Greeter.java
+<P>package COM.artima.greeter;</P>
+<P>&nbsp;</P>
+<P>public interface Greeter {</P>
+<P>&nbsp;</P>
+<P>    void greet();</P>
+<P>}</P>
+</FONT><FONT SIZE="2"><P>&nbsp;</P></FONT><FONT FACE="Courier New">end</FONT></P></PRE>
+<P>As you can see from the code above, the <FONT FACE="Courier New">Greeter</FONT> interface declares only one method: <FONT FACE="Courier New">greet()</FONT>. When a greeter objectís <FONT FACE="Courier New">greet()</FONT> method is invoked, the object should say hello to the world in its own unique way. Here are a few examples of greeters:</P>
+<PRE><P><FONT FACE="Courier New">begin</FONT></P>
+<FONT SIZE="2"><P></FONT><FONT FACE="Courier New">// On CD-ROM in file linking/ex6/greeters/Hello.java
+<P>import COM.artima.greeter.Greeter;</P>
+<P>&nbsp;</P>
+<P>public class Hello implements Greeter {</P>
+<P>&nbsp;</P>
+<P>    public void greet() {</P>
+<P>        System.out.println("Hello, world!");</P>
+<P>    }</P>
+<P>}</P>
+</FONT><FONT SIZE="2"><P>&nbsp;</P></P>
+<P></FONT><FONT FACE="Courier New">// On CD-ROM in file linking/ex6/greeters/Greetings.java
+<P>import COM.artima.greeter.Greeter;</P>
+<P>&nbsp;</P>
+<P>public class Greetings implements Greeter {</P>
+<P>&nbsp;</P>
+<P>    public void greet() {</P>
+<P>        System.out.println("Greetings, planet!");</P>
+<P>    }</P>
+<P>}</P>
+</FONT><FONT SIZE="2"><P>&nbsp;</P></P>
+<P></FONT><FONT FACE="Courier New">// On CD-ROM in file linking/ex6/greeters/Salutations.java
+<P>import COM.artima.greeter.Greeter;</P>
+<P>&nbsp;</P>
+<P>public class Salutations implements Greeter {</P>
+<P>&nbsp;</P>
+<P>    public void greet() {</P>
+<P>        System.out.println("Salutations, orb!");</P>
+<P>    }</P>
+<P>}</P>
+</FONT><FONT SIZE="2"><P>&nbsp;</P></P>
+<P></FONT><FONT FACE="Courier New">// On CD-ROM in file linking/ex6/greeters/HowDoYouDo.java
+<P>import COM.artima.greeter.Greeter;</P>
+<P>&nbsp;</P>
+<P>public class HowDoYouDo implements Greeter {</P>
+<P>&nbsp;</P>
+<P>    public void greet() {</P>
+<P>        System.out.println("How do you do, globe!");</P>
+<P>    }</P>
+<P>}</P>
+</FONT><FONT SIZE="2"><P>&nbsp;</P></FONT><FONT FACE="Courier New">end</FONT></P></PRE>
+<P>Greeters can be more complex than the above four examples. Hereís an example of a greeter that chooses a greeting based on the time of day:</P>
+<PRE><P><FONT FACE="Courier New">begin</FONT></P>
+<FONT SIZE="2"><P></FONT><FONT FACE="Courier New">// On CD-ROM in file linking/ex6/greeters/HiTime.java
+<P>import COM.artima.greeter.Greeter;</P>
+<P>import java.util.Date;</P>
+<P>&nbsp;</P>
+<P>public class HiTime implements Greeter {</P>
+<P>&nbsp;</P>
+<P>    public void greet() {</P>
+<P>&nbsp;</P>
+<P>        // Date's no-arg constructor initializes itself to the</P>
+<P>        // current date and time</P>
+<P>        Date date = new Date();</P>
+<P>        int hours = date.getHours();</P>
+<P>&nbsp;</P>
+<P>        // Some hours: midnight, 0; noon, 12; 11PM, 23;</P>
+<P>        if (hours </FONT>= 4 &amp;&amp; hours &lt;= 11) {</P>
+<P>            System.out.println("Good morning, world!");</P>
+<P>        }</P>
+<P>        else if (hours </FONT>= 12 &amp;&amp; hours &lt;= 16) {</P>
+<P>            System.out.println("Good afternoon, world!");</P>
+<P>        } </P>
+<P>        else if (hours </FONT>= 17 &amp;&amp; hours &lt;= 21) {</P>
+<P>            System.out.println("Good evening, world!");</P>
+<P>        } </P>
+<P>        else if (hours </FONT>= 22 || hours &lt;= 3) {</P>
+<P>            System.out.println("Good night, world!");</P>
+<P>        }</P>
+<P>        else {</P>
+<P>            // This should never happen.</P>
+<P>            System.out.println("Oh oh, the clock is broken, world!");</P>
+<P>        }</P>
+<P>    }</P>
+<P>}</P>
+</FONT><FONT SIZE="2"><P>&nbsp;</P></FONT><FONT FACE="Courier New">end</FONT></P></PRE>
+<P>The <FONT FACE="Courier New">Greet</FONT> application doesnít know at compile-time what greeter classes it will load and where those classes will be stored. At run-time it takes a directory path as its first command-line argument and greeter class names as subsequent arguments. It attempts to load the greeters using the path name as a base directory.</P>
+<P>For example, imagine you invoke the <FONT FACE="Courier New">Greet</FONT> application with the following command line:</P>
+<PRE><P><FONT FACE="Courier New">begin</FONT></P>
+<FONT FACE="Courier New"><P>java Greet greeters Hello</P>
+</FONT><P><FONT FACE="Courier New">end</FONT></P></PRE>
+<P>In this command line, <FONT FACE="Courier New">java</FONT> is the name of the Java Virtual Machine executable. <FONT FACE="Courier New">Greet</FONT> is the class name of the <FONT FACE="Courier New">Greet</FONT> application. <FONT FACE="Courier New">greeters</FONT> is the name of a directory relative to the current directory in which the <FONT FACE="Courier New">Greet</FONT> application should look for greeters. <FONT FACE="Courier New">Hello</FONT> is the name of the greeter.</P>
+<P>When the <FONT FACE="Courier New">Greet</FONT> application is invoked with the above command line, it attempts to load <FONT FACE="Courier New">greeters/Hello.class</FONT> and invoke <FONT FACE="Courier New">Hello</FONT>ís <FONT FACE="Courier New">greet()</FONT> method. If the <FONT FACE="Courier New">Hello.class</FONT> file is indeed sitting in a directory named <FONT FACE="Courier New">greeters</FONT>, the application will print:</P>
+<PRE><P><FONT FACE="Courier New">begin</FONT></P>
+<FONT FACE="Courier New"><P>Hello, world!</P>
+</FONT><P><FONT FACE="Courier New">end</FONT></P></PRE>
+<P>The <FONT FACE="Courier New">Greet</FONT> application can handle more than one greeter. If you invoke the it with the following command line:</P>
+<PRE><P><FONT FACE="Courier New">begin</FONT></P>
+<FONT FACE="Courier New"><P>java Greet greeters Hello Greetings Salutations HowDoYouDo</P>
+</FONT><P><FONT FACE="Courier New">end</FONT></P></PRE>
+<P>The <FONT FACE="Courier New">Greet</FONT> application will load each of the four greeters listed and invoke their <FONT FACE="Courier New">greet()</FONT> methods, yielding the following output:</P>
+<PRE><P><FONT FACE="Courier New">begin</FONT></P>
+<FONT FACE="Courier New"><P>Hello, world!</P>
+<P>Greetings, planet!</P>
+<P>Salutations, orb!</P>
+<P>How do you do, globe!</P>
+</FONT><P><FONT FACE="Courier New">end</FONT></P></PRE>
+<P>The <FONT FACE="Courier New">Greet</FONT> application works by first checking to make sure there are at least two command-line arguments: a directory path and at least one greeter class name. It then instantiates a new <FONT FACE="Courier New">GreeterClassLoader</FONT> object, which will be responsible for loading the greeters. (The inner workings of class <FONT FACE="Courier New">GreeterClassLoader</FONT>, a subclass of <FONT FACE="Courier New">java.lang.ClassLoader</FONT>, will be described later in this section.) The constructor for <FONT FACE="Courier New">GreeterClassLoader</FONT> accepts a <FONT FACE="Courier New">String</FONT> that it uses as a directory path in which to look for greeters.</P>
+<P>After it has created the <FONT FACE="Courier New">GreeterClassLoader</FONT> object, the <FONT FACE="Courier New">Greet</FONT> application invokes its <FONT FACE="Courier New">loadClass()</FONT> method for each greeter name that appears on the command line. When it invokes <FONT FACE="Courier New">loadClass()</FONT>, it passes the greeter class name in <FONT FACE="Courier New">name</FONT> and sets the <FONT FACE="Courier New">resolve</FONT> flag to <FONT FACE="Courier New">true</FONT>:</P>
+<PRE><P><FONT FACE="Courier New">begin</FONT></P>
+<FONT FACE="Courier New"><P>// Load the greeter specified on the command line</P>
+<P>Class c = gcl.loadClass(args[i], true);</P>
+</FONT><P><FONT FACE="Courier New">end</FONT></P></PRE>
+<P>If the <FONT FACE="Courier New">loadClass()</FONT> method is unsuccessful, it throws an exception or error. If the <FONT FACE="Courier New">loadClass()</FONT> method is successful, it returns the <FONT FACE="Courier New">Class</FONT> instance for the newly loaded, linked, and initialized type.</P>
+<P>Once <FONT FACE="Courier New">loadClass()</FONT> has returned a <FONT FACE="Courier New">Class</FONT> instance, the <FONT FACE="Courier New">Greet</FONT> applicationís <FONT FACE="Courier New">main()</FONT> method instantiates a new instance of the greeter by calling <FONT FACE="Courier New">newInstance()</FONT> on the <FONT FACE="Courier New">Class</FONT> instance:</P>
+<PRE><P><FONT FACE="Courier New">begin</FONT></P>
+<FONT FACE="Courier New"><P>// Instantiate it into a greeter object</P>
+<P>Object o = c.newInstance();</P>
+</FONT><P><FONT FACE="Courier New">end</FONT></P></PRE>
+<P>When the <FONT FACE="Courier New">newInstance()</FONT> method is invoked on a <FONT FACE="Courier New">Class</FONT> object, the virtual machine creates and initializes a new instance of the class represented by the <FONT FACE="Courier New">Class</FONT> object. To initialize the new instance, the the virtual machine invokes its no-arg constructor.</P>
+<P>The <FONT FACE="Courier New">Greet</FONT> application then casts the <FONT FACE="Courier New">Object</FONT> reference that points to the greeter object to a <FONT FACE="Courier New">Greeter</FONT> reference:</P>
+<PRE><P><FONT FACE="Courier New">begin</FONT></P>
+<FONT FACE="Courier New"><P>// Cast the Object ref to the Greeter interface type</P>
+<P>// so greet() can be invoked on it</P>
+<P>Greeter greeter = (Greeter) o;</P>
+</FONT><P><FONT FACE="Courier New">end</FONT></P></PRE>
+<P>Finally, armed with a <FONT FACE="Courier New">Greeter</FONT> reference, the <FONT FACE="Courier New">main()</FONT> method invokes the <FONT FACE="Courier New">greet()</FONT> method on the greeter object:</P>
+<PRE><P><FONT FACE="Courier New">begin</FONT></P>
+<FONT FACE="Courier New"><P>// Greet the world in this greeter's special way</P>
+<P>greeter.greet();</P>
+</FONT><P><FONT FACE="Courier New">end</FONT></P></PRE>
+<P>Hereís the code for <FONT FACE="Courier New">GreeterClassLoader</FONT>:</P>
+<PRE><P><FONT FACE="Courier New">begin</FONT></P>
+<FONT SIZE="2"><P></FONT><FONT FACE="Courier New">// On CD-ROM in file
+<P>// linking/ex6/COM/artima/greeter/GreeterClassLoader.java</P>
+<P>package COM.artima.greeter;</P>
+<P>&nbsp;</P>
+<P>import java.io.*;</P>
+<P>import java.util.Hashtable;</P>
+<P>&nbsp;</P>
+<P>public class GreeterClassLoader extends ClassLoader {</P>
+<P>&nbsp;</P>
+<P>    // types is this class loader object's private</P>
+<P>    // cache of type names it has loaded. For each type</P>
+<P>    // name, the Hashtable stores a reference to the</P>
+<P>    // Class instance for that type</P>
+<P>    private Hashtable types = new Hashtable();</P>
+<P>&nbsp;</P>
+<P>    // basePath gives the path to which this class</P>
+<P>    // loader appends "/&lt;typename</FONT>.class" to get the</P>
+<P>    // full path name of the class file to load</P>
+<P>    private String basePath;</P>
+<P>&nbsp;</P>
+<P>    public GreeterClassLoader(String basePath) {</P>
+<P>&nbsp;</P>
+<P>        this.basePath = basePath;</P>
+<P>    }</P>
+<P>&nbsp;</P>
+<P>    public synchronized Class loadClass(String className,</P>
+<P>        boolean resolveIt) throws ClassNotFoundException {</P>
+<P>&nbsp;</P>
+<P>        Class result;</P>
+<P>        byte classData[];</P>
+<P>&nbsp;</P>
+<P>        // Check the local cache</P>
+<P>        result = (Class) types.get(className);</P>
+<P>        if (result != null) {</P>
+<P>            // Return a cached class</P>
+<P>            return result;</P>
+<P>        }</P>
+<P>&nbsp;</P>
+<P>        // Check with the primordial class loader</P>
+<P>        try {</P>
+<P>            result = super.findSystemClass(className);</P>
+<P>            // Return a system class</P>
+<P>            return result;</P>
+<P>        }</P>
+<P>        catch (ClassNotFoundException e) {</P>
+<P>        }</P>
+<P>&nbsp;</P>
+<P>        // Don't attempt to load a system file except through</P>
+<P>        // the primordial class loader</P>
+<P>        if (className.startsWith("java.")) {</P>
+<P>            throw new ClassNotFoundException();</P>
+<P>        }</P>
+<P>&nbsp;</P>
+<P>        // Try to load it from the basePath directory.</P>
+<P>        classData = getTypeFromBasePath(className);</P>
+<P>        if (classData == null) {</P>
+<P>            System.out.println("GCL - Can't load class: "</P>
+<P>                + className);</P>
+<P>            throw new ClassNotFoundException();</P>
+<P>        }</P>
+<P>&nbsp;</P>
+<P>        // Parse it</P>
+<P>        result = defineClass(className, classData, 0,</P>
+<P>            classData.length);</P>
+<P>        if (result == null) {</P>
+<P>            System.out.println("GCL - Class format error: "</P>
+<P>                + className);</P>
+<P>            throw new ClassFormatError();</P>
+<P>        }</P>
+<P>&nbsp;</P>
+<P>        if (resolveIt) {</P>
+<P>            resolveClass(result);</P>
+<P>        }</P>
+<P>&nbsp;</P>
+<P>        // Add newly loaded type to private name cache</P>
+<P>        types.put(className, result);</P>
+<P>&nbsp;</P>
+<P>        // Return class from basePath directory</P>
+<P>        return result;</P>
+<P>    }</P>
+<P>&nbsp;</P>
+<P>    private byte[] getTypeFromBasePath(String className) {</P>
+<P>&nbsp;</P>
+<P>        InputStream in = null;</P>
+<P>        String fileName = basePath + "/" + className + ".class";</P>
+<P>&nbsp;</P>
+<P>        try {</P>
+<P>            in = new FileInputStream(fileName);</P>
+<P>        } catch (FileNotFoundException e) {</P>
+<P>            return null;</P>
+<P>        }</P>
+<P>&nbsp;</P>
+<P>        ByteArrayOutputStream out = new ByteArrayOutputStream();</P>
+<P>&nbsp;</P>
+<P>        try {</P>
+<P>            int c = in.read();</P>
+<P>            while (c != -1) {</P>
+<P>                out.write(c);</P>
+<P>                c = in.read();</P>
+<P>            }</P>
+<P>        }</P>
+<P>        catch (IOException e) {</P>
+<P>            System.out.println("GCL: Error reading bytes of:"</P>
+<P>                + className);</P>
+<P>            e.printStackTrace();</P>
+<P>            return null;</P>
+<P>        }</P>
+<P>&nbsp;</P>
+<P>        return out.toByteArray();</P>
+<P>    }</P>
+<P>}</P>
+</FONT><FONT SIZE="2"><P>&nbsp;</P></FONT><FONT FACE="Courier New">end</FONT></P></PRE>
+<P>The <FONT FACE="Courier New">GreeterClassLoader</FONT> declares two instance variables, <FONT FACE="Courier New">classes</FONT> and <FONT FACE="Courier New">basePath</FONT>. The <FONT FACE="Courier New">classes</FONT> variable, a <FONT FACE="Courier New">Hashtable</FONT>, is used to store for each type this class loader object loads the typeís name and a reference to its <FONT FACE="Courier New">Class</FONT> instance. The <FONT FACE="Courier New">basePath</FONT> variable, a <FONT FACE="Courier New">String</FONT>, is used to store the directory path (passed to <FONT FACE="Courier New">GreetingClassLoader</FONT>ís constructor) in which the <FONT FACE="Courier New">loadClass()</FONT> method should look for the class file of the type it has been requested to load.</P>
+<P>The <FONT FACE="Courier New">loadClass()</FONT> method begins by checking to see if the requested type has already been loaded by this class loader. It does this by looking up the type name passed in parameter <FONT FACE="Courier New">name</FONT> in the <FONT FACE="Courier New">Hashtable</FONT>. If the name exists in the <FONT FACE="Courier New">Hashtable</FONT>, <FONT FACE="Courier New">loadClass()</FONT> retrieves and returns the <FONT FACE="Courier New">Class</FONT> instance for that name:</P>
+<PRE><P><FONT FACE="Courier New">begin</FONT></P>
+<FONT FACE="Courier New"><P>// Check the local cache</P>
+<P>result = (Class) classes.get(className);</P>
+<P>if (result != null) {</P>
+<P>    // Return a cached class</P>
+<P>    return result;</P>
+<P>}</P>
+</FONT><P><FONT FACE="Courier New">end</FONT></P></PRE>
+<P>Why does <FONT FACE="Courier New">GreeterClassLoader</FONT> maintain a list of the types it has loaded? As mentioned earlier in this chapter, the virtual machine maintains its own list of type names that have already been requested of each class loader. When loading superclasses in Step 1 of resolution, the virtual machine always checks its own internal list before automatically invoking <FONT FACE="Courier New">loadClass()</FONT>. As a result, the virtual machine will never automatically invoke <FONT FACE="Courier New">loadClass()</FONT> on a class loader object with the name of a type already loaded by that class loader object. Nevertheless, <FONT FACE="Courier New">GreeterClassLoader</FONT> maintains its own list of the names of the types it has already loaded. Why? Because even though the virtual machine will never ask a class loader object to load the same type twice, the application just might.</P>
+<P>As an example, imagine the <FONT FACE="Courier New">Greet</FONT> application were invoked with this command line:</P>
+<PRE><P><FONT FACE="Courier New">begin</FONT></P>
+<FONT FACE="Courier New"><P>java Greet greeters Hello Hello Hello Hello Hello</P>
+</FONT><P><FONT FACE="Courier New">end</FONT></P></PRE>
+<P>Given this command line, the <FONT FACE="Courier New">Greet</FONT> application would invoke <FONT FACE="Courier New">loadClass()</FONT> with the name <FONT FACE="Courier New">Hello</FONT> five times on the same <FONT FACE="Courier New">GreeterClassLoader</FONT> object. The first time, the <FONT FACE="Courier New">GreeterClassLoader</FONT> would load the class and add its name and <FONT FACE="Courier New">Class</FONT> instance to the <FONT FACE="Courier New">Hashtable</FONT>. The next four times, however, the <FONT FACE="Courier New">GreeterClassLoader</FONT> would simply extract the <FONT FACE="Courier New">Class</FONT> instance for <FONT FACE="Courier New">Hello</FONT> from its <FONT FACE="Courier New">Hashtable</FONT> and return that. It would only load class <FONT FACE="Courier New">Hello</FONT> once.</P>
+<P>If the <FONT FACE="Courier New">loadClass()</FONT> method determines that the requested type has not been loaded into its name space, it next passes the name of the requested type to <FONT FACE="Courier New">findSystemClass()</FONT>:</P>
+<PRE><P><FONT FACE="Courier New">begin</FONT></P>
+<FONT FACE="Courier New"><P>// Check with the primordial class loader</P>
+<P>try {</P>
+<P>    result = super.findSystemClass(className);</P>
+<P>    // Return a system class</P>
+<P>    return result;</P>
+<P>}</P>
+<P>catch (ClassNotFoundException e) {</P>
+<P>}</P>
+</FONT><P><FONT FACE="Courier New">end</FONT></P></PRE>
+<P>When the <FONT FACE="Courier New">findSystemClass()</FONT> method is invoked, the primordial class loader attempts to load the type. If it successfully loads the type, the primordial class loader also links and initializes the type. (As mentioned earlier in this chapter, if the type is a class, the primordial class loader makes sure all the classís superclasses are loaded, linked, and initialized as well.) <FONT FACE="Courier New">findSystemClass()</FONT> returns the <FONT FACE="Courier New">Class</FONT> instance created by the primordial class loader when it successfully loaded the type, and <FONT FACE="Courier New">loadClass()</FONT> returns that same <FONT FACE="Courier New">Class</FONT> instance. Note that classes loaded via <FONT FACE="Courier New">findSystemClass()</FONT> are marked as having been loaded by the primordial class loader. The <FONT FACE="Courier New">loadClass()</FONT> method of <FONT FACE="Courier New">GreeterClassLoader</FONT> does not add the name of such types to its <FONT FACE="Courier New">Hashtable</FONT>.</P>
+<P>If the primordial class loader is unable to load the type, <FONT FACE="Courier New">findSystemClass()</FONT> throws <FONT FACE="Courier New">ClassNotFoundError</FONT>. In this case, the <FONT FACE="Courier New">loadClass()</FONT> method next checks to make sure the requested class is not part of the <FONT FACE="Courier New">java</FONT> package:</P>
+<PRE><P><FONT FACE="Courier New">begin</FONT></P>
+<FONT FACE="Courier New"><P>// Don't attempt to load a system file except through</P>
+<P>// the primordial class loader</P>
+<P>if (className.startsWith("java.")) {</P>
+<P>    throw new ClassNotFoundException();</P>
+<P>}</P>
+</FONT><P><FONT FACE="Courier New">end</FONT></P></PRE>
+<P>This check prevents members of the standard <FONT FACE="Courier New">java</FONT> packages (<FONT FACE="Courier New">java.lang</FONT>, <FONT FACE="Courier New">java.io</FONT>, etc.) from being loaded by anything but the primordial class loader. As mentioned in Chapter 3, &quot;Security,&quot; class loader objects should not attempt to custom load types that declare themselves to be part of the Java API (or any other &quot;restricted&quot; packages) but which canít be loaded by the primordial class loader.</P>
+<P>If the type name doesnít begin with &quot;<FONT FACE="Courier New">java</FONT>,&quot; the <FONT FACE="Courier New">loadClass()</FONT> method next invokes <FONT FACE="Courier New">getTypeFromBasePath()</FONT>, which attempts to import the binary data in the class loader objectís custom way: </P>
+<PRE><P><FONT FACE="Courier New">begin</FONT></P>
+<FONT FACE="Courier New"><P>// Try to load it from the basePath directory.</P>
+<P>classData = getTypeFromBasePath(className);</P>
+<P>if (classData == null) {</P>
+<P>    System.out.println("GCL - Can't load class: "</P>
+<P>        + className);</P>
+<P>    throw new ClassNotFoundException();</P>
+<P>}</P>
+</FONT><P><FONT FACE="Courier New">end</FONT></P></PRE>
+<P>The <FONT FACE="Courier New">getTypeFromBasePath()</FONT> method looks for a file with the type name plus a &quot;<FONT FACE="Courier New">.class</FONT>&quot; extension in the base directory passed to the <FONT FACE="Courier New">GreeterClassLoader</FONT>ís constructor. If the <FONT FACE="Courier New">getTypeFromBasePath()</FONT> method is unable to find the file, it returns a <FONT FACE="Courier New">null</FONT> result and the <FONT FACE="Courier New">loadClass()</FONT> method throws <FONT FACE="Courier New">ClassNotFoundException</FONT>. Otherwise, <FONT FACE="Courier New">loadClass()</FONT> invokes <FONT FACE="Courier New">defineClass()</FONT>, passing the <FONT FACE="Courier New">byte</FONT> array returned by <FONT FACE="Courier New">getTypeFromBasePath()</FONT>:</P>
+<PRE><P><FONT FACE="Courier New">begin</FONT></P>
+<FONT FACE="Courier New"><P>// Parse it</P>
+<P>result = defineClass(className, classData, 0,</P>
+<P>    classData.length);</P>
+<P>if (result == null) {</P>
+<P>    System.out.println("GCL - Class format error: "</P>
+<P>        + className);</P>
+<P>    throw new ClassFormatError();</P>
+<P>}</P>
+</FONT><P><FONT FACE="Courier New">end</FONT></P></PRE>
+<P>The <FONT FACE="Courier New">defineClass()</FONT> method uses the primordial class loader to complete the loading process: to parse the binary data into internal data structures and create a <FONT FACE="Courier New">Class</FONT> instance. The <FONT FACE="Courier New">defineClass()</FONT> method does not link and initialize the type. (As mentioned earlier in this chapter, if the type is a class, the <FONT FACE="Courier New">defineClass()</FONT> method also make sure all the classís superclass are loaded. It does this by invoking <FONT FACE="Courier New">loadClass()</FONT> on this class loader object for each superclass in the hierarchy that hasnít yet been loaded by this class loader, with the <FONT FACE="Courier New">resolve</FONT> flag set to <FONT FACE="Courier New">false</FONT>.)</P>
+<P>If <FONT FACE="Courier New">defineClass()</FONT> is successful, it returns the newly created <FONT FACE="Courier New">Class</FONT> instance. The <FONT FACE="Courier New">loadClass()</FONT> method checks to see if <FONT FACE="Courier New">resolve</FONT> were set to <FONT FACE="Courier New">true</FONT>. If so, it invokes <FONT FACE="Courier New">resolveClass()</FONT>, passing the <FONT FACE="Courier New">Class</FONT> instance returned by <FONT FACE="Courier New">defineClass()</FONT>. The <FONT FACE="Courier New">resolveClass()</FONT> method links and initializes the class. (As mentioned earlier in this chapter, <FONT FACE="Courier New">resolveClass()</FONT> also makes sure that, if the type is a class, all its superclasses are linked and initialized as well.)</P>
+<PRE><P><FONT FACE="Courier New">begin</FONT></P>
+<FONT FACE="Courier New"><P>if (resolveIt) {</P>
+<P>    resolveClass(result);</P>
+<P>}</P>
+</FONT><P><FONT FACE="Courier New">end</FONT></P></PRE>
+<P>Finally, the <FONT FACE="Courier New">loadClass()</FONT> method adds the name and <FONT FACE="Courier New">Class</FONT> instance for the newly loaded type into the class loaderís <FONT FACE="Courier New">Hashtable</FONT>, and returns the <FONT FACE="Courier New">Class</FONT> instance:</P>
+<PRE><P><FONT FACE="Courier New">begin</FONT></P>
+<FONT FACE="Courier New"><P>// Add newly loaded type to private name cache</P>
+<P>classes.put(className, result);</P>
+<P>&nbsp;</P>
+<P>// Return class from basePath directory</P>
+<P>return result;</P>
+</FONT><P><FONT FACE="Courier New">end</FONT></P></PRE>
+<P>The <FONT FACE="Courier New">Greet</FONT> application demonstrates the flexibility inherent in Javaís linking model. The <FONT FACE="Courier New">Greet</FONT> application does not know at compile time what greeters it will be loading and dynamically linking to at run-time. In the examples above, class <FONT FACE="Courier New">Greet</FONT> invokes the <FONT FACE="Courier New">greet()</FONT> method in classes <FONT FACE="Courier New">Hello</FONT>, <FONT FACE="Courier New">Greetings</FONT>, <FONT FACE="Courier New">Salutations</FONT>, and <FONT FACE="Courier New">HowDoYouDo</FONT>. But if you look at <FONT FACE="Courier New">Greet</FONT>ís constant pool, there is no symbolic reference to any of these classes. There is only a symbolic reference to their shared superinterface, <FONT FACE="Courier New">COM.artima.greeter.Greeter</FONT>. Greeters themselves, so long as they implement the <FONT FACE="Courier New">COM.artima.greeter.Greeter</FONT> interface, can be anything and can be written and compiled anytime, even after the <FONT FACE="Courier New">Greet</FONT> application itself is compiled.</P>
+<H3><EM><P>Example: Unloading Unreachable Greeters</P>
+</EM></H3><P>As an example of dynamically loaded types becoming unreachable and getting unloaded by the virtual machine, consider the following application:</P>
+<PRE><P><FONT FACE="Courier New">begin</FONT></P>
+<FONT SIZE="2"><P></FONT><FONT FACE="Courier New">// On CD-ROM in file linking/ex6/GreetAndForget.java
+<P>import COM.artima.greeter.*;</P>
+<P>&nbsp;</P>
+<P>public class GreetAndForget {</P>
+<P>&nbsp;</P>
+<P>    // Arguments to this application:</P>
+<P>    //     args[0] - path name of directory in which class files</P>
+<P>    //               for greeters are stored</P>
+<P>    //     args[1], args[2], ... - class names of greeters to load</P>
+<P>    //               and invoke the greet() method on.</P>
+<P>    //</P>
+<P>    // All greeters must implement the COM.artima.greeter.Greeter</P>
+<P>    // interface.</P>
+<P>    //</P>
+<P>    static public void main(String[] args) {</P>
+<P>&nbsp;</P>
+<P>        if (args.length &lt;= 1) {</P>
+<P>            System.out.println(</P>
+<P>                "Enter base path and greeter class names as args.");</P>
+<P>            return;</P>
+<P>        }</P>
+<P>&nbsp;</P>
+<P>        for (int i = 1; i &lt; args.length; ++i) {</P>
+<P>            try {</P>
+<P>&nbsp;</P>
+<P>                GreeterClassLoader gcl =</P>
+<P>                    new GreeterClassLoader(args[0]);</P>
+<P>&nbsp;</P>
+<P>                // Load the greeter specified on the command line</P>
+<P>                Class c = gcl.loadClass(args[i], true);</P>
+<P>&nbsp;</P>
+<P>                // Instantiate it into a greeter object</P>
+<P>                Object o = c.newInstance();</P>
+<P>&nbsp;</P>
+<P>                // Cast the Object ref to the Greeter interface type</P>
+<P>                // so greet() can be invoked on it</P>
+<P>                Greeter greeter = (Greeter) o;</P>
+<P>&nbsp;</P>
+<P>                // Greet the world in this greeter's special way</P>
+<P>                greeter.greet();</P>
+<P>&nbsp;</P>
+<P>                // Forget the class loader object, Class</P>
+<P>                // instance, and greeter object</P>
+<P>                gcl = null;</P>
+<P>                c = null;</P>
+<P>                o = null;</P>
+<P>                greeter = null;</P>
+<P>&nbsp;</P>
+<P>                // At this point, the types loaded through the</P>
+<P>                // GreeterClassLoader object created at the top of</P>
+<P>                // this for loop are unreferenced and can be unloaded</P>
+<P>                // by the virtual machine.</P>
+<P>            }</P>
+<P>            catch (Exception e) {</P>
+<P>                e.printStackTrace();</P>
+<P>            }</P>
+<P>        }</P>
+<P>    }</P>
+<P>}</P>
+</FONT><FONT SIZE="2"><P>&nbsp;</P></FONT><FONT FACE="Courier New">end</FONT></P></PRE>
+<P>The <FONT FACE="Courier New">GreetAndForget</FONT> application accepts the same command line arguments as the <FONT FACE="Courier New">Greet</FONT> application of the previous example. The first argument is a base directory path name where the <FONT FACE="Courier New">GreetAndForget</FONT> application will look for greeters. Subsequent arguments are greeter names. To understand this example you should be familiar with the <FONT FACE="Courier New">Greet</FONT> application of the previous example.</P>
+<P>Imagine you invoke the <FONT FACE="Courier New">GreetAndForget</FONT> application with the following command line:</P>
+<PRE><P><FONT FACE="Courier New">begin</FONT></P>
+<FONT FACE="Courier New"><P>java GreetAndForget greeters Surprise HiTime Surprise</P>
+</FONT><P><FONT FACE="Courier New">end</FONT></P></PRE>
+<P>The code for the <FONT FACE="Courier New">HiTime</FONT> greeter, which selects a different greeting based on the time of day, is shown above in the previous section of this chapter. The code for the <FONT FACE="Courier New">Surprise</FONT> greeter, which pseudo-randomly selects one of four helper greeters--<FONT FACE="Courier New">Hello</FONT>, <FONT FACE="Courier New">Greetings</FONT>, <FONT FACE="Courier New">Salutations</FONT>, or <FONT FACE="Courier New">HowDoYouDo</FONT>--and invokes its <FONT FACE="Courier New">greet()</FONT> method, is shown here:</P>
+<PRE><P><FONT FACE="Courier New">begin</FONT></P>
+<FONT SIZE="2"><P></FONT><FONT FACE="Courier New">// On CD-ROM in file linking/ex6/greeters/Surprise.java
+<P>import COM.artima.greeter.Greeter;</P>
+<P>&nbsp;</P>
+<P>public class Surprise implements Greeter {</P>
+<P>&nbsp;</P>
+<P>    public void greet() {</P>
+<P>&nbsp;</P>
+<P>        // Choose one of four greeters pseudo-randomly and</P>
+<P>        // invoke its greet() method.</P>
+<P>        int choice = (int) (Math.random() * 3.99);</P>
+<P>&nbsp;</P>
+<P>        Greeter g;</P>
+<P>&nbsp;</P>
+<P>        switch(choice) {</P>
+<P>&nbsp;</P>
+<P>        case 0:</P>
+<P>            g = new Hello();</P>
+<P>            g.greet();</P>
+<P>            break;</P>
+<P>&nbsp;</P>
+<P>        case 1:</P>
+<P>            g = new Greetings();</P>
+<P>            g.greet();</P>
+<P>            break;</P>
+<P>&nbsp;</P>
+<P>        case 2:</P>
+<P>            g = new Salutations();</P>
+<P>            g.greet();</P>
+<P>            break;</P>
+<P>&nbsp;</P>
+<P>        case 3:</P>
+<P>            g = new HowDoYouDo();</P>
+<P>            g.greet();</P>
+<P>            break;</P>
+<P>        }</P>
+<P>    }</P>
+<P>}</P>
+</FONT><FONT SIZE="2"><P>&nbsp;</P></FONT><FONT FACE="Courier New">end</FONT></P></PRE>
+<P>Given the command line shown above, the <FONT FACE="Courier New">GreetAndForget</FONT> application invokes the <FONT FACE="Courier New">greet()</FONT> method of the <FONT FACE="Courier New">Surprise</FONT> greeter first, then the <FONT FACE="Courier New">HiTime</FONT> greeter, then the <FONT FACE="Courier New">Surprise</FONT> greeter again. <FONT FACE="Courier New">GreetAndForget</FONT>ís actual output would vary depending on the time of day and <FONT FACE="Courier New">Surprise</FONT>ís pseudo-random mood. For the purposes of this example, assume that you typed in the above command, hit return, and got the following output:</P>
+<PRE><P><FONT FACE="Courier New">begin</FONT></P>
+<FONT FACE="Courier New"><P>How do you do, globe!</P>
+<P>Good afternoon, world!</P>
+<P>Greetings, planet!</P>
+</FONT><P><FONT FACE="Courier New">end</FONT></P></PRE>
+<P>This output indicates <FONT FACE="Courier New">Surprise</FONT> chose to execute <FONT FACE="Courier New">HowDoYouDo</FONT>ís <FONT FACE="Courier New">greet()</FONT> method the first time around and <FONT FACE="Courier New">Greetings</FONT>ís <FONT FACE="Courier New">greet()</FONT> method the second time around.</P>
+<P>The first pass through <FONT FACE="Courier New">GreetAndForget</FONT>ís for loop, the virtual machine loads the <FONT FACE="Courier New">Surprise</FONT> class and invokes its <FONT FACE="Courier New">greet()</FONT> method. The constant pool for <FONT FACE="Courier New">Surprise</FONT> includes a symbolic reference to each the four helper greeters that it may choose: <FONT FACE="Courier New">Hello</FONT>, <FONT FACE="Courier New">Greetings</FONT>, <FONT FACE="Courier New">Salutations</FONT>, and <FONT FACE="Courier New">HowDoYouDo</FONT>. Assuming the Java Virtual Machine that you used to run the <FONT FACE="Courier New">GreetAndForget</FONT> application uses late resolution, only one of these four symbolic references will be resolved during the first pass of <FONT FACE="Courier New">GreetAndForget</FONT>ís for loop: the symbolic reference to <FONT FACE="Courier New">HowDoYouDo</FONT>. The virtual machine resolves this symbolic reference when it executes the bytecodes that correspond to the following statement in <FONT FACE="Courier New">Surprise</FONT>ís <FONT FACE="Courier New">greet()</FONT> method:</P>
+<PRE><P><FONT FACE="Courier New">begin</FONT></P>
+<FONT FACE="Courier New"><P>g = new HowDoYouDo();</P>
+</FONT><P><FONT FACE="Courier New">end</FONT></P></PRE>
+<P>To resolve the symbolic reference from <FONT FACE="Courier New">Surprise</FONT>ís constant pool to <FONT FACE="Courier New">HowDoYouDo</FONT>, the virtual machine invokes the <FONT FACE="Courier New">GreeterClassLoader</FONT> objectís <FONT FACE="Courier New">loadClass()</FONT> method, passing the string &quot;<FONT FACE="Courier New">HowDoYouDo</FONT>&quot; in the <FONT FACE="Courier New">name</FONT> parameter and setting the <FONT FACE="Courier New">resolve</FONT> flag to <FONT FACE="Courier New">true</FONT>. The virtual machine uses the <FONT FACE="Courier New">GreeterClassLoader</FONT> object to load <FONT FACE="Courier New">HowDoYouDo</FONT> because <FONT FACE="Courier New">Surprise</FONT> was loaded through the <FONT FACE="Courier New">GreeterClassLoader</FONT> object. As mentioned earlier in this chapter, when the Java Virtual Machine resolves a symbolic reference, it uses the same class loader that loaded the referencing type (in this case, <FONT FACE="Courier New">Surprise</FONT>) to load the referenced type (in this case, <FONT FACE="Courier New">HowDoYouDo</FONT>).</P>
+<P>Once <FONT FACE="Courier New">Surprise</FONT>ís <FONT FACE="Courier New">greet()</FONT> method has created a new <FONT FACE="Courier New">HowDoYouDo</FONT> instance, it invokes its <FONT FACE="Courier New">greet()</FONT> method:</P>
+<PRE><P><FONT FACE="Courier New">begin</FONT></P>
+<FONT FACE="Courier New"><P>g.greet();</P>
+</FONT><P><FONT FACE="Courier New">end</FONT></P></PRE>
+<P>As the virtual machine executes <FONT FACE="Courier New">HowDoYouDo</FONT>ís <FONT FACE="Courier New">greet()</FONT> method, it must resolve two symbolic references from <FONT FACE="Courier New">HowDoYouDo</FONT>ís constant pool--one to class <FONT FACE="Courier New">java.lang.System</FONT> and another to class <FONT FACE="Courier New">java.io.PrintStream</FONT>. To resolve these symbolic references, the virtual machine invokes the <FONT FACE="Courier New">GreeterClassLoader</FONT> objectís <FONT FACE="Courier New">loadClass()</FONT> method, once with the name <FONT FACE="Courier New">java.lang.System</FONT> and once with the name <FONT FACE="Courier New">java.io.PrintStream</FONT>. As before, the virtual machine uses the <FONT FACE="Courier New">GreeterClassLoader</FONT> object to load these classes because the referencing class--in this case, <FONT FACE="Courier New">HowDoYouDo</FONT>--was loaded through the <FONT FACE="Courier New">GreeterClassLoader</FONT> object. But these two classes, both members of the Java API, will end up being loaded by the primordial class loader anyway.</P>
+<P>Remember that before the <FONT FACE="Courier New">loadClass()</FONT> method of <FONT FACE="Courier New">GreeterClassLoader</FONT> attempts to look for a requested type in the base directory (in this case, directory <FONT FACE="Courier New">greeters</FONT>), it invokes <FONT FACE="Courier New">findSystemClass()</FONT>. Because <FONT FACE="Courier New">findSystemClass()</FONT>, which uses the primordial class loader to try and load the requested type, is able to load both <FONT FACE="Courier New">java.lang.System</FONT> and <FONT FACE="Courier New">java.io.PrintStream</FONT>, the <FONT FACE="Courier New">loadClass()</FONT> method will simply return the <FONT FACE="Courier New">Class</FONT> instance returned by <FONT FACE="Courier New">findSystemClass()</FONT>. These classes will be marked not as having been loaded by the <FONT FACE="Courier New">GreeterClassLoader</FONT> object, but as having been loaded by the primordial class loader. To resolve any references from <FONT FACE="Courier New">java.lang.System</FONT> or <FONT FACE="Courier New">java.io.PrintStream</FONT>, the virtual machine will not invoke the <FONT FACE="Courier New">loadClass()</FONT> method of the <FONT FACE="Courier New">GreeterClassLoader</FONT> object. It will just use the primordial class loader directly.</P>
+<P>As a result, after <FONT FACE="Courier New">Surprise</FONT>ís <FONT FACE="Courier New">greet()</FONT> method has returned, there will be two types marked as having been loaded by the <FONT FACE="Courier New">GreeterClassLoader</FONT> object: class <FONT FACE="Courier New">Surprise</FONT> and class <FONT FACE="Courier New">HowDoYouDo</FONT>. These two types will be in the virtual machineís internal list of the types loaded by the <FONT FACE="Courier New">GreeterClassLoader</FONT> object and will appear in the <FONT FACE="Courier New">Hashtable</FONT> pointed to by the <FONT FACE="Courier New">GreeterClassLoader</FONT> objectís <FONT FACE="Courier New">classes</FONT> instance variable.</P>
+<P>Just after <FONT FACE="Courier New">Surprise</FONT>ís <FONT FACE="Courier New">greet()</FONT> method returns, the <FONT FACE="Courier New">Class</FONT> instances for <FONT FACE="Courier New">Surprise</FONT> and <FONT FACE="Courier New">HowDoYouDo</FONT> are reachable by the application. The garbage collector will not reclaim the space occupied by these <FONT FACE="Courier New">Class</FONT> instances, because there are ways for the applicationís code to access and use them. See Figure 8-11 for a graphical depiction of the reachability of these two <FONT FACE="Courier New">Class</FONT> instances.</P>
+<P><IMG SRC="fig8-11.gif" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/venners/images/fig8-11.gif" ALT="Figure 8-11"></P>
+
+<P>The <FONT FACE="Courier New">Class</FONT> instance for <FONT FACE="Courier New">Surprise</FONT> can be reached in three ways. First, it can be reached directly from local variable <FONT FACE="Courier New">c</FONT> of <FONT FACE="Courier New">GreetAndForget</FONT>ís <FONT FACE="Courier New">main()</FONT> method. Second, it can be reached from local variables <FONT FACE="Courier New">o</FONT> and <FONT FACE="Courier New">greeter</FONT>, which both point to the same <FONT FACE="Courier New">Surprise</FONT> object. From the <FONT FACE="Courier New">Surprise</FONT> object, the virtual machine can get at <FONT FACE="Courier New">Surprise</FONT>ís type data, which includes a reference to <FONT FACE="Courier New">Surprise</FONT>ís<FONT FACE="Courier New"> Class</FONT> object. The third way the <FONT FACE="Courier New">Class</FONT> instance for <FONT FACE="Courier New">Surprise</FONT> can be reached is through the <FONT FACE="Courier New">gcl</FONT> local variable of <FONT FACE="Courier New">GreetAndForget</FONT>ís <FONT FACE="Courier New">main()</FONT> method. This local variable points to the <FONT FACE="Courier New">GreeterClassLoader</FONT> object, which includes a reference to a <FONT FACE="Courier New">HashTable</FONT> object in which a reference to <FONT FACE="Courier New">Surprise</FONT>ís <FONT FACE="Courier New">Class</FONT> instance is stored.</P>
+<P>The <FONT FACE="Courier New">Class</FONT> instance for <FONT FACE="Courier New">HowDoYouDo</FONT> can be reached in two ways. One way is identical to the one of the paths to the <FONT FACE="Courier New">Class</FONT> instance for <FONT FACE="Courier New">Surprise</FONT>: the <FONT FACE="Courier New">gcl</FONT> local variable of <FONT FACE="Courier New">GreetAndForget</FONT>ís <FONT FACE="Courier New">main()</FONT> method points to the <FONT FACE="Courier New">GreeterClassLoader</FONT> object, which includes a reference to a <FONT FACE="Courier New">HashTable</FONT> object. The <FONT FACE="Courier New">Hashtable</FONT> contains a reference to <FONT FACE="Courier New">HowDoYouDo</FONT>ís <FONT FACE="Courier New">Class</FONT> instance. The other way to reach <FONT FACE="Courier New">HowDoYouDo</FONT>ís class instance is through <FONT FACE="Courier New">Surprise</FONT>ís constant pool.</P>
+<P>When the virtual machine resolved the symbolic reference from <FONT FACE="Courier New">Surprise</FONT>ís constant pool to <FONT FACE="Courier New">HowDoYouDo</FONT>, it replaced the symbolic reference with a direct reference. The direct reference points to <FONT FACE="Courier New">HowDoYouDo</FONT>ís type data, which includes a reference to <FONT FACE="Courier New">HowDoYouDo</FONT>ís <FONT FACE="Courier New">Class</FONT> instance.</P>
+<P>Thus, starting from <FONT FACE="Courier New">Surprise</FONT>ís constant pool, the <FONT FACE="Courier New">Class</FONT> instance to <FONT FACE="Courier New">HowDoYouDo</FONT> is reachable. But why would the garbage collector look at direct references emanating from <FONT FACE="Courier New">Surprise</FONT>ís constant pool in the first place? Because <FONT FACE="Courier New">Surprise</FONT>ís <FONT FACE="Courier New">Class</FONT> instance is reachable. When the garbage collector finds that it can reach <FONT FACE="Courier New">Surprise</FONT>ís <FONT FACE="Courier New">Class</FONT> instance, it makes sure it marks the <FONT FACE="Courier New">Class</FONT> instances for any types that are directly referenced from <FONT FACE="Courier New">Surprise</FONT>ís constant pool as reachable. If <FONT FACE="Courier New">Surprise</FONT> is still live, the virtual machine canít unload any types <FONT FACE="Courier New">Surprise</FONT> may need to use.</P>
+<P>Note that of the three ways, described above, that <FONT FACE="Courier New">Surprise</FONT>ís <FONT FACE="Courier New">Class</FONT> instance can be reached, none of them involve a constant pool of another type. <FONT FACE="Courier New">Surprise</FONT> does not appear as a symbolic reference in the constant pool for <FONT FACE="Courier New">GreetAndForget</FONT>. Class <FONT FACE="Courier New">GreetAndForget</FONT> did not know about <FONT FACE="Courier New">Surprise</FONT> at compile-time. Instead, the <FONT FACE="Courier New">GreetAndForget</FONT> application decided at run-time to load and link to class <FONT FACE="Courier New">Surprise</FONT>. Thus, the <FONT FACE="Courier New">Class</FONT> instance for class <FONT FACE="Courier New">Surprise</FONT> is only reachable by starting from the local variables of <FONT FACE="Courier New">GreetAndForget</FONT>ís <FONT FACE="Courier New">main()</FONT> method. Unfortunately for <FONT FACE="Courier New">Surprise</FONT> (and ultimately for <FONT FACE="Courier New">HowDoYouDo)</FONT>, this does not constitute a very firm grasp on life.</P>
+<P>The next four statements in <FONT FACE="Courier New">GreetAndForget</FONT>ís <FONT FACE="Courier New">main()</FONT> method, will change the reachability situation completely:</P>
+<PRE><P><FONT FACE="Courier New">begin</FONT></P>
+<FONT FACE="Courier New"><P>// Forget the class loader object, Class</P>
+<P>// instance, and greeter object</P>
+<P>gcl = null;</P>
+<P>c = null;</P>
+<P>o = null;</P>
+<P>greeter = null;</P>
+</FONT><P><FONT FACE="Courier New">end</FONT></P></PRE>
+<P>These statements null out all four starting places from which <FONT FACE="Courier New">Surprise</FONT>ís <FONT FACE="Courier New">Class</FONT> instance is reachable. As a result, after these statements have been executed, the <FONT FACE="Courier New">Class</FONT> instance for <FONT FACE="Courier New">Surprise</FONT> is no longer reachable. These statements also render unreachable the <FONT FACE="Courier New">Class</FONT> instance for <FONT FACE="Courier New">HowDoYouDo</FONT>, the <FONT FACE="Courier New">Surprise</FONT> instance that was formerly pointed to by the <FONT FACE="Courier New">o</FONT> and <FONT FACE="Courier New">greeter</FONT> variables, the <FONT FACE="Courier New">GreeterClassLoader</FONT> instance that was formerly pointed to by the <FONT FACE="Courier New">gcl</FONT> variable, and the <FONT FACE="Courier New">Hashtable</FONT> instance that was pointed to by the <FONT FACE="Courier New">classes</FONT> variable of the <FONT FACE="Courier New">GreeterClassLoader</FONT> object. All five of these objects are now available for garbage collection.</P>
+<P>When (and if) the garbage collector gets around to freeing the unreferenced <FONT FACE="Courier New">Class</FONT> instances for <FONT FACE="Courier New">Surprise</FONT> and <FONT FACE="Courier New">HowDoYouDo</FONT>, it can also free up all the associated type data in the method area for <FONT FACE="Courier New">Surprise</FONT> and <FONT FACE="Courier New">HowDoYouDo</FONT>. Because these classís <FONT FACE="Courier New">Class</FONT> instances are unreachable, the types themselves are unreachable and can be unloaded by the virtual machine.</P>
+<P>Note that two iterations of the for loop later (given the command line shown above), the <FONT FACE="Courier New">GreetAndForget</FONT> application will again load class <FONT FACE="Courier New">Surprise</FONT>. Keep in mind that the virtual machine will not reuse the type data for <FONT FACE="Courier New">Surprise</FONT> that was loaded during the first pass of the for loop. Granted, that type data became available for unloading at the end of the first pass. But even if the <FONT FACE="Courier New">Class</FONT> instance for <FONT FACE="Courier New">Surprise</FONT> hadnít become unreferenced at the end of the first pass, the type data from the first pass wouldnít be reused during the third pass.</P>
+<P>With each pass of the for loop, the <FONT FACE="Courier New">main()</FONT> method of <FONT FACE="Courier New">GreetAndForget</FONT> creates a new <FONT FACE="Courier New">GreeterClassLoader</FONT> object. Thus, every greeter that <FONT FACE="Courier New">GreetAndForget</FONT> loads is loaded through a different class loader object. For example, if you invoke the <FONT FACE="Courier New">GreetAndForget</FONT> application with the <FONT FACE="Courier New">Hello</FONT> greeter listed five times on the command line, the application will create five instances of class <FONT FACE="Courier New">GreeterClassLoader</FONT>. The <FONT FACE="Courier New">Hello</FONT> greeter will be loaded five times by five different class loader objects. The method area will contain five different copies of the type data for <FONT FACE="Courier New">Hello</FONT>. The heap will contain five <FONT FACE="Courier New">Class</FONT> instances that represent the <FONT FACE="Courier New">Hello</FONT> class--one for each name space into which <FONT FACE="Courier New">Hello</FONT> is loaded. When one of the <FONT FACE="Courier New">Class</FONT> instances for <FONT FACE="Courier New">Hello</FONT> becomes unreferenced, only the <FONT FACE="Courier New">Hello</FONT> type data associated with that particular <FONT FACE="Courier New">Class</FONT> instance would be available for unloading.</P>
+<H3><EM><P>On the CD-ROM</P>
+</EM></H3><P>The CD-ROM contains the source code examples from this chapter in the <FONT FACE="Courier New">linking</FONT> directory.</P>
+<H3><EM><P>The Resources Page</P>
+</EM></H3><P>For more information about the material presented in this chapter, visit the resources page: <FONT FACE="Courier New"><A HREF="http://www.artima.com/insidejvm/linking.html" tppabs="http://www.artima.com/insidejvm/linking.html">http://www.artima.com/insidejvm/linking.html</A></FONT>.</P>
+<TABLE BORDER="0" WIDTH="100%">
+<TR><TD><A HREF="http://www.pbg.mcgraw-hill.com/betabooks/stores.html" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/stores.html" target="bottom"><IMG SRC="hotkey.gif" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/images/hotkey.gif" ALIGN="LEFT" BORDER="0" WIDTH="40" HEIGHT="40" ALT="Orders"></A>
+<IMG SRC="order_text.gif" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/images/order_text.gif" WIDTH="103" HEIGHT="41" ALT="Orders"></TD>
+<TD ALIGN="RIGHT"><A HREF="chap07.html" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/venners/chap07.html"><IMG SRC="backward.gif" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/images/backward.gif" BORDER="0" ALT="Backward" WIDTH="32" HEIGHT="32"></A>&nbsp;<A HREF="chap09.html" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/venners/chap09.html"><IMG SRC="forward.gif" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/images/forward.gif" BORDER="0" ALT="Forward" WIDTH="32" HEIGHT="32"></A></TD></TR>
+<TR><TD COLSPAN="2"><A HREF="mailto:computing@mcgraw-hill.com"><IMG SRC="hotkey.gif" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/images/hotkey.gif" ALIGN="LEFT" BORDER="0" WIDTH="40" HEIGHT="40" ALT="Comments"></A>
+<IMG SRC="comment_text.gif" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/images/comment_text.gif" WIDTH="73" HEIGHT="39" ALT="Comments"></TD></TR>
+
+</TABLE>
+<HR>
+<P ALIGN=CENTER>&nbsp;<A HREF="http://www.pbg.mcgraw-hill.com/computing/computing-home.html" tppabs="http://www.pbg.mcgraw-hill.com/computing/computing-home.html" TARGET="_top">COMPUTING
+MCGRAW-HILL</A> | <A HREF="http://www.pbg.mcgraw-hill.com/betabooks/betabooks-home.html" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/betabooks-home.html" TARGET="_top">Beta Books</A>
+| <A HREF="http://www.pbg.mcgraw-hill.com/computing/contact.html" tppabs="http://www.pbg.mcgraw-hill.com/computing/contact.html" TARGET="_top">Contact Us</A>
+| <A HREF="http://www.pbg.mcgraw-hill.com/betabooks/stores.html" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/stores.html" TARGET="_top">Order Information</A>
+| <A HREF="http://mcgraw-hill.inforonics.com/compsearch.shtml" tppabs="http://mcgraw-hill.inforonics.com/compsearch.shtml" TARGET="_top">Online Catalog</A></P>
+
+<P ALIGN=CENTER><FONT SIZE="-1"><A HREF="http://www.pbg.mcgraw-hill.com/computing/computing-home.html" tppabs="http://www.pbg.mcgraw-hill.com/computing/computing-home.html" TARGET="_top">Computing McGraw-Hill</A> is an imprint of the <A HREF="http://www.pbg.mcgraw-hill.com/pbg-home.html" tppabs="http://www.pbg.mcgraw-hill.com/pbg-home.html" TARGET="_top">McGraw-Hill Professional Book Group</A>.</FONT></P>
+
+<!-- begin footer -->
+<HR>
+<A HREF="http://www.mcgraw-hill.com/" tppabs="http://www.mcgraw-hill.com/" TARGET="_top"><IMG SRC="division-white.gif" tppabs="http://www.pbg.mcgraw-hill.com/images/division-white.gif" WIDTH="350" HEIGHT="44" ALT="A Division of the McGraw-Hill Companies" BORDER="0"></A><BR>
+<FONT SIZE="-2">Copyright &copy; 1997 <A HREF="http://www.mcgraw-hill.com/" tppabs="http://www.mcgraw-hill.com/" TARGET="_top">
+The McGraw-Hill Companies</A>. All rights reserved. Any use is subject to the 
+<A HREF="http://www.mcgraw-hill.com/corporate/news_info/copyrttm.htm" tppabs="http://www.mcgraw-hill.com/corporate/news_info/copyrttm.htm" TARGET="_top">
+Terms of Use</A>; the corporation also has a comprehensive <A HREF="http://www.mcgraw-hill.com/corporate/news_info/privacy.html" tppabs="http://www.mcgraw-hill.com/corporate/news_info/privacy.html" TARGET="_top">
+Privacy Policy</A> governing information we may collect from our customers.</FONT>
+<!-- end footer -->
+</BODY>
+</HTML>

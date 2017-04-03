@@ -1,0 +1,262 @@
+<!-- All material contained herein is copyright (c) McGraw-Hill Professional Books
+All Rights Reserved. No use of this material may be made without express written
+permission of the copyright holder. HTML conversions by Mega Space [barry@megaspace.com] -->
+
+<HTML>
+<HEAD>
+<META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=ISO-8859-1">
+<TITLE>Understanding Digital Signatures: Inside the Java Virtual Machine
+ by Bill Venners - Beta Version</TITLE>
+</HEAD>
+<BODY BGCOLOR="#FFFFFF">
+<TABLE BORDER="0" WIDTH="100%">
+<TR><TD><A HREF="http://www.pbg.mcgraw-hill.com/betabooks/stores.html" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/stores.html" target="bottom"><IMG SRC="hotkey.gif" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/images/hotkey.gif" ALIGN="LEFT" BORDER="0" WIDTH="40" HEIGHT="40" ALT="Orders"></A>
+<IMG SRC="order_text.gif" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/images/order_text.gif" WIDTH="103" HEIGHT="41" ALT="Orders"></TD>
+<TD ALIGN="RIGHT"><A HREF="chap17.html" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/venners/chap17.html"><IMG SRC="backward.gif" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/images/backward.gif" BORDER="0" ALT="Backward" WIDTH="32" HEIGHT="32"></A>&nbsp;<A HREF="chap19.html" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/venners/chap19.html"><IMG SRC="forward.gif" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/images/forward.gif" BORDER="0" ALT="Forward" WIDTH="32" HEIGHT="32"></A></TD></TR>
+<TR><TD COLSPAN="2"><A HREF="mailto:computing@mcgraw-hill.com"><IMG SRC="hotkey.gif" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/images/hotkey.gif" ALIGN="LEFT" BORDER="0" WIDTH="40" HEIGHT="40" ALT="Comments"></A>
+<IMG SRC="comment_text.gif" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/images/comment_text.gif" WIDTH="73" HEIGHT="39" ALT="Comments"></TD></TR>
+
+<TR><TD COLSPAN="2"><FONT FACE="ARIEL,HELVETICA" SIZE="-1"><I>&copy; 1997 The McGraw-Hill Companies, Inc.  All rights reserved.  <BR>Any use of this Beta Book is subject to the rules stated in the <A HREF="http://www.mcgraw-hill.com/corporate/news_info/copyrttm.htm" tppabs="http://www.mcgraw-hill.com/corporate/news_info/copyrttm.htm" target="_top">Terms of Use</A>.</I></FONT><br>
+<script language="javascript">
+    document.write("<a href='http://banners.linkbuddies.com/click.php?id=237296'><img src='http://banners.linkbuddies.com/image.php?id=237296&ref=" + document.referrer + "' width=468 height=60 alt='Click Here' border=0></a>");
+</script></TD></TR>
+
+</TABLE>
+<HR>
+<P><H1>Chapter Eighteen</H1></P>
+<P><H2>Finally Clauses</H2></P>
+<P>This chapter describes the way finally clauses are implemented in bytecodes. It describes the relevant instructions and shows how they are used. The chapter also describes some surprising behaviors exhibited by finally clauses in Java source code and explains this behavior at the bytecode level.</P>
+<P>Accompanying this chapter on the CD-ROM is an applet that interactively illustrates the material presented in the chapter. The applet, named <I>Hop Around</I>, simulates the Java Virtual Machine executing a method that includes finally clauses. At the end of this chapter, you will find a description of this applet and the bytecodes it executes.</P>
+<I><P>Miniature Subroutines</P>
+</I><P></H3>In bytecodes, <CODE>finally</CODE> clauses act as &quot;miniature subroutines&quot; within a method. The subroutine for a finally clause is &quot;invoked&quot; at each exit point inside a <CODE>try</CODE> block and its associated <CODE>catch</CODE>. After the <CODE>finally</CODE> clause completes--as long as it completes by executing past the last statement in the <CODE>finally</CODE> clause, not by throwing an exception or executing a <FONT FACE="Courier New">return</FONT>, <FONT FACE="Courier New">continue</FONT>, or <FONT FACE="Courier New">break</FONT>--the miniature subroutine itself &quot;returns.&quot; Execution continues just past the point where the miniature subroutine was called in the first place. </P>
+<P>The opcode that causes a Java Virtual Machine to jump to a miniature subroutine is the <EM><FONT FACE="Courier New">jsr</FONT></EM> instruction. The <EM><FONT FACE="Courier New">jsr</FONT></EM> opcode takes a two-byte operand, the 16-bit signed offset from the location of the <EM><FONT FACE="Courier New">jsr</FONT></EM> instruction where the miniature subroutine begins. A second variant of the <EM><FONT FACE="Courier New">jsr</FONT></EM> instruction is <EM><FONT FACE="Courier New">jsr_w</FONT></EM>, which performs the same function as <EM><FONT FACE="Courier New">jsr</FONT></EM> but takes a wide (four-byte) operand. When the Java Virtual Machine encounters a <EM><FONT FACE="Courier New">jsr</FONT></EM> or <EM><FONT FACE="Courier New">jsr_w</FONT></EM> instruction, it pushes a return address onto the stack, then continues execution at the start of the miniature subroutine. The return address is the address (an offset or native pointer) of the bytecode immediately following the <EM><FONT FACE="Courier New">jsr</FONT></EM> or <EM><FONT FACE="Courier New">jsr_w</FONT></EM> opcode and its operands. The type of the address is <FONT FACE="Courier New">returnAddress</FONT>.</P>
+<P>After a miniature subroutine completes, it invokes the <EM><FONT FACE="Courier New">ret</FONT></EM> instruction, which returns from the subroutine. The <EM><FONT FACE="Courier New">ret</FONT></EM> instruction takes one operand, an index into the local variables where the return address is stored. The opcodes that deal with <CODE>finally</CODE> clauses are summarized in Table 18-1: </P>
+<P>Table 18-1. <STRONG>Finally clauses</P>
+</STRONG><TABLE WIDTH="500">
+<TR><TD VALIGN="TOP"><STRONG>Opcode</STRONG></TD><TD VALIGN="TOP"><STRONG>Operand(s)</STRONG></TD><TD VALIGN="TOP"><STRONG>Description</STRONG></TD></TR>
+<TR><TD VALIGN="TOP"><FONT FACE="Courier New">jsr</FONT></TD><TD VALIGN="TOP">branchbyte1, branchbyte2</TD><TD VALIGN="TOP">pushes the return address, branches to offset</TD></TR>
+<TR><TD VALIGN="TOP"><FONT FACE="Courier New">jsr</FONT>_w</TD><TD VALIGN="TOP">branchbyte1, branchbyte2, branchbyte3, branchbyte4</TD><TD VALIGN="TOP">pushes the return address, branches to wide offset</TD></TR>
+<TR><TD VALIGN="TOP"><FONT FACE="Courier New">ret</FONT></TD><TD VALIGN="TOP">index</TD><TD VALIGN="TOP">returns to the address stored in local variable index</TD></TR>
+<TR><TD VALIGN="TOP"><FONT FACE="Courier New">wide</FONT></TD><TD VALIGN="TOP"><FONT FACE="Courier New">ret</FONT>, indexbyte1, indexbyte2</TD><TD VALIGN="TOP">returns to the address stored in local variable index</TD></TR>
+</TABLE>
+<P>Don't confuse a miniature subroutine with a Java method. Java methods use a different set of instructions. Instructions such as <EM><FONT FACE="Courier New">invokevirtual</FONT></EM> or <EM><FONT FACE="Courier New">invokespecial</FONT></EM> cause a Java method to be invoked, and instructions such as <EM><FONT FACE="Courier New">return</FONT></EM>, <EM><FONT FACE="Courier New">areturn</FONT></EM>, or <EM><FONT FACE="Courier New">ireturn</FONT></EM> cause a Java method to return. The <EM><FONT FACE="Courier New">jsr</FONT></EM> instruction does not cause a Java method to be invoked. It merely causes a jump to a different opcode within the same method. Likewise, the <EM><FONT FACE="Courier New">ret</FONT></EM> instruction doesn't return from a method. It just causes the virtual machine to jump back to the opcode in the same method that immediately follows the calling <EM><FONT FACE="Courier New">jsr</FONT></EM> opcode and its operands. In this book, the bytecodes that implement a <CODE>finally</CODE> clause are called a &quot;miniature subroutine&quot; because they act like a small subroutine within the bytecode stream of a single method.</P>
+<H3><EM><P>Asymmetrical Invocation and Return</P>
+</EM></H3><P>You might think that the <EM><FONT FACE="Courier New">ret</FONT></EM> instruction should pop the return address off the stack, because that is where it was pushed by the <EM><FONT FACE="Courier New">jsr</FONT></EM> instruction. But it doesn't. At the start of each subroutine, the return address is popped off the top of the stack and stored in a local variable--the same local variable from which the <EM><FONT FACE="Courier New">ret</FONT></EM> instruction later gets it. This asymmetrical manner of working with the return address is necessary because finally clauses (and therefore, miniature subroutines) themselves can throw exceptions or include <CODE>return</CODE>, <CODE>break</CODE>, or <CODE>continue</CODE> statements. Because of this possibility, the extra return address that was pushed onto the stack by the <EM><FONT FACE="Courier New">jsr</FONT></EM> instruction must be removed from the stack right away, so it won't still be there if the <CODE>finally</CODE> clause exits with a <CODE>break</CODE>, <CODE>continue</CODE>, <CODE>return</CODE>, or thrown exception.</P>
+<P>As an illustration, consider the following code, which includes a <CODE>finally</CODE> clause that exits with a break statement. The result of this code is that, irrespective of the parameter <FONT FACE="Courier New">bVal</FONT> passed to method <CODE>surpriseTheProgrammer()</CODE>, the method returns <CODE>false</CODE>:</P>
+<PRE><P><FONT FACE="Courier New">begin</FONT></P>
+<FONT SIZE="2"><P></FONT><FONT FACE="Courier New">// On CD-ROM in file opcodes/ex3/Surprise.java
+<P>class Surprise {</P>
+<P>&nbsp;</P>
+<P>    static boolean surpriseTheProgrammer(boolean bVal) {</P>
+<P>        while (bVal) {</P>
+<P>            try {</P>
+<P>                return true;</P>
+<P>            }</P>
+<P>            finally {</P>
+<P>                break;</P>
+<P>            }</P>
+<P>        }</P>
+<P>        return false;</P>
+<P>    }</P>
+<P>}</P>
+</FONT><FONT SIZE="2"><P>&nbsp;</P></FONT><FONT FACE="Courier New">end</FONT></P></PRE>
+<P>The example above shows why the return address must be stored into a local variable at the beginning of the <CODE>finally</CODE> clause. Because the <CODE>finally</CODE> clause exits with a break, it never executes the <EM><FONT FACE="Courier New">ret</FONT></EM> instruction. As a result, the Java Virtual Machine never goes back to finish up the "<CODE>return true</CODE>" statement. Instead, it just goes ahead with the <CODE>break</CODE> and drops down past the closing curly brace of the <CODE>while</CODE> statement. The next statement is "<CODE>return false</CODE>," which is precisely what the Java Virtual Machine does. </P>
+<P>The behavior shown by this <CODE>finally</CODE> clause, which exits with a <CODE>break,</CODE> is also shown by <CODE>finally</CODE> clauses that exit with a <CODE>return</CODE> or <CODE>continue</CODE>, or by throwing an exception. In any of these cases, the <EM><FONT FACE="Courier New">ret</FONT></EM> instruction at the end of the <CODE>finally</CODE> clause is never executed. Because the <EM><FONT FACE="Courier New">ret</FONT></EM> instruction is not guaranteed to be executed, it can't be relied on to remove the return address from the stack. Therefore, the return address is stored into a local variable at the beginning of the <CODE>finally</CODE> clause's miniature subroutine. </P>
+<P>For a complete example of a finally clause, consider the following method, which contains a <CODE>try</CODE> block with two exit points. In this example, both exit points are <CODE>return</CODE> statements: </P>
+<PRE><P><FONT FACE="Courier New">begin</FONT></P>
+<FONT SIZE="2"><P></FONT><FONT FACE="Courier New">// On CD-ROM in file opcodes/ex1/Nostalgia.java
+<P>class Nostalgia {</P>
+<P>&nbsp;</P>
+<P>    static int giveMeThatOldFashionedBoolean(boolean bVal) {</P>
+<P>        try {</P>
+<P>            if (bVal) {</P>
+<P>                return 1;</P>
+<P>            }</P>
+<P>            return 0;</P>
+<P>        }</P>
+<P>        finally {</P>
+<P>            System.out.println("Got old fashioned.");</P>
+<P>        }</P>
+<P>    }</P>
+<P>}</P>
+</FONT><FONT SIZE="2"><P>&nbsp;</P></FONT><FONT FACE="Courier New">end</FONT></P></PRE>
+<P>The <FONT FACE="Courier New">giveMeThatOldFashionedBoolean()</FONT> method compiles to the following bytecodes: </P>
+<PRE><P><FONT FACE="Courier New">begin</FONT></P>
+<FONT SIZE="2"><P></FONT><FONT FACE="Courier New">// The bytecode sequence for the try block:
+<P> 0 iload_0   // Push local variable 0 (bval parameter)</P>
+<P> 1 ifeq 11   // Pop int, if equal to 0, jump to 11 (just past</P>
+<P>             // the if statement): if (bval) {}</P>
+<P> 4 iconst_1  // Push int 1</P>
+<P> 5 istore_1  // Pop an int (the 1), store into local variable 1</P>
+<P> 6 jsr 24    // Jump to the mini-subroutine for the finally clause</P>
+<P> 9 iload_1   // Push local variable 1 (the 1)</P>
+<P>10 ireturn   // Return int on top of the stack (the 1): return 1;</P>
+<P>11 iconst_0  // Push int 0</P>
+<P>12 istore_1  // Pop an int (the 0), store into local variable 1</P>
+<P>13 jsr 24    // Jump to the mini-subroutine for the finally clause</P>
+<P>16 iload_1   // Push local variable 1 (the 0)</P>
+<P>17 ireturn   // Return int on top of the stack (the 0): return 0;</P>
+<P>&nbsp;</P>
+<P>// The bytecode sequence for a catch clause that catches any kind</P>
+<P>// of exception thrown from within the try block.</P>
+<P>18 astore_2  // Pop the reference to the thrown exception, store</P>
+<P>             // into local variable 2</P>
+<P>19 jsr 24    // Jump to the mini-subroutine for the finally clause</P>
+<P>22 aload_2   // Push the reference (to the thrown exception) from</P>
+<P>             // local variable 2</P>
+<P>23 athrow    // Rethrow the same exception</P>
+<P>&nbsp;</P>
+<P>// The miniature subroutine that implements the finally block.</P>
+<P>24 astore_3  // Pop the return address, store it in local variable 3</P>
+<P>25 getstatic #7 &lt;Field java.io.PrintStream out</FONT></P>
+<P>             // Get a reference to java.lang.System.out</P>
+<P>28 ldc #1 &lt;String "Got old fashioned."</FONT></P>
+<P>             // Push reference to "Got old fashioned." String from</P>
+<P>             // the constant pool</P>
+<P>30 invokevirtual #8 &lt;Method void println(java.lang.String)</FONT></P>
+<P>             // Invoke System.out.println()</P>
+<P>33 ret 3     // Return to return address stored in local variable 3</P>
+</FONT><FONT SIZE="2"><P>&nbsp;</P></FONT><FONT FACE="Courier New">end</FONT></P></PRE>
+<P>The bytecodes for the <CODE>try</CODE> block include two <EM><FONT FACE="Courier New">jsr</FONT></EM> instructions. Another <EM><FONT FACE="Courier New">jsr</FONT></EM> instruction is contained in the <CODE>catch</CODE> clause. The <CODE>catch</CODE> clause is added by the compiler because if an exception is thrown during the execution of the <CODE>try</CODE> block, the finally block must still be executed. Therefore, the <CODE>catch</CODE> clause merely invokes the miniature subroutine that represents the <CODE>finally</CODE> clause, then throws the same exception again. The exception table for the <CODE>giveMeThatOldFashionedBoolean()</CODE> method, shown below, indicates that any exception thrown between and including addresses 0 and 17 (all the bytecodes that implement the <CODE>try</CODE> block) are handled by the <CODE>catch</CODE> clause that starts at address 18.</P>
+<PRE><P><FONT FACE="Courier New">begin</FONT></P>
+<FONT SIZE="2"><P></FONT><FONT FACE="Courier New">Exception table:
+<P>   from    to   target type</P>
+<P>     0     18     18   any</P>
+</FONT><FONT SIZE="2"><P>&nbsp;</P></FONT><FONT FACE="Courier New">end</FONT></P></PRE>
+<P>The bytecodes of the <CODE>finally</CODE> clause begin by popping the return address off the stack and storing it into local variable three. At the end of the <CODE>finally</CODE> clause, the <EM><FONT FACE="Courier New">ret</FONT></EM> instruction takes its return address from the proper place, local variable three. </P>
+<I><STRONG><P>Hop Around: A Simulation</P>
+</I><P></STRONG>The <I>Hop Around</I> applet, shown in Figure 18-1, demonstrates a Java Virtual Machine executing a sequence of bytecodes. The applet is embedded in a web page on the CD-ROM in file <FONT FACE="Courier New">applets/HopAround.html</FONT>. The bytecode sequence in the simulation was generated by the <CODE>javac</CODE> compiler for the <CODE>hopAround()</CODE> method of the class shown below:</P>
+<PRE><P><FONT FACE="Courier New">begin</FONT></P>
+<FONT SIZE="2"><P></FONT><FONT FACE="Courier New">// On CD-ROM in file opcodes/ex1/Clown.java
+<P>class Clown {</P>
+<P>&nbsp;</P>
+<P>    static int hopAround() {</P>
+<P>        int i = 0;</P>
+<P>        while (true) {</P>
+<P>            try {</P>
+<P>                try {</P>
+<P>                    i = 1;</P>
+<P>                }</P>
+<P>                finally {  // The first finally clause</P>
+<P>                    i = 2;</P>
+<P>                }</P>
+<P>                i = 3;</P>
+<P>                // This return never completes, because of</P>
+<P>                // the continue in the second finally clause</P>
+<P>                return i;</P>
+<P>            }</P>
+<P>            finally {      // The second finally clause</P>
+<P>                if (i == 3) {</P>
+<P>                     // This continue overrides the return statement</P>
+<P>                    continue;</P>
+<P>                }</P>
+<P>            }</P>
+<P>        }</P>
+<P>    }</P>
+<P>}</P>
+</FONT><FONT SIZE="2"><P>&nbsp;</P></FONT><FONT FACE="Courier New">end</FONT></P></PRE>
+<P>The bytecodes generated by <CODE>javac</CODE> for the <CODE>hopAround()</CODE> method are shown below:</P>
+<PRE><P><FONT FACE="Courier New">begin</FONT></P>
+<FONT SIZE="2"><P></FONT><FONT FACE="Courier New"> 0 iconst_0      // Push constant 0
+<P> 1 istore_0      // Pop into local var 0: int i = 0;</P>
+<P>&nbsp;</P>
+<P>// Both try blocks start here (see exception table, below):</P>
+<P> 2 iconst_1      // Push constant 1</P>
+<P> 3 istore_0      // Pop into local var 0: i = 1;</P>
+<P> 4 jsr 18        // Jump to mini-subroutine at offset 18 (the</P>
+<P>                 // first finally clause)</P>
+<P> 7 goto 24       // Jump to offset 24 (to just below first</P>
+<P>                 // finally clause)</P>
+<P>&nbsp;</P>
+<P>// Catch clause for the first finally clause:</P>
+<P>10 astore 4      // Pop the reference to thrown exception, store</P>
+<P>                 // in local variable 4</P>
+<P>12 jsr 18        // Jump to mini-subroutine at offset 18 (the</P>
+<P>                 // first finally clause)</P>
+<P>15 aload 4       // Push the reference (to thrown exception)</P>
+<P>                 // from local variable 4</P>
+<P>17 athrow        // Rethrow the same exception</P>
+<P>&nbsp;</P>
+<P>// The first finally clause:</P>
+<P>18 astore 5      // Store the return address in local variable 5</P>
+<P>20 iconst_2      // Push constant 2</P>
+<P>21 istore_0      // Pop into local var 0: i = 2;</P>
+<P>22 ret 5         // Jump to return address stored in local variable 5</P>
+<P>&nbsp;</P>
+<P>// Bytecodes for the code just after the first finally clause:</P>
+<P>24 iconst_3      // Push constant 3</P>
+<P>25 istore_0      // Pop into local var 0: int i = 3;</P>
+<P>&nbsp;</P>
+<P>// Bytecodes for the return statment:</P>
+<P>26 iload_0       // Push the int from local</P>
+<P>                 // variable 0 (i, which is 3)</P>
+<P>27 istore_1      // Pop and store the int into local</P>
+<P>                 // variable 1 (the return value, i)</P>
+<P>28 jsr 39        // Jump to mini-subroutine at offset 39 (the</P>
+<P>                 // second finally clause)</P>
+<P>31 iload_1       // Push the int from local variable 1 (the</P>
+<P>                 // return value)</P>
+<P>32 ireturn       // Return the int on the top of the stack</P>
+<P>&nbsp;</P>
+<P>// Catch clause for the second finally clause:</P>
+<P>33 astore_2      // Pop the reference to thrown exception, store</P>
+<P>                 // in local variable 2</P>
+<P>34 jsr 39        // Jump to mini-subroutine at offset 39 (the</P>
+<P>                 // second finally clause)</P>
+<P>37 aload_2       // Push the reference (to thrown exception)</P>
+<P>                 // from local variable 2</P>
+<P>38 athrow        // Rethrow the same exception</P>
+<P>&nbsp;</P>
+<P>// The second finally clause:</P>
+<P>39 astore_3      // Store the return address in local variable 3</P>
+<P>40 iload_0       // Push the int from local variable 0 (i)</P>
+<P>41 iconst_3      // Push constant 3</P>
+<P>42 if_icmpeq 47  // If the top two ints on the stack are equal, jump</P>
+<P>                 // to offset 47: if (i == 3) {</P>
+<P>45 ret 3         // Jump to return address stored in local variable 3</P>
+<P>47 goto 2        // Jump to offset 2 (the top of the while</P>
+<P>                 // block): continue;</P>
+<P>&nbsp;</P>
+<P>Exception table:</P>
+<P>   from   to  target type</P>
+<P>     2     4    10   any</P>
+<P>     2    31    31   any</P>
+</FONT><FONT SIZE="2"><P>&nbsp;</P></FONT><FONT FACE="Courier New">end</FONT></P></PRE>
+<P>The <CODE>hopAround()</CODE> method returns from the first <CODE>finally</CODE> clause by executing past the closing curly brace, but returns from the second <CODE>finally</CODE> clause by executing a <CODE>continue</CODE> statement. The first <CODE>finally</CODE> clause, therefore, exits via its <EM><FONT FACE="Courier New">ret</FONT></EM> instruction. But because the second <CODE>finally</CODE> clause exits via a <CODE>continue</CODE>, its <EM><FONT FACE="Courier New">ret</FONT></EM> instruction is never executed. The <CODE>continue</CODE> statement causes the Java Virtual Machine to jump to the top of the <CODE>while</CODE> loop again. This results in an endless loop, even though it is a <CODE>return</CODE> statement that originally causes the second <CODE>finally</CODE> clause to be executed in the first place. The continue statement in the <CODE>finally</CODE> clause supersedes the <CODE>return</CODE> statement, so the method never returns. </P>
+<P>Note that the bytecodes that implement the <CODE>return</CODE> statement store a copy of the return value into local variable one before jumping to the miniature subroutine that represents the second <CODE>finally</CODE> clause. Then, after the miniature subroutine returns (in this case it never does, because the continue is always executed), the return value is retrieved from local variable one and returned.</P>
+<P>This highlights the way the Java Virtual Machine returns values when <CODE>finally</CODE> clauses are also executed. Rather than returning the value of <CODE>i</CODE> after the <CODE>finally</CODE> clause is executed, the Java Virtual Machine will return the value that <CODE>i</CODE> had just <I>before</I> the <CODE>finally</CODE> clause was executed. This means that even if the <CODE>finally</CODE> clause changes the value of <CODE>i</CODE>, the method will still return the value that <CODE>i</CODE> had when the <CODE>return</CODE> statement was first reached, before the <CODE>finally</CODE> clause was invoked. If you wanted the <CODE>finally</CODE> clause to be able to change the return value of the method, you would have to put an actual <CODE>return</CODE> statement with the new return value into the <CODE>finally</CODE> clause itself. </P>
+<P>To drive the <I>Hop Around</I> simulation, use the Step, Reset, Run, and Stop buttons. Each time you press the Step button, the simulator will execute the instruction pointed to by the pc register. If you press the Run button, the simulation will continue with no further coaxing on your part until you press the Stop button. To start the simulation over, press the Reset button. For each step of the simulation, a panel at the bottom of the applet contains an explanation of what the next instruction will do. Happy clicking.</P>
+<P><IMG SRC="fig18-1.gif" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/venners/images/fig18-1.gif" ALT="Figure 18-1"></P>
+
+<H3><EM><P>On the CD-ROM</P>
+</EM></H3><P> The CD-ROM contains the source code examples from this chapter in the <FONT FACE="Courier New">opcodes</FONT> directory. The <I>Hop Around</I> applet is contained in a web page on the CD-ROM in file <FONT FACE="Courier New">applets/HopAround.html</FONT>. The source code for this applet is found alongside its class files, in the <FONT FACE="Courier New">applets/JVMSimulators</FONT> and <FONT FACE="Courier New">applets/JVMSimulators/COM/artima/jvmsim</FONT> directories.</P>
+<H3><EM><P>The Resources Page</P>
+</EM></H3><P>For more information about the material presented in this chapter, visit the resources page: <FONT FACE="Courier New"><A HREF="http://www.artima.com/insidejvm/finally.html" tppabs="http://www.artima.com/insidejvm/finally.html">http://www.artima.com/insidejvm/finally.html</A></FONT>.</P>
+<TABLE BORDER="0" WIDTH="100%">
+<TR><TD><A HREF="http://www.pbg.mcgraw-hill.com/betabooks/stores.html" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/stores.html" target="bottom"><IMG SRC="hotkey.gif" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/images/hotkey.gif" ALIGN="LEFT" BORDER="0" WIDTH="40" HEIGHT="40" ALT="Orders"></A>
+<IMG SRC="order_text.gif" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/images/order_text.gif" WIDTH="103" HEIGHT="41" ALT="Orders"></TD>
+<TD ALIGN="RIGHT"><A HREF="chap17.html" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/venners/chap17.html"><IMG SRC="backward.gif" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/images/backward.gif" BORDER="0" ALT="Backward" WIDTH="32" HEIGHT="32"></A>&nbsp;<A HREF="chap19.html" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/venners/chap19.html"><IMG SRC="forward.gif" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/images/forward.gif" BORDER="0" ALT="Forward" WIDTH="32" HEIGHT="32"></A></TD></TR>
+<TR><TD COLSPAN="2"><A HREF="mailto:computing@mcgraw-hill.com"><IMG SRC="hotkey.gif" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/images/hotkey.gif" ALIGN="LEFT" BORDER="0" WIDTH="40" HEIGHT="40" ALT="Comments"></A>
+<IMG SRC="comment_text.gif" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/images/comment_text.gif" WIDTH="73" HEIGHT="39" ALT="Comments"></TD></TR>
+
+</TABLE>
+<HR>
+<P ALIGN=CENTER>&nbsp;<A HREF="http://www.pbg.mcgraw-hill.com/computing/computing-home.html" tppabs="http://www.pbg.mcgraw-hill.com/computing/computing-home.html" TARGET="_top">COMPUTING
+MCGRAW-HILL</A> | <A HREF="http://www.pbg.mcgraw-hill.com/betabooks/betabooks-home.html" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/betabooks-home.html" TARGET="_top">Beta Books</A>
+| <A HREF="http://www.pbg.mcgraw-hill.com/computing/contact.html" tppabs="http://www.pbg.mcgraw-hill.com/computing/contact.html" TARGET="_top">Contact Us</A>
+| <A HREF="http://www.pbg.mcgraw-hill.com/betabooks/stores.html" tppabs="http://www.pbg.mcgraw-hill.com/betabooks/stores.html" TARGET="_top">Order Information</A>
+| <A HREF="http://mcgraw-hill.inforonics.com/compsearch.shtml" tppabs="http://mcgraw-hill.inforonics.com/compsearch.shtml" TARGET="_top">Online Catalog</A></P>
+
+<P ALIGN=CENTER><FONT SIZE="-1"><A HREF="http://www.pbg.mcgraw-hill.com/computing/computing-home.html" tppabs="http://www.pbg.mcgraw-hill.com/computing/computing-home.html" TARGET="_top">Computing McGraw-Hill</A> is an imprint of the <A HREF="http://www.pbg.mcgraw-hill.com/pbg-home.html" tppabs="http://www.pbg.mcgraw-hill.com/pbg-home.html" TARGET="_top">McGraw-Hill Professional Book Group</A>.</FONT></P>
+
+<!-- begin footer -->
+<HR>
+<A HREF="http://www.mcgraw-hill.com/" tppabs="http://www.mcgraw-hill.com/" TARGET="_top"><IMG SRC="division-white.gif" tppabs="http://www.pbg.mcgraw-hill.com/images/division-white.gif" WIDTH="350" HEIGHT="44" ALT="A Division of the McGraw-Hill Companies" BORDER="0"></A><BR>
+<FONT SIZE="-2">Copyright &copy; 1997 <A HREF="http://www.mcgraw-hill.com/" tppabs="http://www.mcgraw-hill.com/" TARGET="_top">
+The McGraw-Hill Companies</A>. All rights reserved. Any use is subject to the 
+<A HREF="http://www.mcgraw-hill.com/corporate/news_info/copyrttm.htm" tppabs="http://www.mcgraw-hill.com/corporate/news_info/copyrttm.htm" TARGET="_top">
+Terms of Use</A>; the corporation also has a comprehensive <A HREF="http://www.mcgraw-hill.com/corporate/news_info/privacy.html" tppabs="http://www.mcgraw-hill.com/corporate/news_info/privacy.html" TARGET="_top">
+Privacy Policy</A> governing information we may collect from our customers.</FONT>
+<!-- end footer -->
+</BODY>
+</HTML>
